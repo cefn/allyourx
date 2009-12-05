@@ -1,0 +1,15 @@
+.xroot{
+	float:left;
+}
+
+h3>span.ui-icon-plusthick{
+    float:right;
+}
+h3>span.ui-icon-triangle-1-s,h3>span.ui-icon-triangle-1-e{
+    float:left;
+}
+
+.xattribute>label, .xattribute>input {
+    width:45%;
+    float:left;
+}

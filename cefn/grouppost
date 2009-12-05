@@ -1,0 +1,50 @@
+This originates in a problem with Firebug and E4X and XHTML validation, but I propose a feature for mime-type configuration in POW which could be useful.
+
+I propose that the new mime-type control has an additional checkbox, which controls whether <?sjs ?> tag pairs are expanded in the file.
+
+This would mean that executing pow_header before the content prolog could be avoided, (inserts a <script /> before the prolog breaks page rendering when using Firebug and pow_debug), since the header would be set by the file extension. 
+
+This is the way I encountered the problem.
+
+Since E4X is designed to generate strict XML, empty tags are
+frequently serialised as self-closing tags. For example...
+
+document.write(<script type='text/javascript' src="mylib.js"></
+script>.toXMLString());
+
+...will generate in the document...
+
+<script type='text/javascript' src="mylib.js"/>
+
+As discussed here...
+http://stackoverflow.com/questions/69913/why-dont-self-closing-script...
+...self-closing tags are indeed invalid XHTML without the proper mime-
+type passed to the browser. The Content-Type header has to be
+application/xhtml+xml
+
+POW provides support for overriding headers, with this as the first
+line, we have (apparently) solved the problem.
+
+<?sjs 
+pow_header("Content-Type:application/xhtml+xml"); 
+?><!DOCTYPE
+html SYSTEM "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<?sjs 
+	//<![CDATA[
+	document.write(<script type='text/javascript' src="mylib.js"></script>.toXMLString());
+	//]]> 
+?>
+</head>
+<body>
+<p>This is a para</p>
+</body>
+</html> 
+This renders fine and if you leave out the header call, you can see that it breaks the page rendering.
+ 
+However, if we want to use Firebug to debug our script, we encounter a problem. Adding pow_debug() in the first <?sjs ?> causes everything to break because of the rewriting approach inserting <script> tags for RPC client-side execution. In this case the <script> is inserted even before the content prolog of the page.
+
+Ideally we would be able to add a new mime-type mapping for our own file extension in the POW Options. For example, we could add .xsjs as having the application/xhtml+xml mime type. However if we do this, then the <?sjs ?> tags in the xsjs file are ignored and not expanded. 
+
+Hence my proposal to change the Mime-type control to add the extra checkboxed feature of 'expand <?sjs ?> tags'.

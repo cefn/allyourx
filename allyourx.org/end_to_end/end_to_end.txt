@@ -1,0 +1,6 @@
+use accordion for elements, tables with fields for attributes (greyed when optional)
+use tabs for views (graphical annotated vs graphical xml vs textual xml (json?)
+
+Markup for themeroller plus icon
+<li title=".ui-icon-plusthick" class="ui-state-default ui-corner-all"><span class="ui-icon ui-icon-plusthick"/></li>
+

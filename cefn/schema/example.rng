@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grammar 
+  xmlns="http://relaxng.org/ns/structure/1.0"
+  xmlns:a="http://relaxng.org/ns/compatibility/annotations/1.0"
+  datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
+    
+    <include href="xhtml/xhtml.rng">
+        <start>
+            <element name="data">
+                <zeroOrMore>
+                    <element name="item">
+                        <attribute name="title">
+                            <data type="string"/>
+                        </attribute>
+                        <attribute name="description">
+                            <data type="string"/>
+                        </attribute>
+                        <element name="content">
+                            <ref name="html"/>
+                        </element>
+                    </element>
+                </zeroOrMore>
+            </element>
+        </start>
+    </include>
+    
+    
+    <define name="hypertext">
+        <oneOrMore>
+            <ref name="Block.model"/>
+        </oneOrMore>
+    </define>
+</grammar>

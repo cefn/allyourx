@@ -1,0 +1,13 @@
+I'm having some trouble with Firebug debugging on 3.5, and some unusual sort of crosstalk between versions of POW in different Firefox versions. 
+
+Having launched Firefox 3.5 and reconfigured POW in that version to use :6673 and be secured by a username and password (as outlined in the pow_debug() howto at http://davidkellogg.com/wiki/Firebug ) I run into a bug at the line...
+
+var pow_server = new pow_Serv();
+
+...in the inserted script, which reports...
+
+pow_Serv is not defined
+
+Sure enough, the imported /system/rpc
+
+Incidentally, when trying to launch the original version of Firefox and visit the default POW on :6670 I encounter a login screen (even though that POW configuration isn't user:pass protected).

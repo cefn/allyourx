@@ -1,0 +1,14 @@
+.test.good h1 {
+	color:green;
+}
+.test.bad h1 {
+	color:red;
+}
+
+.test{
+	display:table;
+	width:100%;
+}
+.test h1, .test p{
+	display:table-cell;
+}

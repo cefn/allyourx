@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grammar 
+  xmlns="http://relaxng.org/ns/structure/1.0"
+  xmlns:a="http://relaxng.org/ns/compatibility/annotations/1.0"
+  datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
+    <start>
+        <element name="data">
+            <oneOrMore>
+                <element name="soldier" a:label="A-team member">
+                    <attribute name="name" a:label="Character name" />
+                    <attribute name="skill" a:label="Unique skill" />
+                </element>
+            </oneOrMore>
+        </element>
+    </start>
+</grammar>
