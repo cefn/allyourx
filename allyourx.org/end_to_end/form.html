@@ -45,7 +45,7 @@
                     if (itemq.hasClass('xattribute')) {
                         var name = itemq.attr('a:name');
                         var value = itemq.find("input").val();
-						value = value ? value : "";
+                        value = value ? value : "";
                         xml = ' ' + name + '="' + value + '"';
                     }
                     else 
@@ -61,38 +61,47 @@
                     return xml;
                 }
                 else {
-					return resetXML(itemq);
+                    return resetXML(itemq);
                 }
             }
-			
+            
             function resetXML(itemq){
                 xml = asXML(itemq);
                 itemq.data('xxml', xml);
-                return xml;                
-            }
-			
-            function showXML(){
-				var xml = asXML($(".xroot .xelement:first"));
-                $("#xxml").text(xml);
-            }
-			
-            function bubbleResetXML(itemq){
-				var itemlist = [];
-                itemq.parents().each(function(){
-					if($(this).filter(".xroot,.xelement,.xattribute,.xtext")){
-						itemlist.push(this);
-	                	resetXML($(this));						
-					}
-                });
-				showXML();
+                return xml;
             }
             
+            function showXML(){
+                var xml = asXML($(".xroot .xelement:first"));
+                $("#xxml").text(xml);
+            }
+            
+            function bubbleResetXML(itemq){
+                var itemlist = [];
+                itemq.parents().each(function(){
+                    if ($(this).filter(".xroot,.xelement,.xattribute,.xtext")) {
+                        itemlist.push(this);
+                        resetXML($(this));
+                    }
+                });
+                showXML();
+            }
+            
+            var soldier_template = '<div class="xelement" a:title="A-Team Member" a:name="soldier">\
+                                                    <div class="xattribute" a:title="Character name" a:name="name">\
+                                                    </div>\
+                                                    <div class="xattribute" a:title="Date of birth" a:name="birthdate" a:type="date">\
+                                                    </div>\
+                                                    <div class="xattribute" a:title="Unique skill" a:name="skill">\
+                                                    </div>\
+                                            </div>';
+            
             $(function(){
-				
-				$(".xroot .xelement, .xroot .xattribute, .xroot .xtext").livequery(function(){
-					bubbleResetXML($(this));
-				});
-
+            
+                $(".xroot .xelement, .xroot .xattribute, .xroot .xtext").livequery(function(){
+                    bubbleResetXML($(this));
+                });
+                
                 $(".xroot").livequery(function(){
                     $(this).after('<div class="ui-helper-clearfix"></div>');
                 });
@@ -119,21 +128,25 @@
                         });
                     }
                 });
+                
                 $(".xroot>h3,.xelement>h3").livequery(function(){
                     $(this).addClass("ui-widget-header ui-helper-reset ui-state-active ui-corner-top");
-                    $(this).prepend('<span class="ui-icon ui-icon-wrench"><div class="xdrop ui-state-hover"><span class="ui-icon ui-icon-note"/><span class="ui-icon ui-icon-pencil"/></div></span>');
-                    //$(this).prepend('<span class="ui-icon ui-icon-wrench"/>');
-                    $(this).prepend('<span class="ui-icon ui-icon-plusthick"/>');
+                    $(this).prepend('<span class="ui-icon ui-icon-wrench"><div class="xdrop ui-state-hover ui-state-default"><span class="ui-icon ui-icon-note"/><span class="ui-icon ui-icon-pencil"/></div></span>');
                     $(this).prepend('<span class="ui-icon ui-icon-triangle-1-s"/>');
                 });
-
+                
+                $(".xroot>h3").livequery(function(){
+                    $(this).prepend('<span class="ui-icon ui-icon-plusthick"/>');
+                });
+                
                 $(".xroot>h3 .ui-icon-wrench,.xelement>h3 .ui-icon-wrench").livequery(function(){
-					$(this).hover(
-						function(){ $(".xdrop",this).css('display','block');},
-						function(){ $(".xdrop",this).css('display','none');}
-					);					
-				});
-
+                    $(this).hover(function(){
+                        $(".xdrop", this).css('display', 'block');
+                    }, function(){
+                        $(".xdrop", this).css('display', 'none');
+                    });
+                });
+                
                 $("h3>span.ui-icon-triangle-1-s").livequery('click', function(){
                     $(this).removeClass("ui-icon-triangle-1-s").addClass("ui-icon-triangle-1-e");
                     $(this).parents(".xmlelement:first").removeClass("ui-state-active").addClass("ui-state-default");
@@ -155,6 +168,17 @@
                     var targetq = $(this).parents("h3:first").next(); //navigate to corresponding element
                     $("#newxattribute").data('targetq', targetq);
                     $("#newxattribute").dialog('open');
+                });
+                $(".xroot h3 span.ui-icon-copy").livequery('click', function(){ //not currently used
+                    var parentq = $(this).parents(".xroot:first").find(".xelement:first");
+                    var childq = parentq.find(".xelement:first");
+                    parentq.append(childq.clone()); //must add logic to prevent repeat addition of gui elements
+                });
+                
+                $(".xroot h3 span.ui-icon-plusthick").livequery('click', function(){
+                    var parentq = $(this).parents(".xroot:first").find(".xelement:first");
+                    var childq = parentq.find(".xelement:first");
+                    parentq.append($(soldier_template)); //must add logic to prevent repeat addition of gui elements
                 });
                 
                 //$("#xtabs").tabs();
@@ -189,7 +213,7 @@
                             var title = thisq.find("input[name='title']").val();
                             var type = thisq.find("select[name='type']").val();
                             var targetq = thisq.data('targetq');
-                            targetq.append($('<div class="xattribute" a:name="' + name + '" a:title="' + title + '" a:value="' + value + '" a:type="' + type +'" ></div>'));
+                            targetq.append($('<div class="xattribute" a:name="' + name + '" a:title="' + title + '" a:value="' + value + '" a:type="' + type + '" ></div>'));
                             resetXML(targetq);
                             thisq.dialog('close');
                         },
@@ -200,16 +224,18 @@
                     close: function(){
                     }
                 });
-				
-				var bubbleResetTrigger = function(){
-					var q = $(this);
-					setTimeout(function(){ bubbleResetXML(q);}, 1);
-				}
-				
-				$(".xroot input").livequery('keyup',bubbleResetTrigger);
-				$(".xroot input").livequery('change',bubbleResetTrigger);
-				
-				showXML();
+                
+                var bubbleResetTrigger = function(){
+                    var q = $(this);
+                    setTimeout(function(){
+                        bubbleResetXML(q);
+                    }, 1);
+                }
+                
+                $(".xroot input").livequery('keyup', bubbleResetTrigger);
+                $(".xroot input").livequery('change', bubbleResetTrigger);
+                
+                showXML();
                 
             });
             //]]>
@@ -217,28 +243,9 @@
     </head>
     <body>
         <div id="xtabs">
-            <ul>
-                <li>
-                    <a href="#xgui">GUI</a>
-                </li>
-                <li>
-                    <a href="#xxml">XML</a>
-                </li>
-                <li>
-                    <a href="#xjson">JSON</a>
-                </li>
-            </ul>
             <div id="xgui">
                 <div class="xroot">
                     <div class="xelement" a:title="All data records" a:name="data">
-                        <div class="xelement" a:title="A-Team Member" a:name="soldier">
-                            <div class="xattribute" a:title="Character name" a:name="name">
-                            </div>
-                            <div class="xattribute" a:title="Date of birth" a:name="birthdate" a:type="date">
-                            </div>
-                            <div class="xattribute" a:title="Unique skill" a:name="skill">
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -270,7 +277,7 @@
                 <p id="validateTips">
                     All form fields are required.
                 </p>
-                <form action="#" >
+                <form action="#">
                     <fieldset>
                         <label for="name">
                             Name
@@ -283,10 +290,10 @@
                         <label for="type">
                             Type
                         </label>
-						<select name="type" class="text ui-widget-content ui-corner-all">
-							<option value="">None</option>
-							<option value="date">Date</option>
-						</select>
+                        <select name="type" class="text ui-widget-content ui-corner-all">
+                            <option value="">None</option>
+                            <option value="date">Date</option>
+                        </select>
                     </fieldset>
                 </form>
             </div>
