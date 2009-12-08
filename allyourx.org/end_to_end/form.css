@@ -1,15 +1,52 @@
+#xgui,#xxml,#xjson{
+    float:left;
+    width:30%;
+}
+
+span.ui-icon-wrench{
+    overflow:visible;
+}
+
+.ui-icon .xdrop{
+    position:relative;
+    top:16px;
+	display:none;
+}
+
 .xroot{
 	float:left;
 }
 
-h3>span.ui-icon-plusthick{
+span.ui-icon-plusthick,span.ui-icon-wrench{
     float:right;
 }
-h3>span.ui-icon-triangle-1-s,h3>span.ui-icon-triangle-1-e{
+span.ui-icon-triangle-1-s,h3>span.ui-icon-triangle-1-e{
     float:left;
 }
 
-.xattribute>label, .xattribute>input {
+.xelement,.xattribute,.xtext{
+    clear:left;
+    padding:1%;
+}
+
+.xattribute label, .xattribute input {
+    display:inline-block;
     width:45%;
-    float:left;
+}
+
+.xroot>h3.ui-state-default, .xelement>h3.ui-state-default{
+    border-width:1px;
+    border-bottom-width:1px;
+}
+
+.xroot>h3.ui-state-active, .xelement>h3.ui-state-active{
+    border-width:1px;
+    border-bottom-width:0px;
+}
+
+.xelement {
+    border-width:1px;
+    border-top-width:0px;
+    padding-left:1em;
+    padding-right:0.5em;
 }

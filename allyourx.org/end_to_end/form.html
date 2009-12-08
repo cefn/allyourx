@@ -1,7 +1,7 @@
 <!DOCTYPE html SYSTEM "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:a="http://allyourx.org" xml:lang="en" lang="en">
     <head>
-        <title>jQuery UI Accordion - Default functionality</title>
+        <title>AllyourX - Test Form</title>
         <link rel="stylesheet" href="../../jquery-ui-1.7.2/themes/base/ui.all.css" type="text/css"/>
         <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/themes/le-frog/jquery-ui.css" type="text/css" />
         <!-- <link rel="stylesheet" href="../../jquery-ui-1.7.2/demos/demos.css" type="text/css"/> -->
@@ -10,7 +10,11 @@
         </script>
         <script type="text/javascript" src="../../jquery-ui-1.7.2/ui/ui.core.js">
         </script>
+        <script type="text/javascript" src="../../jquery-ui-1.7.2/ui/ui.tabs.js">
+        </script>
         <script type="text/javascript" src="../../jquery-ui-1.7.2/ui/ui.accordion.js">
+        </script>
+        <script type="text/javascript" src="../../jquery-ui-1.7.2/ui/ui.dialog.js">
         </script>
         <script type="text/javascript" src="../../jquery-ui-1.7.2/ui/ui.datepicker.js">
         </script>
@@ -22,72 +26,269 @@
         </script>
         <script type="text/javascript">
             //<![CDATA[
-	            $(function(){
-	                $(".xroot").livequery(function(){
-	                    $(this).addClass("");
-	                });
-	                $(".xroot, .xelement").livequery(function(){
-	                    $(this).addClass("ui-accordion ui-widget ui-helper-reset");
-	                });
-					$(".xelement").livequery(function(){
-						var q = $(this);
-						var title = q.attr('title');
-	                    q.addClass("ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active");
-						q.before('<h3><a href="#">' + title + '</a></h3>');
-					});
-					$(".xattribute").livequery(function(){
-						var q = $(this);
-						var name =q.attr('name');
-						var title =q.attr('title');
-						q.append('<label for="' + name + '">' + title + '</label><input type="text" name="' + name + '"/>');
-					});
-					$(".xattribute[type='date']>input").livequery(function(){
-						$(this).datepicker({
-							dateFormat: $.datepicker.ISO_8601
-						});
-					});
-	                $(".xroot>h3,.xelement>h3").livequery(function(){
-	                    $(this).addClass("ui-accordion-header ui-helper-reset ui-state-active ui-corner-top");
-						$(this).prepend('<span class="ui-icon ui-icon-plusthick"/>');
-						$(this).prepend('<span class="ui-icon ui-icon-triangle-1-s"/>');
-	                });
-	                $("h3>span.ui-icon-triangle-1-s").livequery('click', function(){
-						$(this).removeClass("ui-icon-triangle-1-s").addClass("ui-icon-triangle-1-e");
-						$(this).parents(".xmlelement:first").removeClass("ui-state-active").addClass("ui-state-default");
-						$(this).parents("h3:first").removeClass("ui-corner-top").addClass("ui-corner-all");
-						$(this).parent().next().hide();
-	                });
-	                $("h3>span.ui-icon-triangle-1-e").livequery('click', function(){
-						$(this).removeClass("ui-icon-triangle-1-e").addClass("ui-icon-triangle-1-s");
-						$(this).parents(".xmlelement").removeClass("ui-state-default").addClass("ui-state-active");
-						$(this).parents("h3:first").removeClass("ui-corner-all").addClass("ui-corner-top");
-						$(this).parent().next().show();
-	                });
-	            });
+            
+            function asXML(itemq){
+                var xml = "";
+                if (itemq.hasClass('xelement')) {
+                    var attxml = "";
+                    itemq.children(".xattribute").each(function(){
+                        attxml += getXML($(this));
+                    })
+                    var childxml = "";
+                    itemq.children(".xelement,.xtext").each(function(){
+                        childxml += getXML($(this));
+                    })
+                    var name = itemq.attr('a:name');
+                    xml = '<' + name + attxml + '>' + childxml + '</' + name + '>';
+                }
+                else 
+                    if (itemq.hasClass('xattribute')) {
+                        var name = itemq.attr('a:name');
+                        var value = itemq.find("input").val();
+						value = value ? value : "";
+                        xml = ' ' + name + '="' + value + '"';
+                    }
+                    else 
+                        if (itemq.hasClass('xtext')) {
+                            xml = itemq.text();
+                        }
+                return xml;
+            }
+            
+            function getXML(itemq){
+                var xml = itemq.data('xxml');
+                if (xml) {
+                    return xml;
+                }
+                else {
+					return resetXML(itemq);
+                }
+            }
+			
+            function resetXML(itemq){
+                xml = asXML(itemq);
+                itemq.data('xxml', xml);
+                return xml;                
+            }
+			
+            function showXML(){
+				var xml = asXML($(".xroot .xelement:first"));
+                $("#xxml").text(xml);
+            }
+			
+            function bubbleResetXML(itemq){
+				var itemlist = [];
+                itemq.parents().each(function(){
+					if($(this).filter(".xroot,.xelement,.xattribute,.xtext")){
+						itemlist.push(this);
+	                	resetXML($(this));						
+					}
+                });
+				showXML();
+            }
+            
+            $(function(){
+				
+				$(".xroot .xelement, .xroot .xattribute, .xroot .xtext").livequery(function(){
+					bubbleResetXML($(this));
+				});
+
+                $(".xroot").livequery(function(){
+                    $(this).after('<div class="ui-helper-clearfix"></div>');
+                });
+                $(".xroot,.xelement").livequery(function(){
+                    $(this).addClass("ui-widget ui-helper-reset");
+                });
+                $(".xelement").livequery(function(){
+                    var q = $(this);
+                    //add graphical elements
+                    q.addClass("ui-widget-content ui-helper-reset ui-corner-bottom");
+                    q.before('<h3><a href="#">' + q.attr('a:title') + '</a></h3>');
+                });
+                $(".xattribute").livequery(function(){
+                    var q = $(this);
+                    var name = q.attr('a:name');
+                    var title = q.attr('a:title');
+                    //add graphical elements
+                    q.append('<label for="' + name + '">' + title + '</label><input type="text" name="' + name + '"/>');
+                });
+                $(".xattribute").livequery(function(){
+                    if ($(this).attr('a:type') == 'date') {
+                        $(this).find("input").datepicker({
+                            dateFormat: $.datepicker.ISO_8601
+                        });
+                    }
+                });
+                $(".xroot>h3,.xelement>h3").livequery(function(){
+                    $(this).addClass("ui-widget-header ui-helper-reset ui-state-active ui-corner-top");
+                    $(this).prepend('<span class="ui-icon ui-icon-wrench"><div class="xdrop ui-state-hover"><span class="ui-icon ui-icon-note"/><span class="ui-icon ui-icon-pencil"/></div></span>');
+                    //$(this).prepend('<span class="ui-icon ui-icon-wrench"/>');
+                    $(this).prepend('<span class="ui-icon ui-icon-plusthick"/>');
+                    $(this).prepend('<span class="ui-icon ui-icon-triangle-1-s"/>');
+                });
+
+                $(".xroot>h3 .ui-icon-wrench,.xelement>h3 .ui-icon-wrench").livequery(function(){
+					$(this).hover(
+						function(){ $(".xdrop",this).css('display','block');},
+						function(){ $(".xdrop",this).css('display','none');}
+					);					
+				});
+
+                $("h3>span.ui-icon-triangle-1-s").livequery('click', function(){
+                    $(this).removeClass("ui-icon-triangle-1-s").addClass("ui-icon-triangle-1-e");
+                    $(this).parents(".xmlelement:first").removeClass("ui-state-active").addClass("ui-state-default");
+                    $(this).parents("h3:first").removeClass("ui-state-active ui-corner-top").addClass("ui-state-default ui-corner-all");
+                    $(this).parent().next().slideUp('slow');
+                });
+                $("h3>span.ui-icon-triangle-1-e").livequery('click', function(){
+                    $(this).removeClass("ui-icon-triangle-1-e").addClass("ui-icon-triangle-1-s");
+                    $(this).parents(".xmlelement:first").removeClass("ui-state-default").addClass("ui-state-active");
+                    $(this).parents("h3:first").removeClass("ui-state-default ui-corner-all").addClass("ui-state-active ui-corner-top");
+                    $(this).parent().next().slideDown('slow');
+                });
+                $("h3 .xdrop span.ui-icon-note").livequery('click', function(){
+                    var targetq = $(this).parents("h3:first").next(); //navigate to corresponding element
+                    $("#newxelement").data('targetq', targetq);
+                    $("#newxelement").dialog('open');
+                });
+                $("h3 .xdrop span.ui-icon-pencil").livequery('click', function(){
+                    var targetq = $(this).parents("h3:first").next(); //navigate to corresponding element
+                    $("#newxattribute").data('targetq', targetq);
+                    $("#newxattribute").dialog('open');
+                });
+                
+                //$("#xtabs").tabs();
+                
+                $("#newxelement").dialog({
+                    autoOpen: false,
+                    modal: true,
+                    buttons: {
+                        'Add': function(){
+                            var thisq = $(this);
+                            var name = thisq.find("input[name='name']").val();
+                            var title = thisq.find("input[name='title']").val();
+                            var targetq = thisq.data('targetq');
+                            targetq.append($('<div class="xelement" a:title="' + title + '" a:name="' + name + '"></div>'));
+                            resetXML(targetq);
+                            thisq.dialog('close');
+                        },
+                        'Cancel': function(){
+                            $(this).dialog('close');
+                        }
+                    },
+                    close: function(){
+                    }
+                });
+                $("#newxattribute").dialog({
+                    autoOpen: false,
+                    modal: true,
+                    buttons: {
+                        'Add': function(){
+                            var thisq = $(this);
+                            var name = thisq.find("input[name='name']").val();
+                            var title = thisq.find("input[name='title']").val();
+                            var type = thisq.find("select[name='type']").val();
+                            var targetq = thisq.data('targetq');
+                            targetq.append($('<div class="xattribute" a:name="' + name + '" a:title="' + title + '" a:value="' + value + '" a:type="' + type +'" ></div>'));
+                            resetXML(targetq);
+                            thisq.dialog('close');
+                        },
+                        'Cancel': function(){
+                            $(this).dialog('close');
+                        }
+                    },
+                    close: function(){
+                    }
+                });
+				
+				var bubbleResetTrigger = function(){
+					var q = $(this);
+					setTimeout(function(){ bubbleResetXML(q);}, 1);
+				}
+				
+				$(".xroot input").livequery('keyup',bubbleResetTrigger);
+				$(".xroot input").livequery('change',bubbleResetTrigger);
+				
+				showXML();
+                
+            });
             //]]>
         </script>
     </head>
     <body>
-    	<!--
-        <div class="xroot">
-            <h3><a href="#">Element header</a></h3>
-            <div class="xelement" title="A-Team Member" name="soldier">
-            	<p class="xtext">
-	            	Here is some content.            		
-            	</p>
-				<p class="xattribute" title="Character name" name="name">
-					<label for="name"></label><input type="test" name="name"/>
-				</p>
+        <div id="xtabs">
+            <ul>
+                <li>
+                    <a href="#xgui">GUI</a>
+                </li>
+                <li>
+                    <a href="#xxml">XML</a>
+                </li>
+                <li>
+                    <a href="#xjson">JSON</a>
+                </li>
+            </ul>
+            <div id="xgui">
+                <div class="xroot">
+                    <div class="xelement" a:title="All data records" a:name="data">
+                        <div class="xelement" a:title="A-Team Member" a:name="soldier">
+                            <div class="xattribute" a:title="Character name" a:name="name">
+                            </div>
+                            <div class="xattribute" a:title="Date of birth" a:name="birthdate" a:type="date">
+                            </div>
+                            <div class="xattribute" a:title="Unique skill" a:name="skill">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="xxml">
+            </div>
+            <div id="xjson">
             </div>
         </div>
-		-->
-        <div class="xroot">
-            <div class="xelement" title="A-Team Member" name="soldier">
-				<div class="xattribute" title="Character name" name="name"></div>
-				<div class="xattribute" title="First appearance" name="appearance" type="date"></div>
-				<div class="xtext">
-					Here is some content.					
-				</div>
+        <!-- Dialogs - ordinarily hidden -->
+        <div class="xcontrols">
+            <div id="newxelement" title="Add an Element">
+                <p id="validateTips">
+                    All form fields are required.
+                </p>
+                <form action="#">
+                    <fieldset>
+                        <label for="name">
+                            Name
+                        </label>
+                        <input type="text" name="name" class="text ui-widget-content ui-corner-all" />
+                        <label for="title">
+                            Title
+                        </label>
+                        <input type="text" name="title" class="text ui-widget-content ui-corner-all" />
+                    </fieldset>
+                </form>
+            </div>
+            <div id="newxattribute" title="Add an Attribute">
+                <p id="validateTips">
+                    All form fields are required.
+                </p>
+                <form action="#" >
+                    <fieldset>
+                        <label for="name">
+                            Name
+                        </label>
+                        <input type="text" name="name" class="text ui-widget-content ui-corner-all" />
+                        <label for="title">
+                            Title
+                        </label>
+                        <input type="text" name="title" class="text ui-widget-content ui-corner-all" />
+                        <label for="type">
+                            Type
+                        </label>
+						<select name="type" class="text ui-widget-content ui-corner-all">
+							<option value="">None</option>
+							<option value="date">Date</option>
+						</select>
+                    </fieldset>
+                </form>
             </div>
         </div>
     </body>
