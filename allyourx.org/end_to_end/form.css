@@ -1,6 +1,10 @@
 #xgui,#xxml,#xjson{
     float:left;
-    width:30%;
+    width:45%;
+    margin-top:1em;
+    margin-bottom:1em;
+    margin-right:2%;
+    margin-left:2%;
 }
 
 span.ui-icon-wrench{
