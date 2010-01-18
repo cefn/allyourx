@@ -16,7 +16,7 @@ The canonical implementation will be able to author valid XML using entirely cli
 
 The project is planned with strict stages of increasingly complex RelaxNG. These subsets of RelaxNG are themselves defined using RelaxNG as follows...
 
-* v001 ([schema](ally/lib/schema/yourx/yourx.001.rng)) ([examples](ally/lib/schema/yourx/examples.001/))
+* v001 ([schema](tree/master/ally/lib/schema/yourx/yourx.001.rng)) ([examples](tree/master/ally/lib/schema/yourx/examples.001/))
 
 A professional developer working in this area may employ a commercial schema-driven-authoring tool such as OxygenXML http://www.oxygenxml.com/ to author compliant schemas. Others may prefer manually editing the files with the direct use of a validator such as Jing to establish conformance http://www.thaiopensource.com/relaxng/jing.html 
 
