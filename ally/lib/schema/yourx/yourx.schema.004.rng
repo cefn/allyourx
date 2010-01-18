@@ -1,0 +1,133 @@
+<?xml version="1.0"?>
+<!-- 
+  Defines the minimal subset of RelaxNG which Allyourx can support in v004.
+  Extends support of version v003 to escape the russian doll-only representation
+  and permit infinite recursion through production rules in ref/define relationships.
+-->
+<grammar datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes"
+  ns="http://relaxng.org/ns/structure/1.0"
+  xmlns="http://relaxng.org/ns/structure/1.0"
+  xmlns:a="http://allyourx.org" >
+  <start>
+    <element name="grammar" ns="http://relaxng.org/ns/structure/1.0" >
+      <attribute name="datatypeLibrary">
+        <value>http://www.w3.org/2001/XMLSchema-datatypes</value>
+      </attribute>
+      <attribute name="ns">
+        <value>http://relaxng.org/ns/structure/1.0</value>
+      </attribute>
+      <element name="start">
+        <ref name="element"/>
+      </element>
+      <zeroOrMore>
+        <ref name="element-define"/>
+      </zeroOrMore>
+      <zeroOrMore>
+        <ref name="attribute-define"/>
+      </zeroOrMore>
+    </element>      
+  </start>
+    
+  <define name="attribute">
+    <element name="attribute">
+      <attribute name="name"/>
+      <ref name="ally-control-atts" />
+      <ref name="attribute-content-choice" />
+    </element>
+  </define>
+  
+  <define name="element">
+    <element name="element">
+      <attribute name="name"/>
+      <ref name="ally-control-atts" />
+      <zeroOrMore>
+        <ref name="attribute-quantifier-choice"/>
+      </zeroOrMore>
+      <interleave>
+        <zeroOrMore>
+          <ref name="element"/>
+        </zeroOrMore>
+        <zeroOrMore>
+          <ref name="ref"/><!-- Note, this must refer to an attribute define -->
+        </zeroOrMore>
+      </interleave>
+    </element>    
+  </define>  
+  
+  <define name="attribute-define">
+    <element name="define">
+      <attribute name="name"/>
+      <ref name="attribute" />
+    </element>
+  </define>
+  
+  <define name="element-define">
+    <element name="define">
+      <attribute name="name"/>
+      <ref name="element" />
+    </element>
+  </define>
+  
+  <define name="ref">
+    <element name="ref">
+      <attribute name="name"/>
+    </element>
+  </define>  
+    
+  <define name="attribute-quantifier-choice">
+    <choice>
+      <ref name="attribute"/>
+      <element name="optional">
+        <ref name="attribute" />
+      </element>
+      <ref name="ref" /><!-- Note, this must refer to an attribute define -->
+    </choice>
+  </define>
+  
+  <define name="element-quantifier-choice">
+    <choice>
+      <ref name="element"/>
+      <element name="optional">
+        <ref name="element" />
+      </element>
+      <element name="zeroOrMore">
+        <ref name="element" />
+      </element>
+      <element name="oneOrMore">
+        <ref name="element" />
+      </element>
+      <ref name="ref" /><!-- Note, this must refer to an element define -->
+    </choice>
+  </define>
+
+  <define name="attribute-content-choice">
+    <choice>
+      <ref name="data"/>
+      <oneOrMore>
+        <element name="value">
+          <text/>
+        </element>
+      </oneOrMore>
+    </choice>
+  </define>
+    
+  <define name="data">
+    <element name="data">
+      <attribute name="type">
+        <choice>
+          <!-- Primitive datatypes from http://www.w3.org/TR/xmlschema-2/ -->
+          <value>date</value>
+          <value>decimal</value>
+          <value>integer</value>
+        </choice>
+      </attribute>
+    </element>
+  </define>
+            
+  <define name="ally-control-atts" >
+    <optional>
+      <attribute name="a:label" />
+    </optional>
+  </define>
+
+</grammar>

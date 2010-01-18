@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?oxygen RNGSchema="schema.rng" type="xml"?>
+<data xmlns:x="http://www.w3.org/1999/xhtml">
+	<page id="index" title="What is WIDOH?">
+		<h2>Suggested Format</h2>
+		<ol>
+			<li>What you did</li>
+			<li>What happened</li>
+			<li>What you learned</li>
+			<li>How to contact you</li>
+		</ol>
+		<p>Alternatively, ignore this format and surprise us.</p>
+	</page>
+	<page id="rationale" title="Why are we doing this?">
+		<h2>Rationale</h2>
+		<p>The role of research to offer new technical approaches and insights with commercial impact - new inventive steps. We stand in contrast to the work which is done by our colleagues providing consultancy, steering standards committees, and building business cases to serve domains of technology where the inventive steps have already taken place.</p>
+		<p>New inventive steps require insights which are unexpected in their source or form, arrived at by people who have the liberty to explore in ways which the mainstream business does not.</p>
+		<p>The creative engine of research does not thrive under financial and marketing analysis, or the narrowing assumptions required to serve a specific product line of a specific commercial business.</p> 
+		<p>A high-performing research community interfaces badly with those structures. Unleashed, it promises a broader vision than those of the existing business, indeed, promises the creation of new businesses and new product lines never before anticipated or understood.</p>			
+		<p>The creative engine of research is best served by a richly networked peer group who are enthusiastic about their craft and excited to prove to themselves and to others what they can achieve.</p>
+		<p>That group is promiscuous with technologies, sciences and applications, they can afford to have a vision, indeed many visions, because they are not afraid to share, and they are not scared to fail.</p>
+		<p>We hope these events provide an opportunity for critical exchanges to take place.</p>
+	</page>
+</data>

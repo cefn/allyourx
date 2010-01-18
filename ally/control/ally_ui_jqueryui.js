@@ -1,0 +1,1 @@
+/** This file uses LiveQuery to decorate ally standard xml->html markup with jquery ui controls */

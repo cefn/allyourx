@@ -1,0 +1,24 @@
+*{
+    font-family:sans-serif;
+}
+
+.test.good h1 {
+	color:green;
+}
+.test.bad h1 {
+	color:red;
+}
+
+.test{
+	display:table;
+	width:80%;
+        margin-left:10%;
+}
+.test h1, .test p{
+	display:table-cell;
+        font-size:70%;
+}
+
+.test p {
+    text-align:right;
+}

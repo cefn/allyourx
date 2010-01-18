@@ -1,0 +1,127 @@
+/* Represents the canonical form of an XML document*/
+
+/*
+<data>
+<soldier name="B.A.Baracas" birthdate="2007-09-11" skill="Driver"/>
+<soldier name="Hannibal" birthdate="2007-09-11" skill="Planner"/>
+</data>
+*/
+
+/*
+Simple convention. 
+
+Hashmaps are used only for attribute namespaces.
+Arrays are used for sequences (child ordering) and element structure (0,1,2 position represents different structural data).
+
+Every element is represented by an array. 
+The first item is the name string. 
+Next comes an object - the hashmap keys are the attribute names.
+Next comes an array - the sequence of child elements.
+
+This representation of the XML infoset lends itself to fast access and minimises spurious hashmaps and keys to represent element structure. It parses
+data in the same sequence as XML, allowing fast memoryless transforms.
+
+It's possible that looser use of this standard would take advantage of the fact that each structural item is of a different type;
+element name <=> 'string'
+attributes <=> 'object'
+children <=> 'array'
+
+To maximise efficiency by enabling strong parser assumptions, you should adopt these conventions.
+
+Drop either position 2 (the child array), or position 1 and 2 (both the child array and the attribute hashmap). 
+Dropping position 0 makes no sense.
+
+This means that a simple length check of the element array can indicate the existence of children. 
+An empty element with no attributes has length 1. 
+An empty element with attributes but no children has length 2.
+
+It also means that there's no ambiguity about the position of the attribute hashmap object or child sequence array inside the element array. 
+This would otherwise require expensive parser evaluation and type checking.
+
+*/
+
+[
+   "data",
+   {},
+   [
+       [
+           "soldier",
+           {
+               "name": "B.A.Baracas",
+               "birthdate": "2007-09-11",
+               "skill": "Driver"
+           },
+           []
+       ],
+       [
+           "soldier",
+           {
+               "name": "Hannibal",
+               "birthdate": "2007-09-11",
+               "skill": "Planner"
+           },
+           []
+       ]
+   ]
+]
+
+
+
+
+BAD ALTERNATIVES
+
+This introduces a semantic layer with property names for attributes and children, and is inelegant.
+
+{
+   "data": {
+       "attributes": {
+       },
+       "children": [
+           {
+               "soldier": {
+                   "attributes": {
+                       "name": "B.A.Baracas",
+                       "birthdate": "2007-11-09",
+                       "skill": "Driver"
+                   },
+                   "children": [
+                   ]
+               }
+           },
+           {
+               "soldier": {
+                   "attributes": {
+                       "name": "Hannibal",
+                       "birthdate": "2007-11-09",
+                       "skill": "Planner"
+                   },
+                   "children": [
+                   ]
+               }
+           }
+       ]
+   }
+}
+
+
+This creates a whole hashmap for a single string value - the name of the element. Processing this list will require a lot of unwrapping and object property listing
+
+{
+   "data": [
+       {
+           "soldier": [
+               {
+                   "name": "B.A.Baracas",
+                   "birthdate": "2007-09-11",
+                   "skill": "Driver"
+               }
+           ]
+       },
+       {
+           "soldier": [
+               {
+               }
+           ]
+       }
+   ]
+}

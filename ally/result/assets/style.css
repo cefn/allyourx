@@ -1,0 +1,135 @@
+/* Generated with EditiX at Fri Nov 21 19:49:28 GMT 2008 */
+
+a{
+    text-decoration:none;
+}
+
+a:hover {
+    text-decoration:underline;
+}
+
+a:visited {
+    font-weight:lighter;
+}
+
+div.content {
+    font-family:serif;
+    font-size:12px; 
+}
+
+.mute {
+    color:#808080;
+}
+
+.bright, a {
+    color:#FF8000;
+}
+
+h1, h2, h3, h4, h5, h6{
+    margin:0px;
+    padding:0px;
+}
+
+h1 {
+    color:#FF8000;
+    text-align:right;
+    border-color:#808080;
+    border-width:2px;
+    border-style:none;
+    border-bottom-style:solid;
+    font-size:4em;
+    margin-bottom:0.3em;
+}
+
+h1 a{
+    text-decoration:none;
+}
+
+h2, h3, h4, h5, h6{
+    border-width:0.1em;
+    color:#FF8000;
+    border-bottom-style:none;
+    padding:0.3em;
+    border-bottom-style:solid;
+}
+
+h1 {font-size:4em;}
+ul.menu li {font-size:2.0em;}
+h2 {font-size:1.4em;}
+h3 {font-size:1.3em;}
+h4 {font-size:1.2em;}
+h5 {font-size:1.1em;}
+h6 {font-size:1.0em;}
+
+.menu h2{
+    text-transform:uppercase;
+}
+
+p, li{
+    border-color:#FF8000;
+    color:#808080;
+    padding:0.3em;
+}
+
+div.content {
+margin: 0 auto;
+width:800px;
+}
+
+ul.menu {
+    width:100%;
+    margin:0 auto;
+    padding:0;
+    font-weight:bold;
+    margin-bottom:2em;
+}
+
+ul.menu li{   
+    display:inline;
+    padding:0;
+    padding-right:1em;
+}
+
+ul.menu li a{
+    text-transform:uppercase;
+}
+
+div.page div, div.menu div{
+    margin-top:1em;
+    margin-bottom:2em;
+    border-style:solid;
+    border-width:0.1em;
+    border-color:#FF8000;
+}
+
+div.page div p, div.menu div p,
+div.page div h2, div.menu div h2{
+    padding-left:8px;
+    padding-right:10px;
+    text-align:justify;
+}
+
+div.menu, div.page {
+    float:left;
+}
+div.page {
+    width:500px;
+}
+div.menu {
+    width:280px;
+    margin:0;
+    margin-left:20px;
+}
+div.footer{
+    float:none;
+    clear:left;
+    width:100%;
+    margin:0;
+    margin-top:2em;
+    text-align:right;
+    border-style:none;
+    border-width:2px;
+    border-top-style:solid;
+    border-top-color:#808080;
+    color:#ff8000
+}
