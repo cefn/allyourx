@@ -110,7 +110,7 @@ if(typeof(jQuery) != 'undefined'){
  * created in a private scope, with public functions served
  * under the YOURX namespace.
  */
-YOURX = function(){
+YOURX = (function(){
 
 	/** Universal access for global variable regardless of browser or non-browser environment. */
 	function getGlobal(){ //from http://www.nczonline.net/blog/2008/04/20/get-the-javascript-global/
@@ -121,11 +121,24 @@ YOURX = function(){
 		return Array.prototype.slice.call(array);
 	}	
 	
+	/**
+	 * @param {Object} from The object from which the properties should be copied.
+	 * @param {Object,String} to The object or global name of object to which the properties should be copied.
+	 * @param {Object} propnames The property names which should be copied. If omitted, all properties are copied.
+	 */
 	function copyProperties(from,to,propnames){ //if propname omitted all named properties copied
 		if(!propnames){
 			propnames = [];
 			for(name in from){
 				propnames.push(name);
+			}
+		}
+		if(typeof to == 'string'){
+			if(to in getGlobal()){
+				to = getGlobal()[to]; //use existing object of this name
+			}
+			else{
+				to = getGlobal()[to]={}; //create new object
 			}
 		}
 		for(var idx = 0; idx < propnames.length; idx++){
@@ -147,15 +160,18 @@ YOURX = function(){
 		return eval(readFile(filename));
 	}		
 	
-	function exportProperties(propnames){
+	function writeScopeExportCode(propnames){
 		var pairs = [];
 		propnames.forEach(function(item){pairs.push("\"" + item + "\":" + item)});
-		var code = "({" + pairs.join(",") + "})"; 
-		return eval(code);
+		return "({" + pairs.join(",") + "})"; 		
 	}
-		
+
+	function exportProperties(propnames){
+		return eval(writeScopeExportCode(propnames));
+	}
+			
 	return exportProperties([
-		'getGlobal','readFile','evalFile','exportProperties','copyProperties','cloneArray'
+		'getGlobal','readFile','evalFile','exportProperties','writeScopeExportCode','copyProperties','cloneArray'
 	]);
 	
-}();
+}());

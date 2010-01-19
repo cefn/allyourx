@@ -10,8 +10,16 @@ function executeTests(testpairs, options){
 		var desc = currentpair[0];
 		var test = currentpair[1];
 		/** invoke single test with global object as this and empty arguments array */
-		var result = test.apply(this, []);
-		testReport(desc, (result===true ? "good" : "bad"), (result===true ? "Success" : "Failure"));
+		var testclasses = function(outcome){ return (outcome===true ? "good" : "bad")};
+		var testmsg = function(outcome){ return (outcome===true ? "Success" : "Failure")};
+		var result = false;
+		try{
+			var result = test.apply(this, []);		
+			testReport(desc, testclasses(result), testmsg(result));
+		}
+		catch(e){
+			testReport(desc, testclasses(result), "Exception thrown " + e);
+		}
 	}
 }
 

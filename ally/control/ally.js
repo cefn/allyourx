@@ -51,7 +51,7 @@ YOURX.ContentThingy.prototype.getAllyInnerMarkup = function(descend){
  * with public functions served under the ALLY namespace.
  */
 YOURX.copyProperties(
-	function(){	
+	(function(){	
 	
 		function getAnnotationNames(){
 			return ['a:name','a:title','a:type'];
@@ -105,11 +105,10 @@ YOURX.copyProperties(
 			}
 		}
 		
-		eval(uneval(YOURX.exportProperties));			
-		return exportProperties([
-			'bindThingy', 'getAnnotationNames'
-		]);		
+		return eval(YOURX.writeScopeExportCode([
+			'bindThingy', 'getAnnotationNames']
+		));	
 		
-	}(),
-	(typeof(ALLY)!='undefined'?ALLY:ALLY={})
+	}()),
+	'ALLY' //(typeof(ALLY)!='undefined'?ALLY:ALLY={})
 );

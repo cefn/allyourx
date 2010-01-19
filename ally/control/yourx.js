@@ -1,9 +1,9 @@
 YOURX.copyProperties(
-	function(){
+	(function(){
 			
 		/** Utility methods in a 'static' library object */		
 		var ThingyUtil = { //TODO consider reusing single static DOMParser and XMLSerializer
-			log:function(msg){$(function(){$('body').prepend(msg + <br/>.toXMLString())});},
+			log:function(msg){$(function(){$('body').prepend(msg + "<br/>")});},
 			xml2e4x:function(xml){ return new XML(ThingyUtil.xmlStripComments(xml));},
 			xml2dom:function(xml){ return (new DOMParser()).parseFromString(xml,"text/xml");},
 			e4x2xml:function(e4x){ return e4x.toXMLString();},
@@ -199,9 +199,9 @@ YOURX.copyProperties(
 			getRule:function(){
 				return this.rule;
 			},
-			matchRule:function(){
-				if(this.getRule()!=null){
-					var matchedindices = ThingyUtil.greedyConsumeSequence([this.getRule()],[this], false);
+			matchRule:function(rule){
+				try{
+					var matchedindices = ThingyUtil.greedyConsumeSequence([rule],[this], false);
 					if(matchedindices instanceof Array){
 						if(matchedindices.length == 1){
 							if(matchedindices[0] == 0){
@@ -209,10 +209,15 @@ YOURX.copyProperties(
 							}
 						}
 					}
-					return false;
+					return false;					
 				}
-				else{
-					throw new Error("No rule associated with thingy. Cannot match.");
+				catch(e){
+					if(e instanceof ThingyRuleError){
+						return false;
+					}
+					else{
+						throw e;
+					}
 				}
 			},
 			bind:function(name,fun){
@@ -852,13 +857,12 @@ YOURX.copyProperties(
 		TextThingyRule.prototype = new TypedThingyRule();
 
 		//evaluate the export function in this scope	
-		eval(uneval(YOURX.exportProperties));
-	
-		return exportProperties([
+		return eval(YOURX.writeScopeExportCode([
 			"ThingyUtil",
 			"Thingy","ContainerThingy","ContentThingy","ElementThingy","AttributeThingy","TextThingy",
-			"ThingyGrammar","ThingyRule","ElementThingyRule","AttributeThingyRule","TextThingyRule","OptionalThingyRule","ZeroOrMoreThingyRule","OneOrMoreThingyRule"
-		]);
-	}(),
-	YOURX
+			"ThingyGrammar","ThingyRule","ElementThingyRule","AttributeThingyRule","TextThingyRule","OptionalThingyRule","ZeroOrMoreThingyRule","OneOrMoreThingyRule",
+			"ThingyRuleError"
+		]));	
+	}()),
+	'YOURX'
 );
