@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?oxygen RNGSchema="file:/home/cefn/Documents/code/allyourx/pow_root/pow/htdocs/gigox/ally/lib/schema/yourx/yourx.002.rng" type="xml"?>
+<grammar xmlns="http://relaxng.org/ns/structure/1.0" datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes" >
+    <start>
+        <element name="data">
+            <oneOrMore>
+                <element name="project">
+                    <attribute name="title"/>
+                    <optional>
+                        <attribute name="description"/>
+                    </optional>
+                    <oneOrMore>
+                        <element name="action">
+                            <attribute name="title"/>
+                            <optional>
+                                <attribute name="description"/>
+                            </optional>
+                        </element>
+                    </oneOrMore>
+                </element>
+            </oneOrMore>
+            <oneOrMore>
+                <element name="context">
+                    <attribute name="title"/>
+                    <optional>
+                        <attribute name="description"/>
+                    </optional>
+                </element>
+            </oneOrMore>            
+        </element>
+    </start>
+</grammar>
