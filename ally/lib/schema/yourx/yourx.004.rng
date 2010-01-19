@@ -40,14 +40,12 @@
     <element name="element">
       <attribute name="name"/>
       <ref name="ally-control-atts" />
-      <interleave>
-        <zeroOrMore>
-          <ref name="attribute-quantifier-choice"/>
-        </zeroOrMore>
-        <zeroOrMore>
-          <ref name="element-quantifier-choice"/>
-        </zeroOrMore>
-      </interleave>
+      <zeroOrMore>
+        <ref name="attribute-quantifier-choice"/>
+      </zeroOrMore>
+      <zeroOrMore>
+        <ref name="element-quantifier-choice"/>
+      </zeroOrMore>
     </element>    
   </define>  
   
@@ -65,19 +63,25 @@
     </element>
   </define>
   
-  <define name="ref">
+  <define name="attribute-ref">
     <element name="ref">
       <attribute name="name"/>
     </element>
   </define>  
-    
+  
+  <define name="element-ref">
+    <element name="ref">
+      <attribute name="name"/>
+    </element>
+  </define>  
+  
   <define name="attribute-quantifier-choice">
     <choice>
       <ref name="attribute"/>
       <element name="optional">
         <ref name="attribute" />
       </element>
-      <ref name="ref" /><!-- Note, this must refer to an attribute define -->
+      <ref name="attribute-ref" /><!-- Note, this must refer to an attribute define -->
     </choice>
   </define>
   
@@ -93,7 +97,7 @@
       <element name="oneOrMore">
         <ref name="element" />
       </element>
-      <ref name="ref" /><!-- Note, this must refer to an element define -->
+      <ref name="element-ref" /><!-- Note, this must refer to an element define -->
     </choice>
   </define>
 
