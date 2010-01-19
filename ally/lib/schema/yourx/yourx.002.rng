@@ -14,11 +14,8 @@
       <attribute name="datatypeLibrary">
         <value>http://www.w3.org/2001/XMLSchema-datatypes</value>
       </attribute>
-      <attribute name="ns">
-        <value>http://relaxng.org/ns/structure/1.0</value>
-      </attribute>
       <element name="start">
-        <ref name="element"/>
+        <ref name="element-quantifier-choice"/>
       </element>
     </element>      
   </start>
@@ -38,7 +35,7 @@
         <ref name="attribute-quantifier-choice"/>
       </zeroOrMore>
       <zeroOrMore>
-        <ref name="element"/>
+        <ref name="element-quantifier-choice"/>
       </zeroOrMore>
     </element>    
   </define>  
@@ -64,7 +61,6 @@
       <element name="oneOrMore">
         <ref name="element" />
       </element>
-      <ref name="ref" /><!-- Note, this must refer to an element define -->
     </choice>
   </define>
             

@@ -17,7 +17,7 @@
         <value>http://relaxng.org/ns/structure/1.0</value>
       </attribute>
       <element name="start">
-        <ref name="element"/>
+        <ref name="element-quantifier-choice"/>
       </element>
       <zeroOrMore>
         <ref name="element-define"/>
@@ -40,15 +40,12 @@
     <element name="element">
       <attribute name="name"/>
       <ref name="ally-control-atts" />
-      <zeroOrMore>
-        <ref name="attribute-quantifier-choice"/>
-      </zeroOrMore>
       <interleave>
         <zeroOrMore>
-          <ref name="element"/>
+          <ref name="attribute-quantifier-choice"/>
         </zeroOrMore>
         <zeroOrMore>
-          <ref name="ref"/><!-- Note, this must refer to an attribute define -->
+          <ref name="element-quantifier-choice"/>
         </zeroOrMore>
       </interleave>
     </element>    
@@ -101,14 +98,16 @@
   </define>
 
   <define name="attribute-content-choice">
-    <choice>
-      <ref name="data"/>
-      <oneOrMore>
-        <element name="value">
-          <text/>
-        </element>
-      </oneOrMore>
-    </choice>
+    <optional>
+      <choice>
+        <ref name="data"/>
+        <oneOrMore>
+          <element name="value">
+            <text/>
+          </element>
+        </oneOrMore>
+      </choice>
+    </optional>
   </define>
     
   <define name="data">
