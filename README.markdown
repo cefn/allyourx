@@ -1,6 +1,10 @@
 # Ally- A Canonical Implementation of an AllyourX schema-driven authoring editor for XML.
 
-This is work in progress on a canonical implementation of a framework complying with the AllyourX standard. It should provide a proof-of-concept of the rationale at [http://allyourx.org](http://allyourx.org)
+This is work in progress on a canonical implementation of a framework complying with the AllyourX standard. It should provide a proof-of-concept of the rationale at [http://allyourx.org](http://allyourx.org). 
+
+The AllyourX standard is public domain. 
+
+This software is distributed under the GPL version 3. If you would like to distribute the software under another license, contact the authors.
 
 A by-product is the creation of a validating XML editor with autocompletion, which binds against RelaxNG schemata for XML.
 
