@@ -51,3 +51,5 @@ A professional developer working in this area may employ a commercial RelaxNG sc
 A simple alternative is to slightly modify the definitions of existing example files until they are satisfactory for your application (e.g. change the names of elements and attributes).
 
 Contributors should note that the canonical code and the standard itself is prone to radical change as version 001 is approached, and versions 002-005 may also change based on feedback from participants, as deployment issues are encountered and improved definitions are proposed.
+
+Have fun.
