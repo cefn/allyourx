@@ -1,0 +1,257 @@
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+   <head>
+      <title>AllyourX - Frequently Asked Questions</title>
+      <meta content="application/xhtml+xml; charset=UTF-8" http-equiv="content-type"></meta>
+      <meta content="Allyourx.org" name="generator"></meta>
+      <meta content="Schema language incorporating form metadata" name="description"></meta>
+      <meta content="xml, xhtml, forms, schema, metadata, input, controls, framework, scaffolding, crud, relaxng, jquery, wymeditor" name="keywords"></meta>
+      <link title="Default" rel="stylesheet" type="text/css" media="screen, tv, projection" href="assets/css/reset-min.css"></link>
+      <link title="Default" rel="stylesheet" type="text/css" media="screen, tv, projection" href="assets/css/fonts-min.css"></link>
+      <link title="Default" rel="stylesheet" type="text/css" media="screen, tv, projection" href="assets/css/allyourx_pre.css"></link>
+      <link title="Default" rel="stylesheet" type="text/css" media="screen, tv, projection" href="assets/css/bluesky.css"></link>
+      <link title="Larger Fonts" rel="alternative stylesheet" type="text/css" media="screen, projection, tv" href="assets/css/bluesky_large.css"></link>
+      <link title="Print Preview" rel="alternative stylesheet" type="text/css" media="screen" href="assets/css/print.css"></link>
+      <link title="Small Layout Preview" rel="alternative stylesheet" type="text/css" media="screen" href="assets/css/handheld.css"></link>
+      <link title="Small Layout" rel="stylesheet" type="text/css" media="handheld" href="assets/css/handheld.css"></link>
+      <link rel="stylesheet" type="text/css" media="print" href="assets/css/print.css"></link>
+      <link title="Default" rel="stylesheet" type="text/css" media="screen, tv, projection" href="assets/css/allyourx_post.css"></link><script type="text/javascript">
+                      
+                          var _gaq = _gaq || [];
+                          _gaq.push(['_setAccount', 'UA-1301819-2']);
+                          _gaq.push(['_trackPageview']);
+                        
+                          (function() {
+                            var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+                            ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+                            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ga);
+                          })();
+                      
+                </script></head>
+   <body>
+      <div id="page">
+         <div id="header-right">
+            Free, liberty-enhancing, cross-platform data wrangling.
+            
+         </div>
+         <div id="header"><a href="index.html">AllyourX</a><img alt="A lot of graphical eggs in a basket" class="logo" src="assets/images/logo.png"></img></div>
+         <div id="wrapper">
+            <div id="content">
+               <div id="main">
+                  <h1>Frequently Asked Questions</h1>
+                  <ul>
+                     <li><a href="#1">What is AllyourX ?</a></li>
+                     <li><a href="#2">How does it relate to existing standards and software ?</a></li>
+                     <li><a href="#3">What are the benefits of conforming?</a></li>
+                     <li><a href="#4">What software supports the standard ?</a></li>
+                     <li><a href="#5">Why are the technologies provided for free ?</a></li>
+                     <li><a href="#6">What is the license ?</a></li>
+                     <li><a href="#7">Why is the project called AllyourX ?</a></li>
+                  </ul>
+                  <h1><a name="1">What is AllyourX ?</a></h1>
+                  
+                  <p>
+                     AllyourX is a minimal standard defining the rich data which an application requests from its users.
+                     
+                  </p>
+                  
+                  <p>
+                     GPL software is provided which uses this information to automatically generate a functional front end for your users, 
+                     as well as defining the back-end interaction with your choice of hosting platform.
+                     
+                  </p>
+                  
+                  <p>
+                     The standard is agnostic to specific hosting technologies used, allowing prototyping to proceed without committing to database
+                     or server technologies.
+                     
+                  </p>
+                  
+                  <h1><a name="2">How does it relate to existing standards and software ?</a></h1>
+                  
+                  <p>
+                     The AllyourX toolset is merely a smart combination of selected <a href="standard.html">standards</a> and <a href="software.html">software</a>.
+                     It extends them minimally, and only to the extent which is absolutely necessary to close the gap between schema languages
+                     and fully working 
+                     applications.
+                     
+                  </p>
+                  
+                  <h1><a name="3">What are the benefits of conforming?</a></h1>
+                  
+                  <p>
+                     You should be able to prototype applications without writing much, if any, application code.
+                     A GPL software implementation is available which generates forms for your users in XHTML (webpages in the browser) 
+                     and outputs data to store in the form of XML.
+                     
+                  </p>
+                  
+                  <p>
+                     Once you additionally define queries and views on your data, (we choose XPath and XQuery for this), this fully defines most
+                     web applications. 
+                     You can rapidly prototype your app using the canonical XHTML+javascript+XML implementations provided, and 
+                     later specialise your choice of look and feel, implementation language, data storage and query engine according to your 
+                     tastes and needs, rather than being locked into one implementation approach for the lifetime of your app. 
+                     This contrasts with typical apps which tangle the definition of form validation, front-end and 
+                     back-end together with host-specific and language-specific implementation details.
+                     
+                  </p>
+                  
+                  <p>
+                     A canonical example of a single-user application is provided, which runs as a Firefox plugin, stores your rich data 
+                     on your local disk and uses XQuery to query and construct views (pages) on the fly. This application can be re-purposed 
+                     to the creation of almost any single-user website by simply copy-pasting your design in place. However, the same techniques
+                     
+                     can be applied to multi-user web applications. If you're inspired by the single user prototype, we are 
+                     <a href="http://allyourx.co.uk/contact.html">here to help.</a>. Storage and querying are separate modules from the data 
+                     authoring framework, so we hope to see a community of people specialising these techniques for their favourite hosting flavour
+                     too.
+                     
+                  </p>
+                  
+                  <h1><a name="4">What software supports the standard ?</a></h1>
+                  
+                  <p>                
+                     A single-user canonical implementation already exists suitable to generate websites hosted on your local 
+                     machine. The user interface is browser-based, using an XHTML+JQuery (front end), local XML file storage (back end) 
+                     and POW+XQuery hosting (server and query engine). It is available <a href="software.html#allyourx.co.uk">here</a>.
+                     
+                  </p>
+                  
+                  <p>
+                     Multi-user applications can take advantage of <a href="contribute.html">a variety of hosting and querying platforms</a> 
+                     with more to follow.
+                     
+                  </p>
+                  
+                  <h1><a name="5">Why are the technologies provided for free ?</a></h1>
+                  
+                  <p>
+                     We believe that maximising benefit to users is simply a good way of doing business. With this single-minded focus
+                     we hope to reach millions of users by removing blatantly obvious obstacles to application prototyping which 
+                     currently make users unhappy.                 
+                     
+                  </p>
+                  
+                  <p>
+                     Doing it for free helps us to focus on customer enablement, rather than customer prevention. 
+                     The mainstream industry is in the business of prevention, through licensing and lock-in. It overlooks these trivial 
+                     early-lifecycle prototyping problems in the interests of selling monolithic and expensive solutions where they are unnecessary.
+                     
+                     
+                  </p>
+                  
+                  <p>
+                     Allyourx.co.uk want to be a trusted partner, recommending solutions to you which meet your actual needs, and this is our proof.
+                     
+                  </p>
+                  
+                  <h1><a name="6">What is the license ?</a></h1>
+                  
+                  <p>
+                     The augmented schema standards from allyourx.org are in the public domain, making them available for use by any person 
+                     for any purpose. 
+                     
+                  </p>
+                  
+                  <p>
+                     The authoring software from <a href="http://allyourx.co.uk">allyourx.co.uk</a> built against these standards is 
+                     distributed under the Gnu Public License (GPL) to maximise the freedom of any derived software, (the GPL includes a copyleft
+                     
+                     clause ensuring software distributed with allyourx.co.uk code is itself available under the GPL). 
+                     
+                  </p>
+                  
+                  <p>
+                     If you wish to relicense our software under different terms, then please <a href="http://allyourx.co.uk">make an enquiry</a>. We are reasonable people.
+                     
+                  </p>
+                  
+                  <h1><a name="7">Why is the project called AllyourX ?</a></h1>
+                  
+                  <div class="img_right">
+                     <img src="http://upload.wikimedia.org/wikipedia/en/0/03/Aybabtu.png" alt="Cult image from Zero Wing"></img>
+                     <img src="assets/images/allyourbase.gif" style="width:240px;height:160px;clear:both;" alt="Cult animation from Zero Wing"></img>
+                     
+                  </div>
+                  
+                  <p>
+                     It's a combination of "<a href="http://www.phrases.org.uk/bulletin_board/21/messages/46.html">All your eggs in one basket</a>", 
+                     and "<a href="http://www.theregister.co.uk/2001/02/22/all_your_base_are_belong/">All your base are belong to us</a>", 
+                     two important proverbs from the English language.
+                     
+                  </p>
+                  
+                  <p>
+                     You can avoid putting all your eggs in one basket by adopting a standard which can bridge a host of
+                     front-end and back-end technologies, making migration to a new hosting technology simple as your needs change. 
+                     
+                  </p>
+                  
+                  <p>
+                     We also hope that, in the end, people will come around to our way of thinking. And then, all your base are belong to us, HA
+                     HA HA HA....
+                     
+                  </p>
+                  
+                  <p>
+                     The X is a pun, because the toolkit uses XML technologies.
+                     
+                  </p>
+                  
+                  <div style="clear:both;"></div>
+                  
+               </div>
+            </div>
+            <div id="left">
+               <div id="nav">
+                  <h3>Learning</h3>
+                  <div class="inner_box">
+                     <ul>
+                        <li><a href="index.html">Intro</a></li>
+                        <li><a href="1_end_to_end.html">Example</a></li>
+                        <li><a href="vision.html">Vision</a></li>
+                        <li><a href="list_faq.html">Asked</a></li>
+                        <li><a href="team.html">Team</a></li>
+                     </ul>
+                  </div>
+               </div>
+               <div class="left_box">
+                  <h3>Developments</h3>
+                  <div class="inner_box">
+                     <h1>Desktop data hosting</h1>
+                     <p>
+                        A free firefox plugin to edit your data 
+                        and generate rich data-driven websites. 
+                        
+                     </p>
+                     <p>
+                        Your bespoke blog, calendar or online catalog in just a few lines of code.
+                        
+                     </p>
+                     <p><a href="software.html#allyourx.co.uk">Read more</a></p>
+                  </div>
+               </div>
+               <div class="left_box">
+                  <h3>Giants' Shoulders</h3>
+                  <div class="inner_box">
+                     <p> 
+                        - <a href="http://relaxng.org/">Relax NG</a><br></br> 
+                        - <a href="http://saxon.sourceforge.net/">Saxon</a><br></br>
+                        - <a href="http://jquery.com/">JQuery</a><br></br> 
+                        - <a href="http://docs.jquery.com/Plugins/livequery">Livequery</a><br></br> 
+                        - <a href="http://www.wymeditor.org/">WYMeditor</a><br></br>
+                        - <a href="http://http://davidkellogg.com/wiki/Main_Page/">POW</a><br></br></p>
+                  </div>
+               </div>
+            </div>
+         </div>
+         <div id="footer">
+            <p> 
+               Copyleft©2009 <a href="http://allyourx.co.uk">Allyourx.org</a>. Maintained by <a href="http://cefn.com">Cefn Hoile</a> Design by <a href="http://www.jonasjohn.de/">Jonas John</a>.
+               <a href="http://validator.w3.org/check/referer">Valid XHTML</a> and <a href="http://jigsaw.w3.org/css-validator/check/referer">Valid CSS</a></p>
+         </div>
+      </div>
+   </body>
+</html>

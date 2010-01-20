@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<data xmlns="http://www.w3.org/1999/xhtml">
+    <page id="index" title="Instant apps, just add users">
+        <p>
+            Writing applications is now within the reach of ordinary people. 
+        </p>
+        <p>
+            AllyourX.org defines descriptive <a href="http://en.wikipedia.org/wiki/Markup_language" target="_blank">markup</a> which can be used to 
+            <em>automatically write</em> the software for user-facing applications.
+        </p>
+        <h2>Simply describe your data</h2>
+        <ul>
+            <li>
+                provide a <a href="standard.html">specification</a> of the data needed from users, 
+                (using a <a href="http://en.wikipedia.org/wiki/RELAX_NG" target="_blank">schema language</a>)
+            </li>
+            <li>
+                optionally, add labels, tooltips, validation rules, warnings, (using 
+                <a href="http://books.xmlschemata.org/relaxng/relax-CHP-13-SECT-1.html" target="_blank">schema annotations</a>) 
+            </li>
+        </ul>
+        <p>
+            <a href="software.html">Front end generators</a> produce input forms for your preferred user interface.
+        </p>
+        <p>
+            <a href="software.html">Back-end hosts</a> accept edits to your stored data sent by these input forms.
+        </p>
+        <h2>Go live... Host and query your data.</h2>
+        <p>
+            With additional components provided by <a href="software.html#allyourx.co.uk">us</a> and <a href="contribute.html">the community</a>, 
+            you can host your user edited data on your desktop or in the cloud. You can query your data in just a few characters to produce data-rich webpages.
+        </p>
+        <p>
+            For many applications, these two components are sufficient to deploy a full production system.
+        </p>
+        <h2>Interested?</h2>
+        <p>
+            Look at an <a href="1_end_to_end.html">end to end example</a>.
+        </p>
+        <p>
+            Scan the <a href="software.html">software components</a> available to work with AllyourX.
+        </p>
+    </page>
+    <page id="community" title="Asking the community">
+        <p>It is normally possible to raise your question on the #AllyourX IRC channel at freenode.net</p>
+        <p>To log on to the channel and chat immediately, <a href="http://webchat.freenode.net/?channels=allyourx">click here</a> to load a web-based IRC client </p>
+    </page>
+    <page id="team" title="The AllyourX Team">
+        <p>
+            In 1972 a crack commando unit was sent to prison by a military court for a crime they didn't commit.
+            These men promptly escaped from a maximum security stockade to the Los Angeles underground.
+            Today, still wanted by the government, they survive as soldiers of fortune.
+        </p>
+        <p>
+            OK *blush* actually it's a bunch of geeks like every other software project.
+            A team committed to Open Source, personal liberty, and making pots of cash in their spare time.
+        </p>
+        <p>
+            AllyourX was conceived and prototyped by <a href="http://cefn.com">Cefn Hoile</a>, who leads ongoing development 
+            of utility code made available under the GPL, alongside commercial hosting plans for AllyourX-driven apps.
+        </p>
+        <p>
+            But if no-one else can help create unique designs, bespoke implementations or hosting plans, 
+            and if you can find them, maybe you can hire, the <a href="team.html">A team</a>.
+        </p>
+    </page>
+    <page id="vision" title="AllyourX in 1 minute">
+        <p>Apps are really driven by...</p>
+        <ul>
+            <li>The data which users put into the application</li>
+            <li>The slices and views on that data which come out again</li>
+        </ul>
+        <p>
+            So why can't we specify these two items of information, have the application write itself for your chosen platform, 
+            and go out and do something less boring instead ?
+        </p>
+        <h2>You can!</h2>
+        <p>
+            Simply define your data using the AllyourX standard.
+        </p>
+        <p>
+            AllyourX compliant-software then generates the front-end for you and defines the back-end interactions with the hosting platform.
+        </p>
+        <p>You don't have to choose a platform before you build your application!</p>
+        <p>
+            ASP+SQL Server, PHP+MySQL, Java+Postgres all fulfil essentially the same roles, AllyourX allows
+            you to operate at a level above, and generate the coding CRUD beneath using whatever platform you choose.
+        </p>
+        <p>
+            Use our <a href="software.html#allyourx.co.uk">test platform</a> to instantly deploy a hosted application suitable for a single user on your local machine.
+        </p>
+        <h2>Seeking closure....</h2>
+        <p>
+            AllyourX can generate editors for any XML data, so it can generate an editor for AllyourX markup too! 
+        </p>
+    </page>
+    <page id="standard" title="AllyourX standard">
+        <h2>Solid foundations</h2>
+        <p>
+            The AllyourX standard is an extension of <a href="http://en.wikipedia.org/wiki/RELAX_NG">Relax NG</a>, with annotations.
+        </p>
+        <p>
+            These annotations add important metadata defining the input controls you want,
+            such as 
+        </p>
+        <ul>
+            <li>internationalised labels for input fields</li>
+            <li>tooltips shown to confused users</li>
+            <li>rules input must satisfy</li>
+            <li>warnings shown when rules aren't followed</li>
+        </ul>
+        <p>
+            For more, see an <a href="1_end_to_end.html">example of AllyourX markup</a>.
+        </p>
+    </page>
+    <page id="contribute" title="Add your energy, and help steer the project">
+        <p>
+            If your preferred user interface or hosting platform is not yet supported, you can 
+            author simple components to be able to incorporate the AllyourX goodness 
+            into your prototyping process.
+        </p>
+        <h2>Generators for your preferred front end technology</h2>
+        <p>
+            
+        </p>
+        <h2>Data Hosting through your preferred back end technology</h2>
+        <p>
+            
+        </p>
+    </page>
+    <page id="software" title="Software supporting AllyourX">
+        <h2><a name="allyourx.co.uk">Rapid Prototyping</a></h2>
+        <p>
+            Javascript code is provided to generate interactive forms from AllyourX markup, code you can incorporate in your own open source applications!
+        </p>
+        <p>
+            We rely on JQuery to construct input controls, styled using ThemeRoller.
+        </p>
+        <p>
+            A complete application example is also available open source, combining the AllyourX form generator with a simple client-side webserver 
+            and XML database system to create a rich-data authoring tool for single-user websites.
+        </p>
+    </page>
+    <page id="implementation" title="Implementation">
+        <p>
+            The following components have been engineered to deliver the end experience, and may themselves stabilise
+            into reusable components.
+        </p>
+        <h2>HTML DOM Model of XML</h2>
+        <p>
+            To present XML on the screen, augmented with controls, we've employed a simple transformation of XML into HTML.
+        </p>
+        <p>
+            DIV elements marked up with the classes <em>xroot</em>,<em>xelement</em>,<em>xattribute</em><em>xtext</em>, embedded in document order
+            are sufficient to capture a complete representation of the XML document. 
+        </p>
+        <p>
+            AllyourX schema annotation markup is added to these elements in the http://allyourx.org namespace for simplicity,
+            such as <em>a:name</em>,<em>a:type</em>,,<em>a:title</em> although it is also possible to dynamically calculate these
+            from the real-time document structure and schema.
+        </p>
+        <p>
+            Control form components are implemented as LiveQuery decorator patterns, which add control classes, headers, buttons etc around these
+            semantic divs to make everything look good.
+        </p>
+        <h2>HTTP Post model of XML</h2>
+        <p>
+            When a whole XML document exists in the page, you can submit it as a string back to the server, but if 
+            you want to submit modifications without relying on JQuery or Javascript, (e.g. you want to use a raw HTML form 
+            for a simple browser in an embedded platform), or if you simply want to update the values of individual xml elements 
+            with a single minimal post operation, then you have to be able to sub-address individual elements.
+        </p>
+        <p>
+            The convention we've adopted for this is to use a subset of XPath to specify individual values. For example
+            the <em>due</em> attribute of a <em>book</em> element inside a top-level <em>data</em> is represented with the form
+            field name <em>/data[1]/book[1]/@due</em>, allowing individual form input elements to target specific values, including
+            the creation of new items.
+        </p>
+        <p>
+            This approach is very rich, and future proof, permitting many different values in the xml document to be configured 
+            through HTTP POST, or even GET, for example an element name itself could be changed using <em>local-name(/data/book[1]/)</em>. 
+            It may permit very straightforward XQuery XMLDB implementation in the future too, although all form input will have to be 
+            parsed in any case for security purposes.
+        </p>
+        <h2>JSON model of XML</h2>
+        <p>
+            Storing or posting XML over JSON, (for example for storage in couchdb) requires a two-way transform to be defined
+            between the XML infoset (the canonical form of data used by AllyourX) and valid JSON.
+        </p>
+        <p>
+            The strategy adopted is simple. Elements are represented as JSON arrays.
+        </p>
+        <ul>
+            <li>the first item is of type string : the name of the element</li>
+            <li>the second (optional) item is of type object : attribute pairs of the element, stored in a json hashmap as name:value </li>
+            <li>further items are children of the array in document order. Child text nodes are strings. Child element nodes are themselves arrays, following this same definition. </li>
+        </ul>
+        <h4>An example</h4>
+        <pre>
+["data", 
+    ["soldier",
+        {name:"B.A. Baracas",skill:"Driver"}
+    ], 
+    ["soldier",
+        {name:"Hannibal Smith",skill:"Planner"}
+    ]
+]
+        </pre>
+        <p>
+            We speculate whether the JSON representation would permit a mapreduce implementation of JSON storage like couchdb, could be 
+            reused as an XQuery processor, following the example of MonetDB's 
+            <a href="http://www-db.informatik.uni-tuebingen.de/research/pathfinder">Pathfinder</a>
+        </p>
+        <h2>Javascript Classes model of XML and RelaxNG</h2>
+        <p>
+            In the heart of the Ally implementation is an XML agnostic Javascript-class-based representation of the XML infoset. 
+        </p>
+        <p>
+            The top level class used is a Thingy. 
+            A ContainerThingy is equivalent to a document or element node. An AttributeThingy maps to an attribute node. 
+            A Text Thingy is equivalent to a text node.
+        </p>
+        <p>
+            A related framework is used to manage schema parsing, validation, autocompletion etc. in a Javascript environment.
+        </p>
+        <p>
+            Instances of ThingyRule mapp to RelaxNG entities, such as OneOrMoreThingyRule, ZeroOrMoreThingyRule. 
+            The 'Required' semantic is assumed if a quantifier is not explicitly provided, just as in RelaxNG.
+        </p>
+        <p>
+            These classes may be able to be reused for similar dynamic validation and autocompletion scenarios to those we encounter 
+            in Ally.
+        </p>
+        <h2>POW, Firefox, JQuery extensions for E4X</h2>
+        <p>
+            In the mainstream Ally implementation we employ the Mozilla javascript engine both client-side through the Firefox browser component and server-side through 
+            <a href="http://davidkellogg.com/wiki/Main_Page">Plain Old Webserver</a> running on XUL. This means exactly the same javascript libraries can be employed, 
+            and E4X support can be assumed, making coding more reliable.
+        </p>
+        <p>
+            This is a sensible initial limitation, since Firefox/Xulrunner is available for most platforms and installers are already maintained.
+            This initial limitation is only for the authors of the data and generators of the websites. 
+            The webpages generated by Ally do not themselves have any specific dependencies, and will work on IE, Webkit, Gecko or anything else
+            so long as you have coded them properly.
+        </p>
+        <p>
+            Since neither POW, Firefox or JQuery incorporate support for E4X as part of their document.write and $() functions, bootstrapping code which 
+            patches POW, Firefox and JQuery at runtime is loaded where necessary.
+        </p>
+        <p>
+            In the future, we may relax this approach, and test for non Mozilla and non E4X platforms, , 
+            including even the Nokia N810! Interesting alternative platforms include Webkit (QT,Safari,Konqueror) Internet Explorer, QTScript, 
+            Narwhal (esp. running on Google App Engine), Persevere, Couchdb, Commonjs (serverjs).
+        </p>
+    </page>
+    <tutorial id="end_to_end" title="End to end example">
+        <step title="Define your input...">
+            <pre style="font-size:150%;">
+&lt;oneOrMore&gt;
+    &lt;element name=&quot;soldier&quot; a:label=&quot;A-team member&quot;&gt;
+        &lt;attribute name=&quot;name&quot; a:label=&quot;Character name&quot; /&gt;
+        &lt;attribute name=&quot;birthdate&quot; a:label=&quot;Date of birth&quot; a:type=&quot;date&quot; /&gt;
+        &lt;attribute name=&quot;skill&quot; a:label=&quot;Unique skill&quot; /&gt;
+    &lt;/element&gt;
+&lt;/oneOrMore&gt;
+            </pre>
+            <p>
+                Here is the first example fragment of AllyourX markup, sufficient to generate a front end to your application. 
+            </p>
+            <p>
+                The data structure is not very complicated. 
+                It introduces a data record or <em>element</em> named 'soldier', and says that
+                users must input at least one soldier record.
+                It specifies that every example of a soldier record must have three properties 
+                or <em>attributes</em> : a name, a date of birth and a skill. The date of birth 
+                attribute must conform to being a date.
+            </p>
+            <p>
+                In addition to the schema information which describes the data, 
+                it also includes some annotations which describe the input form which the user should see.
+            </p>
+            <p>
+                The a:label attributes determine the labels which will be shown to the user on the input
+                form. The user will be offered the chance to input an 'A-team member' instead of a new soldier <em>element</em>. 
+                Every soldier's name <em>attribute</em>will be labelled 'Character name', and their skill will be labelled 'Unique skill'.
+            </p>
+        </step>
+        <step title="Input form auto-generated...">
+            <iframe src="http://allyourx.org/git/pow_dir/allyourx.org/end_to_end/form.html" style="width:150%;height:300px;">
+                <p>Your browser does not support iframes</p>
+            </iframe>
+            <p>
+                The <a href="software.html#allyourx.co.uk">AllyourX.co.uk form generator</a> 
+                uses the schema information from the previous page to generate the interactive 
+                form above (<a href="http://allyourx.org/git/pow_dir/allyourx.org/end_to_end/form.html">view in separate page</a>). 
+            </p>
+            <p>
+                The form generator uses JQuery UI and Themeroller for interactivity and styling.
+            </p>
+            <p>
+                Try using the form to input and save data. Note how it authors XML dynamically, (right pane), 
+                since it's a right pain to author XML in practically any other way.
+            </p>
+            <p>
+                Try choosing different Themeroller styles to change the look and feel.
+            </p>
+        </step>
+        <step title="Query your data...">
+            <pre style="font-size:150%;">
+for $item in $data//soldier return 
+&lt;div&gt;
+    &lt;h2&gt;{$item/@name}&lt;/h2&gt;&lt;p&gt;Special skill: {$item/@skill}&lt;/p&gt;
+&lt;/div&gt;
+            </pre>
+            <p>
+                The <a href="software.html#allyourx.co.uk">AllyourX.co.uk desktop host</a> 
+                can process queries like the one above, to generate
+                webpages from data you have authored and stored on your local disk. 
+            </p>
+            <p>
+                The pages generated by these queries are also stored in your local disk, 
+                where they can be uploaded by FTP, SCP or RSync to your chosen web server.
+            </p>
+            <p>
+                The desktop host uses XUL and Plain Old Webserver, and can be installed
+                as a Firefox plugin for cross platform support on any desktop with java
+                installed.
+            </p>
+            <p>
+                The data, schemas and forms making up a website can be sent to a friend
+                as a zip file, modified and sent back.
+            </p>
+        </step>
+    </tutorial>    
+    <faq>
+        <question>What is AllyourX ?</question>
+        <answer>
+            <p>
+                AllyourX is a minimal standard defining the rich data which an application requests from its users.
+            </p>
+            <p>
+                GPL software is provided which uses this information to automatically generate a functional front end for your users, 
+                as well as defining the back-end interaction with your choice of hosting platform.
+            </p>
+            <p>
+                The standard is agnostic to specific hosting technologies used, allowing prototyping to proceed without committing to database
+                or server technologies.
+            </p>
+        </answer>
+    </faq>
+    <faq>
+        <question>How does it relate to existing standards and software ?</question>
+        <answer>
+            <p>
+                The AllyourX toolset is merely a smart combination of selected <a href="standard.html">standards</a> and <a href="software.html">software</a>.
+                It extends them minimally, and only to the extent which is absolutely necessary to close the gap between schema languages and fully working 
+                applications.
+            </p>
+        </answer>
+    </faq>
+    <faq>
+        <question>What are the benefits of conforming?</question>
+        <answer>
+            <p>
+                You should be able to prototype applications without writing much, if any, application code.
+                A GPL software implementation is available which generates forms for your users in XHTML (webpages in the browser) 
+                and outputs data to store in the form of XML.
+            </p>
+            <p>
+                Once you additionally define queries and views on your data, (we choose XPath and XQuery for this), this fully defines most web applications. 
+                You can rapidly prototype your app using the canonical XHTML+javascript+XML implementations provided, and 
+                later specialise your choice of look and feel, implementation language, data storage and query engine according to your 
+                tastes and needs, rather than being locked into one implementation approach for the lifetime of your app. 
+                This contrasts with typical apps which tangle the definition of form validation, front-end and 
+                back-end together with host-specific and language-specific implementation details.
+            </p>
+            <p>
+                A canonical example of a single-user application is provided, which runs as a Firefox plugin, stores your rich data 
+                on your local disk and uses XQuery to query and construct views (pages) on the fly. This application can be re-purposed 
+                to the creation of almost any single-user website by simply copy-pasting your design in place. However, the same techniques 
+                can be applied to multi-user web applications. If you're inspired by the single user prototype, we are 
+                <a href="http://allyourx.co.uk/contact.html">here to help.</a>. Storage and querying are separate modules from the data 
+                authoring framework, so we hope to see a community of people specialising these techniques for their favourite hosting flavour too.
+            </p>
+        </answer>
+    </faq>
+    <faq>
+        <question>What software supports the standard ?</question>
+        <answer>
+            <p>                
+                A single-user canonical implementation already exists suitable to generate websites hosted on your local 
+                machine. The user interface is browser-based, using an XHTML+JQuery (front end), local XML file storage (back end) 
+                and POW+XQuery hosting (server and query engine). It is available <a href="software.html#allyourx.co.uk">here</a>.
+            </p>
+            <p>
+                Multi-user applications can take advantage of <a href="contribute.html">a variety of hosting and querying platforms</a> 
+                with more to follow.
+            </p>
+        </answer>
+    </faq>
+    <faq>
+        <question>Why are the technologies provided for free ?</question>
+        <answer>
+            <p>
+                We believe that maximising benefit to users is simply a good way of doing business. With this single-minded focus
+                we hope to reach millions of users by removing blatantly obvious obstacles to application prototyping which 
+                currently make users unhappy.                 
+            </p>
+            <p>
+                Doing it for free helps us to focus on customer enablement, rather than customer prevention. 
+                The mainstream industry is in the business of prevention, through licensing and lock-in. It overlooks these trivial 
+                early-lifecycle prototyping problems in the interests of selling monolithic and expensive solutions where they are unnecessary. 
+            </p>
+            <p>
+                Allyourx.co.uk want to be a trusted partner, recommending solutions to you which meet your actual needs, and this is our proof.
+            </p>
+        </answer>
+    </faq>
+    <faq>
+        <question>What is the license ?</question>
+        <answer>
+            <p>
+                The augmented schema standards from allyourx.org are in the public domain, making them available for use by any person 
+                for any purpose. 
+            </p>
+            <p>
+                The authoring software from <a href="http://allyourx.co.uk">allyourx.co.uk</a> built against these standards is 
+                distributed under the Gnu Public License (GPL) to maximise the freedom of any derived software, (the GPL includes a copyleft 
+                clause ensuring software distributed with allyourx.co.uk code is itself available under the GPL). 
+            </p>
+            <p>
+                If you wish to relicense our software under different terms, then please <a href="http://allyourx.co.uk">make an enquiry</a>. We are reasonable people.
+            </p>
+        </answer>
+    </faq>
+    <faq>
+        <question>Why is the project called AllyourX ?</question>
+        <answer>
+            <div class="img_right">
+                <img src="http://upload.wikimedia.org/wikipedia/en/0/03/Aybabtu.png" alt="Cult image from Zero Wing"/>
+                <img src="assets/images/allyourbase.gif" style="width:240px;height:160px;clear:both;" alt="Cult animation from Zero Wing"/>
+            </div>
+            <p>
+                It's a combination of "<a href="http://www.phrases.org.uk/bulletin_board/21/messages/46.html">All your eggs in one basket</a>", 
+                and "<a href="http://www.theregister.co.uk/2001/02/22/all_your_base_are_belong/">All your base are belong to us</a>", 
+                two important proverbs from the English language.
+            </p>
+            <p>
+                You can avoid putting all your eggs in one basket by adopting a standard which can bridge a host of
+                front-end and back-end technologies, making migration to a new hosting technology simple as your needs change. 
+            </p>
+            <p>
+                We also hope that, in the end, people will come around to our way of thinking. And then, all your base are belong to us, HA HA HA HA....
+            </p>
+            <p>
+                The X is a pun, because the toolkit uses XML technologies.
+            </p>
+            <div style="clear:both;"></div>
+        </answer>
+    </faq>
+</data>

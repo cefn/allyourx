@@ -1,0 +1,31 @@
+/* Used to override preceding declarations to tune design. */
+
+#content h1, #content h2, #content h3, #content h4, #content h5, #content h6 {
+    margin-bottom:0.5em;
+}
+
+#path a:active{
+    color: #2E668B;    
+}
+
+#header {
+    font-size:1.2em;
+}
+
+#content li {
+    list-style-position:inside;
+    list-style-type:disc;
+}
+
+.left_box .inner_box h1, .left_box .inner_box h2, .left_box .inner_box h3, .left_box .inner_box h4, .left_box .inner_box h5, .left_box .inner_box h6{
+    font-weight:bold;
+}
+
+.left_box .inner_box {
+    padding:1em;
+}
+
+.left_box .inner_box *{
+    padding:0em;
+    padding-bottom:0.5em;
+}

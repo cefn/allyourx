@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grammar 
+  xmlns="http://relaxng.org/ns/structure/1.0"
+  xmlns:a="http://relaxng.org/ns/compatibility/annotations/1.0"
+  datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes" ns="http://www.w3.org/1999/xhtml">
+    
+    <include href="xhtml/xhtml.rng">
+        <start>
+            <element name="data">
+                <oneOrMore>
+                    <ref name="entity"/>
+                </oneOrMore>
+            </element>
+        </start>
+    </include>
+    
+    <define name="entity">
+        <choice>
+            <ref name="page"/>
+            <ref name="person"/>
+            <ref name="project"/>
+            <ref name="topic"/>
+        </choice>
+    </define>
+    
+    <define name="labelling">
+        <attribute name="id">
+            <data type="ID"/>
+        </attribute>
+        <attribute name="title"/>
+    </define>
+    
+    <define name="describing">
+        <attribute name="desc"/>
+    </define>
+    
+    <define name="linking">
+        <zeroOrMore>
+            <element name="link">
+                <attribute name="ref">
+                    <data type="IDREF"/>
+                </attribute>
+            </element>
+        </zeroOrMore>        
+    </define>
+    
+    <define name="timing">
+        <attribute name="when">
+            <data type="date"/>
+        </attribute>
+    </define>
+    
+    <define name="hypertext">
+        <oneOrMore>
+            <ref name="div"/>
+        </oneOrMore>
+    </define>
+    
+    <define name="project">
+        <element name="project">
+            <attribute name="presented">
+                <data type="date"/>
+            </attribute>
+            <ref name="labelling"/>
+            <ref name="describing" />
+            <ref name="contributing" />
+            <ref name="hypertext" />
+        </element>
+    </define>
+    
+    <define name="page">
+        <element name="page">
+            <ref name="labelling"/>
+            <ref name="hypertext" />
+        </element>
+    </define>
+
+    <define name="person">
+        <element name="person">
+            <ref name="labelling"/>
+            <ref name="describing"/>
+            <ref name="hypertext" />
+            <ref name="linking" />
+        </element>
+    </define>
+    
+    <define name="topic" >
+        <element name="topic">
+            <ref name="labelling" />
+            <ref name="describing"/>
+            <oneOrMore>
+                <element name="relatedtopic">
+                    <attribute name="ref">
+                        <data type="IDREF"/>
+                    </attribute>
+                </element>
+            </oneOrMore>
+        </element>
+    </define>
+
+   <define name="contributing">
+   	<oneOrMore>
+   		<element name="contributor">
+   			<attribute name="refid">
+   				<data type="IDREF"/>
+   			</attribute>
+   		</element>
+   	</oneOrMore>
+   </define>
+    
+</grammar>

@@ -1,0 +1,14 @@
+/* Used to control elements introduced by allyourx design.*/
+
+#header-right{
+    width:auto;
+    float:right;
+    color:#fff;
+    padding:1em;
+}
+
+img.logo{
+    width:70px;
+    vertical-align:top;
+    padding-left:10px;
+}
