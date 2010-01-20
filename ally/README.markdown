@@ -1,6 +1,6 @@
-# Ally- A canonical implementation for the AllyourX standard 
+# A canonical implementation for the AllyourX standard 
 
-## A schema-driven authoring editor for XML.
+## Ally - A RelaxNG schema-driven authoring editor for XML.
 
 This is work in progress on a canonical implementation of a data authoring framework complying with the AllyourX standard. It should provide a proof-of-concept of the rationale at [http://allyourx.org](http://allyourx.org). A by-product is the creation of a validating XML editor with autocompletion, which binds against RelaxNG schemata for XML. This component is designed to be used independently of the framework.
 
@@ -31,16 +31,16 @@ The AllyourX standard is designed expressly to capture the definition of an appl
 
 The project is planned with strict stages of increasingly complex RelaxNG, allowing clear unit tests and counterexamples to be identified. These subsets of RelaxNG are themselves defined using RelaxNG metaschema as follows...
 
-* v001 ([metaschema](allyourx/tree/master/ally/lib/schema/yourx/yourx.001.rng)) ([unit testing examples](allyourx/tree/master/ally/lib/schema/yourx/examples.001/))
-* v002 ([metaschema](allyourx/tree/master/ally/lib/schema/yourx/yourx.002.rng)) (examples to be authored))
-* v003 ([metaschema](allyourx/tree/master/ally/lib/schema/yourx/yourx.003.rng)) (examples to be authored)
-* v004 ([metaschema](allyourx/tree/master/ally/lib/schema/yourx/yourx.004.rng)) (examples to be authored)
-* v005 ([metaschema](allyourx/tree/master/ally/lib/schema/yourx/yourx.005.rng)) (examples to be authored)
-* Target ([metaschema](allyourx/tree/master/ally/lib/schema/yourx/yourx.target.rng)) (examples to be authored)
+* v001 ([metaschema](lib/schema/yourx/yourx.001.rng)) ([unit testing examples](lib/schema/yourx/examples.001/))
+* v002 ([metaschema](lib/schema/yourx/yourx.002.rng)) (examples to be authored))
+* v003 ([metaschema](lib/schema/yourx/yourx.003.rng)) (examples to be authored)
+* v004 ([metaschema](lib/schema/yourx/yourx.004.rng)) (examples to be authored)
+* v005 ([metaschema](lib/schema/yourx/yourx.005.rng)) (examples to be authored)
+* Target ([metaschema](lib/schema/yourx/yourx.target.rng)) (examples to be authored)
 
 Each schema complexity version should express a set of languages which includes the preceding set language as a strict subset. An editor which is conformant with a given version should be able to author every member of the given set of languages. An example of a schema which conforms to the schema 
 
-The use of these strict targets allows debugging to proceed incrementally. Initially, any bug experienced with a data specification conforming to the v001 schema will be accepted into the bugtracker for a release promising conformance with v001. We believe that many applications can already describe individual records using just the v001 schema. However, long term conformance to the schema described by the target metaschema [yourx.target.rng](allyourx/tree/master/ally/lib/schema/yourx/yourx.target.rng) is desired and development will proceed through increasingly complex versions with this aim.
+The use of these strict targets allows debugging to proceed incrementally. Initially, any bug experienced with a data specification conforming to the v001 schema will be accepted into the bugtracker for a release promising conformance with v001. We believe that many applications can already describe individual records using just the v001 schema. However, long term conformance to the schema described by the target metaschema [yourx.target.rng](lib/schema/yourx/yourx.target.rng) is desired and development will proceed through increasingly complex versions with this aim.
 
 An implementation with at least some form of closure, as described in milestone 3) above, will mean that ordinary users can use the graphical front end to define their own schemas, avoiding the need for RelaxNG tools directly except for debugging or for more advanced data structures than those authorable by the editor at that time. In other words, when the schema-driven AllyourX editor is capable of authoring against a metaschema itself, then people don't need to see the underlying RelaxNG in its xml stream form, or the XML authored against it.
 
