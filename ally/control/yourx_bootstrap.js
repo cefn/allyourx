@@ -165,13 +165,9 @@ YOURX = (function(){
 		propnames.forEach(function(item){pairs.push("\"" + item + "\":" + item)});
 		return "({" + pairs.join(",") + "})"; 		
 	}
-
-	function exportProperties(propnames){
-		return eval(writeScopeExportCode(propnames));
-	}
-			
-	return exportProperties([
-		'getGlobal','readFile','evalFile','exportProperties','writeScopeExportCode','copyProperties','cloneArray'
-	]);
+		
+	return eval(writeScopeExportCode([
+		'getGlobal','readFile','evalFile','writeScopeExportCode','copyProperties','cloneArray'
+	]));
 	
 }());
