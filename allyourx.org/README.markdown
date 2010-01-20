@@ -6,3 +6,4 @@ It is also a useful example of an XQuery-driven website, illustrated by ...
 
 * The XML [source file](data/data.xml)
 * The XQuery [template file](data/design.xq)
+* The resulting [website](http://allyourx.org)
