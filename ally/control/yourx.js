@@ -193,12 +193,6 @@ YOURX.copyProperties(
 				}
 				return this.data.dom;
 			},
-			setRule:function(rule){
-				this.rule = rule;
-			},
-			getRule:function(){
-				return this.rule;
-			},
 			matchRule:function(rule){
 				try{
 					var matchedindices = ThingyUtil.greedyConsumeSequence([rule],[this], false);

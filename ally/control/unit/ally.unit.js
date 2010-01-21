@@ -7,7 +7,7 @@ $(function() {
 			return UNITTEST.rootthingy.getChildren().length != 0;
 		}],
 		["bindThingy adds some text nodes",function(){
-			UNITTEST.editor = new ALLY.DivEditor();
+			UNITTEST.editor = new ALLY.RawEditor();
 			UNITTEST.editor.bindThingy(UNITTEST.rootthingy,UNITTEST.viewportq);
 			var counttext = UNITTEST.viewportq.find(".xtext").size();
 			return counttext === 14;

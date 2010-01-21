@@ -6,6 +6,11 @@ YOURX.copyProperties(
 	(function(){	
 	
 		function Editor(){}
+		/** Binds a thingy to the element identified by the JQuery selection. 
+		 * The contents of this element will henceforth be updated according to Thingy events indicating a change of state or relationships.
+		 * @param {Object} thingy The thingy to bind
+		 * @param {Object} elq A JQuery selection to bind to
+		 */
 		Editor.prototype.bindThingy = function(thingy,elq){
 			throw new YOURX.UnsupportedException("The bindThingy() function must be overriden to implement an ALLY.Editor");				
 		}
@@ -14,17 +19,33 @@ YOURX.copyProperties(
 			Editor.apply(this,arguments);
 		}
 		RecursiveEditor.prototype = new Editor();
-		RecursiveEditor.prototype.getMarkup = function(thingy,descend){
-			throw new YOURX.UnsupportedException("The getMarkup() function must be overriden to implement an ALLY.RecursiveEditor");
+		/** Creates a new set of DOM elements, representing a Thingy in the Editor.
+		 * @param {Object} thingy The thingy to create elements for
+		 * @param {Object} descend Whether child content should be included
+		 * @return A JQuery set of elements not yet attached to a DOM. 
+		 */
+		RecursiveEditor.prototype.createThingyQuery = function(thingy,descend){
+			throw new YOURX.UnsupportedException("The createThingyQuery() function must be overriden to implement an ALLY.RecursiveEditor");
 		}
-		RecursiveEditor.prototype.getContentMarkup = function(contentthingy){
-			throw new YOURX.UnsupportedException("The getContentMarkup() function must be overriden to implement an ALLY.RecursiveEditor");			
+		/** Creates a new set of DOM elements, representing the content of a ContentThingy in the Editor.
+		 * @param {Object} contentthingy The contentthingy to create elements for
+		 * @return A JQuery set of elements not yet attached to a DOM. 
+		 */
+		RecursiveEditor.prototype.createContentQuery = function(contentthingy){
+			throw new YOURX.UnsupportedException("The createContentQuery() function must be overriden to implement an ALLY.RecursiveEditor");			
 		}
+		/** Binds a Thingy to the element identified by the JQuery selection. 
+		 * As it recurses, it creates new elements from attributes, child elements, and child text nodes,
+		 * as constructed from the createThingyQuery() and createContentQuery() functions. 
+		 * These are recursively bound in turn.
+		 * @param {Object} thingy
+		 * @param {Object} elq
+		 */
 		RecursiveEditor.prototype.bindThingy = function(thingy, elq){
 			var thiseditor = this;
 			if(thingy instanceof YOURX.ContainerThingy){
 				if(thingy instanceof YOURX.ElementThingy){					
-					//add as listener to attributes, traversing existing
+					//or just elements add as listener to attributes, traversing existing
 					var attelqs = {};
 					thingy.getAttributes(
 						function(parentthingy,attthingy){
@@ -33,7 +54,7 @@ YOURX.copyProperties(
 								if(attthingy.name in attelqs){
 									attelqs[attthingy.name].remove();
 								}
-								attelqs[attthingy.name] = $(thiseditor.getMarkup(attthingy,false));
+								attelqs[attthingy.name] = thiseditor.createThingyQuery(attthingy,false);
 								elq.append(attelqs[attthingy.name]);
 							});
 						},
@@ -45,13 +66,12 @@ YOURX.copyProperties(
 						}
 					);
 				}
-				//add as listener to children, traversing existing
+				//for all containers add as listener to children, traversing existing
 				var childelqs = [];
 				thingy.getChildren(
 					function(parentthingy, childthingy,childidx){ //child appeared
 						//attach new dom element
-						var childmarkup = thiseditor.getMarkup(childthingy,false);
-						var childelq = $(childmarkup);
+						var childelq = thiseditor.createThingyQuery(childthingy,false);
 						elq.append(childelq);
 						childelqs[childidx] = childelq;							
 						//bind on children
@@ -64,7 +84,7 @@ YOURX.copyProperties(
 			}
 			else if(thingy instanceof YOURX.ContentThingy){
 				thingy.getValue(function(item,value){
-					elq.html(thiseditor.getContentMarkup(thingy));
+					elq.html(thiseditor.createContentQuery(thingy));
 				});
 			}
 		}
@@ -82,34 +102,29 @@ YOURX.copyProperties(
 			RecursiveEditor.apply(this,arguments);
 		}
 		DivEditor.prototype = new RecursiveEditor();
-		DivEditor.prototype.getMarkup = function(thingy,descend){
-			var annotationmarkup = "";
-			var rule = thingy.getRule();
-			if(rule){ //skip annotation if no schema info
-				var force = true;
-				ALLY.getAnnotationNames().forEach(function(item){
-					var value = rule.getAnnotation(item);
-					annotationmarkup += (value || force) ? ' ' + name + '="' + value + '"' : "";		
-				});
-			}
+		DivEditor.prototype.createThingyQuery = function(thingy,descend){
+			//create div with defined classes
+			var elq = $("<div/>");
+			elq.addClass(this.getClasses(thingy));
 			
-			var innermarkup;
+			//handle Containers vs Content
 			if(thingy instanceof YOURX.ContainerThingy){
-				innermarkup = "";
+				//add attributes and child elements and text
 				if(descend){
 					this.getAllyDescendants().forEach(function(item){
-						innermarkup += this.getMarkup(item);
+						elq.append(this.createThingyQuery(item));
 					});
 				}
 			}
 			else if(thingy instanceof YOURX.ContentThingy){
-				innermarkup = this.getContentMarkup(thingy);
+				//add the content div
+				elq.append(this.createContentQuery(thingy));
 			}
-		
-			return '<div class="' + this.getClasses(thingy) + '"' + annotationmarkup + '>' + innermarkup + '</div>';
+
+			return elq;
 		}
-		DivEditor.prototype.getContentMarkup = function(contentthingy){
-			return '<div class="xcontent">' + contentthingy.getValue() + '</div>'
+		DivEditor.prototype.createContentQuery = function(contentthingy){
+			return $('<div class="xcontent">' + contentthingy.getValue() + '</div>');
 		}
 		DivEditor.prototype.getClasses = function(thingy){
 			if(thingy instanceof YOURX.ContainerThingy){
@@ -131,21 +146,27 @@ YOURX.copyProperties(
 			throw new Error("Unexpected Thingy class encountered in getClasses()");			
 		}
 		
-		function ContentEditableEditor(){
-			RecursiveEditor.apply(this,arguments);
+		function RawEditor(){
+			DivEditor.apply(this,arguments);
 		}
-		ContentEditableEditor.prototype = new RecursiveEditor();
-		ContentEditableEditor.prototype.getMarkup = function(thingy,descend){			
-			
+		RawEditor.prototype = new DivEditor();
+		RawEditor.prototype.createThingyQuery = function(thingy,descend){			
+				var superq = DivEditor.prototype.createThingyQuery.apply(this,arguments);
+				superq.addClass("xraw");
+				return superq;
 		}
-		
+		RawEditor.prototype.createContentQuery = function(thingy,descend){			
+				var superq = DivEditor.prototype.createContentQuery.apply(this,arguments);
+				superq.attr("contentEditable",true);
+				return superq;
+		}
 	
 		function getAnnotationNames(){
 			return ['a:name','a:title','a:type'];
 		}
 		
 		return eval(YOURX.writeScopeExportCode([
-			'getAnnotationNames', 'RecursiveEditor', 'DivEditor']
+			'getAnnotationNames', 'RecursiveEditor', 'DivEditor', 'RawEditor']
 		));	
 		
 	}()),
