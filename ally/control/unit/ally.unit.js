@@ -2,13 +2,14 @@ $(function() {
 	var UNITTEST = {}; //create namespace object for temporary unittest properties
 	UNITTEST.viewportq = $("#UNITTEST"); //target this element when binding controls
 	executeTests([
-		["url2yourx loads XML file  ", function(){
+		["url2yourx loads XML file without corresponding schema ", function(){
 			UNITTEST.rootthingy = YOURX.ThingyUtil.url2thingy("../../data/data.xml");
 			return UNITTEST.rootthingy.getChildren().length != 0;
 		}],
 		["bindThingy adds some text nodes",function(){
 			UNITTEST.editor = new ALLY.RawEditor();
-			UNITTEST.editor.bindThingy(UNITTEST.rootthingy,UNITTEST.viewportq);
+			UNITTEST.boundq = UNITTEST.editor.createThingyWrapper(UNITTEST.rootthingy);
+			UNITTEST.viewportq.append(UNITTEST.boundq);
 			var counttext = UNITTEST.viewportq.find(".xtext").size();
 			return counttext === 14;
 		}],
@@ -28,6 +29,12 @@ $(function() {
 			var testtext = UNITTEST.viewportq.find(".xelement .xelement .xelement .xtext:first").text();
 			return testtext === "Suggested Format";
 		}],
+		["bindThingy: Removing content from root removes all child elements",function(){
+			YOURX.cloneArray(UNITTEST.rootthingy.getChildren()).forEach(function(child){
+				UNITTEST.rootthingy.removeChild(child);
+			});
+			return UNITTEST.boundq.find(".xelement").length === 0;
+		}]
 	]);
 });            
 

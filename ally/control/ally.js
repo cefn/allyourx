@@ -11,8 +11,8 @@ YOURX.copyProperties(
 		 * @param {Object} thingy The thingy to bind
 		 * @param {Object} elq A JQuery selection to bind to
 		 */
-		Editor.prototype.bindThingy = function(thingy,elq){
-			throw new YOURX.UnsupportedException("The bindThingy() function must be overriden to implement an ALLY.Editor");				
+		Editor.prototype.bindThingyTreeBelow = function(thingy,elq){
+			throw new YOURX.UnsupportedException("The bindThingyTreeBelow() function must be overriden to implement an ALLY.Editor");				
 		}
 		
 		function RecursiveEditor(){
@@ -24,29 +24,24 @@ YOURX.copyProperties(
 		 * @param {Object} descend Whether child content should be included
 		 * @return A JQuery set of elements not yet attached to a DOM. 
 		 */
-		RecursiveEditor.prototype.createThingyQuery = function(thingy,descend){
-			throw new YOURX.UnsupportedException("The createThingyQuery() function must be overriden to implement an ALLY.RecursiveEditor");
-		}
-		/** Creates a new set of DOM elements, representing the content of a ContentThingy in the Editor.
-		 * @param {Object} contentthingy The contentthingy to create elements for
-		 * @return A JQuery set of elements not yet attached to a DOM. 
-		 */
-		RecursiveEditor.prototype.createContentQuery = function(contentthingy){
-			throw new YOURX.UnsupportedException("The createContentQuery() function must be overriden to implement an ALLY.RecursiveEditor");			
+		RecursiveEditor.prototype.createThingyWrapper = function(thingy){
+			throw new YOURX.UnsupportedException("The createThingyWrapper() function must be overriden to implement an ALLY.RecursiveEditor");
 		}
 		/** Binds a Thingy to the element identified by the JQuery selection. 
 		 * As it recurses, it creates new elements from attributes, child elements, and child text nodes,
-		 * as constructed from the createThingyQuery() and createContentQuery() functions. 
+		 * as constructed from the createThingyWrapper() and managed by the query*Wrapper functions, 
+		 * which provide Editor-specific retrieval from the ThingyWrapper of structural subsections. 
 		 * These are recursively bound in turn.
 		 * @param {Object} thingy
 		 * @param {Object} elq
 		 */
-		RecursiveEditor.prototype.bindThingy = function(thingy, elq){
+		RecursiveEditor.prototype.bindThingyTreeBelow = function(thingy, elq){
 			var thiseditor = this;
 			if(thingy instanceof YOURX.ContainerThingy){
 				if(thingy instanceof YOURX.ElementThingy){					
 					//or just elements add as listener to attributes, traversing existing
 					var attelqs = {};
+					var openelq = thiseditor.queryOpenWrapper(elq);
 					thingy.getAttributes(
 						function(parentthingy,attthingy){
 							var attelq;
@@ -54,8 +49,8 @@ YOURX.copyProperties(
 								if(attthingy.name in attelqs){
 									attelqs[attthingy.name].remove();
 								}
-								attelqs[attthingy.name] = thiseditor.createThingyQuery(attthingy,false);
-								elq.append(attelqs[attthingy.name]);
+								attelqs[attthingy.name] = thiseditor.createThingyWrapper(attthingy);
+								openelq.append(attelqs[attthingy.name]);
 							});
 						},
 						function(parentthingy,attthingy){
@@ -68,23 +63,22 @@ YOURX.copyProperties(
 				}
 				//for all containers add as listener to children, traversing existing
 				var childelqs = [];
+				var descendelq = thiseditor.queryDescendWrapper(elq);
 				thingy.getChildren(
 					function(parentthingy, childthingy,childidx){ //child appeared
 						//attach new dom element
-						var childelq = thiseditor.createThingyQuery(childthingy,false);
-						elq.append(childelq);
-						childelqs[childidx] = childelq;							
-						//bind on children
-						thiseditor.bindThingy(childthingy,childelq);
+						var childelq = thiseditor.createThingyWrapper(childthingy);
+						descendelq.append(childelq);
+						childelqs[childidx] = childelq;
 					},
 					function(parentthingy,childthingy,childidx){ //child disappeared
-						childelqs.splice(childidx).remove(); //remove previously added	
+						childelqs.splice(childidx, 1)[0].remove(); //remove previously added	
 					}
 				);
 			}
 			else if(thingy instanceof YOURX.ContentThingy){
 				thingy.getValue(function(item,value){
-					elq.html(thiseditor.createContentQuery(thingy));
+					thiseditor.queryContentWrapper(elq).text(value);
 				});
 			}
 		}
@@ -98,67 +92,94 @@ YOURX.copyProperties(
 			throw new Error("Unexpected Thingy class encountered in getDescendants()");			
 		}
 		
-		function DivEditor(){
+		function SpanEditor(){
 			RecursiveEditor.apply(this,arguments);
 		}
-		DivEditor.prototype = new RecursiveEditor();
-		DivEditor.prototype.createThingyQuery = function(thingy,descend){
-			//create div with defined classes
-			var elq = $("<div/>");
-			elq.addClass(this.getClasses(thingy));
-			
-			//handle Containers vs Content
-			if(thingy instanceof YOURX.ContainerThingy){
-				//add attributes and child elements and text
-				if(descend){
-					this.getAllyDescendants().forEach(function(item){
-						elq.append(this.createThingyQuery(item));
-					});
-				}
-			}
-			else if(thingy instanceof YOURX.ContentThingy){
-				//add the content div
-				elq.append(this.createContentQuery(thingy));
-			}
+		SpanEditor.prototype = new RecursiveEditor();
+		SpanEditor.prototype.createThingyWrapper = function(thingy){
+			var elq = $("<span/>");
+										
+			//bind thingy and add structural elements
+			elq.data("xthingy",thingy);
 
-			return elq;
-		}
-		DivEditor.prototype.createContentQuery = function(contentthingy){
-			return $('<div class="xcontent">' + contentthingy.getValue() + '</div>');
-		}
-		DivEditor.prototype.getClasses = function(thingy){
+			//assign classes depending on Thingy type
 			if(thingy instanceof YOURX.ContainerThingy){
+				elq.addClass("xcontainer");
 				if(thingy instanceof YOURX.ElementThingy){
-					return "xelement";
-				}
-				else{
-					return "xcontainer";					
+					elq.addClass("xelement");
 				}
 			}
 			else if(thingy instanceof YOURX.ContentThingy){
 				if(thingy instanceof YOURX.AttributeThingy){
-					return "xattribute";
+					elq.addClass("xattribute");
 				}
 				else if(thingy instanceof YOURX.TextThingy){
-					return "xtext";
+					elq.addClass("xtext");
 				}
 			}
-			throw new Error("Unexpected Thingy class encountered in getClasses()");			
+			
+			if(thingy instanceof YOURX.ContainerThingy){
+				//add structural spans for start, end and descendants
+				elq.append('<span class="xdescend"/>');
+				if(thingy instanceof YOURX.ElementThingy){
+					elq.prepend('<span class="xopen" />');
+					elq.append('<span class="xclose" />');
+				}
+			}
+			if(thingy instanceof YOURX.ContentThingy){
+				//add a separate content span
+				var contentq = $('<span class="xcontent">' + thingy.getValue() + '</span>');
+				elq.append(contentq);
+			}			
+			
+			//creates and binds new DOM elements matching
+			//attributes, child elements and text nodes below 
+			//this Thingy in the heirarchy
+			this.bindThingyTreeBelow(thingy,elq);
+
+			return elq;
+		}
+		
+		SpanEditor.prototype.queryContentWrapper = function(elq){
+			return elq.children().filter(".xcontent");
+		}
+		SpanEditor.prototype.queryDescendWrapper = function(elq){
+			return elq.children().filter(".xdescend");
+		}
+		SpanEditor.prototype.queryOpenWrapper = function(elq){
+			return elq.children().filter(".xopen");
+		}
+		SpanEditor.prototype.queryCloseWrapper = function(elq){
+			return elq.children().filter(".xclose");
 		}
 		
 		function RawEditor(){
-			DivEditor.apply(this,arguments);
+			SpanEditor.apply(this,arguments);
 		}
-		RawEditor.prototype = new DivEditor();
-		RawEditor.prototype.createThingyQuery = function(thingy,descend){			
-				var superq = DivEditor.prototype.createThingyQuery.apply(this,arguments);
-				superq.addClass("xraw");
-				return superq;
-		}
-		RawEditor.prototype.createContentQuery = function(thingy,descend){			
-				var superq = DivEditor.prototype.createContentQuery.apply(this,arguments);
-				superq.attr("contentEditable",true);
-				return superq;
+		RawEditor.prototype = new SpanEditor();
+		/** Add xraw class and contentEditable behaviour to content elements
+		 * @param {Object} thingy
+		 * @param {Object} descend
+		 */
+		RawEditor.prototype.createThingyWrapper = function(thingy){
+			var superq = SpanEditor.prototype.createThingyWrapper.apply(this,arguments);
+			superq.addClass("xraw");
+			if(thingy instanceof YOURX.ContainerThingy){
+				if(thingy instanceof YOURX.ElementThingy){
+					this.queryOpenWrapper(superq).before("&lt;" + thingy.getName());					
+					this.queryOpenWrapper(superq).after("&gt;");					
+					this.queryCloseWrapper(superq).before("&lt;" + thingy.getName());					
+					this.queryCloseWrapper(superq).after("/&gt;");
+				}					
+			}
+			else if (thingy instanceof YOURX.ContentThingy){
+				this.queryContentWrapper(superq).attr("contentEditable",true);
+				if(thingy instanceof YOURX.AttributeThingy){
+					this.queryContentWrapper(superq).before(' ' + thingy.getName() + '="');
+					this.queryContentWrapper(superq).after('"');
+				}
+			}
+			return superq;
 		}
 	
 		function getAnnotationNames(){
@@ -166,7 +187,7 @@ YOURX.copyProperties(
 		}
 		
 		return eval(YOURX.writeScopeExportCode([
-			'getAnnotationNames', 'RecursiveEditor', 'DivEditor', 'RawEditor']
+			'getAnnotationNames', 'RecursiveEditor', 'SpanEditor', 'RawEditor']
 		));	
 		
 	}()),

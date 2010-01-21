@@ -280,8 +280,8 @@ YOURX.copyProperties(
 				var onadd = arguments[0];
 				this.bind('childadded',onadd);
 				var parent = this;
-				this.children.forEach(function(item){
-					onadd(parent, item);
+				this.children.forEach(function(item, idx){
+					onadd(parent, item, idx);
 				});
 			}
 			if(arguments.length > 1 && arguments[1] instanceof Function){ //subscribe for future child removal
@@ -300,10 +300,10 @@ YOURX.copyProperties(
 			if(arguments.length > 0){
 				if(arguments[0] instanceof Thingy){
 					var child = arguments[0]; 
-					this.children.push(child);
+					var childidx = this.children.push(child);
 					var parent = this;
 					this.traverseListeners('childadded', function(listener){
-						listener(parent,child);
+						listener(parent,child,childidx);
 					});
 				}
 				else {
@@ -315,11 +315,22 @@ YOURX.copyProperties(
 			if(arguments.length > 0){
 				if(arguments[0] instanceof Thingy){
 					var child = arguments[0];
-					this.children = this.children.filter(function(item){return item != arguments[0] ? item : false;});
-					var parent = this;
-					this.traverseListeners('childremoved', function(listener){
-						listener(parent,child);
+					var childidx = -1;
+					this.children = this.children.filter(function(item,idx){
+						if(item === child){
+							childidx = idx;
+							return false;
+						}
+						else{
+							return true;
+						}
 					});
+					if(childidx != -1){
+						var parent = this;
+						this.traverseListeners('childremoved', function(listener){
+							listener(parent,child,childidx);
+						});						
+					}
 				}
 				else {
 					 throw new Error("Malformed invocation of ContainerThingy#addChild()");
@@ -390,6 +401,9 @@ YOURX.copyProperties(
 			throw new Error("Malformed invocation of ElementThingy constructor");
 		}
 		ElementThingy.prototype = new ContainerThingy();
+		ElementThingy.prototype.getName = function(){
+			return this.name;
+		}
 		ElementThingy.prototype.addNode=function(node){
 			var thingy = ThingyUtil.dom2thingy(node);
 			if(thingy instanceof AttributeThingy){
@@ -531,6 +545,9 @@ YOURX.copyProperties(
 			ContentThingy.apply(this,[value]);
 		}
 		AttributeThingy.prototype = new ContentThingy();
+		AttributeThingy.prototype.getName = function(){
+			return this.name;
+		}
 		
 		function TextThingy(){
 			if(arguments.length > 0 && arguments[0] instanceof Text){  //creation from values in DOM node

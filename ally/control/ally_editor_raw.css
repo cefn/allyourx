@@ -1,0 +1,34 @@
+.xraw{
+}
+
+.xraw.xcontainer, .xraw.xelement{
+    display:block;
+    color:#FFFFFF;
+    background-color:#AAAAFF;
+    padding:0;
+    padding-left:4em; 
+}
+
+.xraw.xattribute, .xraw.xtext, .xraw.xcontent{
+}
+
+.xraw.xcontainer {
+}
+.xraw.xelement {
+    border-width:1px;
+    border-style:solid;
+    background-color:#AAFFAA;
+    clear:both;
+}
+.xraw.xattribute {
+    color:#FF0000;
+    background-color:#AAFFAA;
+    clear:left;
+}
+.xraw.xtext {
+    color:#000000;
+    background-color:#CCCCCC;
+}
+.xraw.xcontent {
+    
+}
