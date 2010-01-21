@@ -7,19 +7,19 @@ YOURX.copyProperties(
 	
 		function Editor(){}
 		Editor.prototype.bindThingy = function(thingy,elq){
-			throw new YOURX.UnsupportedException("The bindThingy() function must be overriden to implement an Ally adaptor");				
-		}
-		Editor.prototype.getOuterMarkup = function(thingy,descend){
-			throw new YOURX.UnsupportedException("The getOuterMarkup() function must be overriden to implement an Ally adaptor");
-		}
-		Editor.prototype.getInnerMarkup = function(thingy,descend){
-			throw new YOURX.UnsupportedException("The getInnerMarkup() function must be overriden to implement an Ally adaptor");				
+			throw new YOURX.UnsupportedException("The bindThingy() function must be overriden to implement an ALLY.Editor");				
 		}
 		
 		function RecursiveEditor(){
 			Editor.apply(this,arguments);
 		}
 		RecursiveEditor.prototype = new Editor();
+		RecursiveEditor.prototype.getMarkup = function(thingy,descend){
+			throw new YOURX.UnsupportedException("The getMarkup() function must be overriden to implement an ALLY.RecursiveEditor");
+		}
+		RecursiveEditor.prototype.getContentMarkup = function(contentthingy){
+			throw new YOURX.UnsupportedException("The getContentMarkup() function must be overriden to implement an ALLY.RecursiveEditor");			
+		}
 		RecursiveEditor.prototype.bindThingy = function(thingy, elq){
 			var thiseditor = this;
 			if(thingy instanceof YOURX.ContainerThingy){
@@ -33,7 +33,7 @@ YOURX.copyProperties(
 								if(attthingy.name in attelqs){
 									attelqs[attthingy.name].remove();
 								}
-								attelqs[attthingy.name] = $(thiseditor.getOuterMarkup(attthingy,false));
+								attelqs[attthingy.name] = $(thiseditor.getMarkup(attthingy,false));
 								elq.append(attelqs[attthingy.name]);
 							});
 						},
@@ -50,30 +50,39 @@ YOURX.copyProperties(
 				thingy.getChildren(
 					function(parentthingy, childthingy,childidx){ //child appeared
 						//attach new dom element
-						var childmarkup = thiseditor.getOuterMarkup(childthingy,false);
+						var childmarkup = thiseditor.getMarkup(childthingy,false);
 						var childelq = $(childmarkup);
 						elq.append(childelq);
-						childelqs[childidx] = childelq;
+						childelqs[childidx] = childelq;							
 						//bind on children
 						thiseditor.bindThingy(childthingy,childelq);
 					},
 					function(parentthingy,childthingy,childidx){ //child disappeared
-						childelqs.splice(childidx).remove(); //remove previously added
+						childelqs.splice(childidx).remove(); //remove previously added	
 					}
 				);
 			}
 			else if(thingy instanceof YOURX.ContentThingy){
 				thingy.getValue(function(item,value){
-					elq.html(thiseditor.getInnerMarkup(thingy));
+					elq.html(thiseditor.getContentMarkup(thingy));
 				});
 			}
+		}
+		RecursiveEditor.prototype.getDescendants = function(thingy){
+			if(thingy instanceof ElementThingy){
+				return thingy.getAttributes().concat(thingy.getChildren());
+			}
+			else if(thingy instanceof ContainerThingy){
+				return this.getChildren();
+			}
+			throw new Error("Unexpected Thingy class encountered in getDescendants()");			
 		}
 		
 		function DivEditor(){
 			RecursiveEditor.apply(this,arguments);
 		}
 		DivEditor.prototype = new RecursiveEditor();
-		DivEditor.prototype.getOuterMarkup = function(thingy,descend){
+		DivEditor.prototype.getMarkup = function(thingy,descend){
 			var annotationmarkup = "";
 			var rule = thingy.getRule();
 			if(rule){ //skip annotation if no schema info
@@ -83,34 +92,24 @@ YOURX.copyProperties(
 					annotationmarkup += (value || force) ? ' ' + name + '="' + value + '"' : "";		
 				});
 			}
-		
-			return '<div class="' + this.getClasses(thingy) + '"' + annotationmarkup + '>' +
-				this.getInnerMarkup(thingy,descend) +
-			'</div>';
-		}
-		DivEditor.prototype.getInnerMarkup = function(thingy,descend){
+			
+			var innermarkup;
 			if(thingy instanceof YOURX.ContainerThingy){
-				var innermarkup = "";
+				innermarkup = "";
 				if(descend){
 					this.getAllyDescendants().forEach(function(item){
-						innermarkup += this.getOuterMarkup(item);
+						innermarkup += this.getMarkup(item);
 					});
 				}
-				return innermarkup;
 			}
 			else if(thingy instanceof YOURX.ContentThingy){
-					return '<div class="xcontent">' + thingy.getValue() + '</div>';
+				innermarkup = this.getContentMarkup(thingy);
 			}
-			throw new Error("Unexpected Thingy class encountered in getInnerMarkup()");			
+		
+			return '<div class="' + this.getClasses(thingy) + '"' + annotationmarkup + '>' + innermarkup + '</div>';
 		}
-		DivEditor.prototype.getDescendants = function(thingy){
-			if(thingy instanceof ElementThingy){
-				return thingy.getAttributes().concat(thingy.getChildren());
-			}
-			else if(thingy instanceof ContainerThingy){
-				return this.getChildren();
-			}
-			throw new Error("Unexpected Thingy class encountered in getDescendants()");			
+		DivEditor.prototype.getContentMarkup = function(contentthingy){
+			return '<div class="xcontent">' + contentthingy.getValue() + '</div>'
 		}
 		DivEditor.prototype.getClasses = function(thingy){
 			if(thingy instanceof YOURX.ContainerThingy){
@@ -136,11 +135,8 @@ YOURX.copyProperties(
 			RecursiveEditor.apply(this,arguments);
 		}
 		ContentEditableEditor.prototype = new RecursiveEditor();
-		ContentEditableEditor.prototype.getOuterMarkup = function(thingy,descend){
-			throw new YOURX.UnsupportedException("The getOuterMarkup() function must be overriden to implement an Ally adaptor");
-		}
-		ContentEditableEditor.prototype.getInnerMarkup=function(thingy,descend){
-			throw new YOURX.UnsupportedException("The getInnerMarkup() function must be overriden to implement an Ally adaptor");				
+		ContentEditableEditor.prototype.getMarkup = function(thingy,descend){			
+			
 		}
 		
 	
