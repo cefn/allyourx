@@ -88,11 +88,11 @@ YOURX.copyProperties(
 				return dom;
 			},
 			xmlStripComments:function(xml){return xml.replace(/<\?(.*?)\?>/g,"");}, /** From http://www.xml.com/pub/a/2007/11/28/introducing-e4x.html?page=4 */
-			greedyConsumeSequence:function(rls, ths, skip) {
+			greedyConsumeSequence:function(rls, ths, skip, nodescend) {
 				var origths = ths;
 				var rlidx = 0, totalconsumed = [];
 				while(rlidx < rls.length){
-					consumed = rls[rlidx].greedyConsume(ths, skip);
+					consumed = rls[rlidx].greedyConsume(ths, skip, nodescend);
 					if(consumed.length > 0){
 						ths = ths.slice(consumed[consumed.length-1], ths.length);
 						totalconsumed = totalconsumed.concat(consumed);
@@ -193,9 +193,9 @@ YOURX.copyProperties(
 				}
 				return this.data.dom;
 			},
-			matchRule:function(rule){
+			matchRule:function(rule, nodescend){
 				try{
-					var matchedindices = ThingyUtil.greedyConsumeSequence([rule],[this], false);
+					var matchedindices = ThingyUtil.greedyConsumeSequence([rule],[this], false, nodescend);
 					if(matchedindices instanceof Array){
 						if(matchedindices.length == 1){
 							if(matchedindices[0] == 0){
@@ -572,7 +572,7 @@ YOURX.copyProperties(
 			 * @param {boolean} skip If true, skip non-matching items in order to find matching ones.
 			 * @return {integer[]} Array containing the index of each candidate Thingy consumed by a single match to this rule. 
 			 */
-			greedyConsume:function(ths, skip){ /** 	@return if the rule has been satisfied the indexes of matched thingies 
+			greedyConsume:function(ths, skip, nodescend){ /** 	@return if the rule has been satisfied the indexes of matched thingies 
 												 		if the rule cannot be satisfied, should throw error */
 				throw new UnsupportedOperationError("No production rule has been implemented for " + typeof(this));
 			},
@@ -602,21 +602,27 @@ YOURX.copyProperties(
 			var childnodes = YOURX.cloneArray(parent.getChildren());
 			var childrules = YOURX.cloneArray(this.getChildren());
 		}
-		ThingyGrammar.prototype.greedyConsume=function(ths, skip){
+		ThingyGrammar.prototype.greedyConsume=function(ths, skip, nodescend){
 			if(ths.length==1){ //match one node
 				if(ths[0] instanceof ContainerThingy){ //match root node
-					var documentnodes = ths[0].getChildren();
-					if(documentnodes.length == 1){
-						if(documentnodes[0] instanceof ElementThingy ){ //match singleton document node
-							ThingyUtil.greedyConsumeSequence(this.getChildren(),documentnodes);
-							return [0];
-						}
-						else{
-							throw new ThingyRuleError("ThingyGrammar requires ContainerThingy to contain a singleton document ElementThingy");
-						}						
+					var consumed = [0];
+					if(nodescend){
+						return consumed;
 					}
 					else{
-						throw new ThingyRuleError("ThingyGrammar requires a single document ElementThingy: " + documentnodes.length + " items provided.");
+						var documentnodes = ths[0].getChildren();
+						if(documentnodes.length == 1){
+							if(documentnodes[0] instanceof ElementThingy ){ //match singleton document node
+								ThingyUtil.greedyConsumeSequence(this.getChildren(),documentnodes);
+								return consumed;
+							}
+							else{
+								throw new ThingyRuleError("ThingyGrammar requires ContainerThingy to contain a singleton document ElementThingy");
+							}						
+						}
+						else{
+							throw new ThingyRuleError("ThingyGrammar requires a single document ElementThingy: " + documentnodes.length + " items provided.");
+						}						
 					}
 				}
 				else{
@@ -632,9 +638,9 @@ YOURX.copyProperties(
 			ThingyRule.apply(this,arguments);	
 		}
 		OptionalThingyRule.prototype = new ThingyRule();
-		OptionalThingyRule.prototype.greedyConsume=function(ths){
+		OptionalThingyRule.prototype.greedyConsume=function(ths, skip, nodescend){
 			try{
-				ThingyUtil.greedyConsumeSequence(this.getChildren(),ths);
+				ThingyUtil.greedyConsumeSequence(this.getChildren(),ths, skip, nodescend);
 			}
 			catch(e){
 				if(e instanceof ThingyRuleError){ //the Optional structure is not actually there - consume nothing
@@ -651,10 +657,10 @@ YOURX.copyProperties(
 			ThingyRule.apply(this,arguments);	
 		}
 		ZeroOrMoreThingyRule.prototype = new ThingyRule();
-		ZeroOrMoreThingyRule.prototype.greedyConsume = function(ths){
+		ZeroOrMoreThingyRule.prototype.greedyConsume = function(ths, skip, nodescend){
 			var origths = ths, consumed = 0;
 			do{
-				consumed = ThingyUtil.greedyConsumeSequence(this.getChildren(),ths);
+				consumed = ThingyUtil.greedyConsumeSequence(this.getChildren(),ths, skip, nodescend);
 				ths = ths.slice(consumed, ths.length);
 			} while((consumed > 0) &&  (ths.length > 0));
 			return origths.length - ths.length; //zero consumed is allowed
@@ -665,8 +671,8 @@ YOURX.copyProperties(
 			ThingyRule.apply(this,arguments);	
 		}
 		OneOrMoreThingyRule.prototype = new ThingyRule();
-		OneOrMoreThingyRule.prototype.greedyConsume = function(ths){
-			var consumed = ZeroOrMoreThingyRule.prototype.greedyConsume.apply(this,[ths]);
+		OneOrMoreThingyRule.prototype.greedyConsume = function(ths, skip, nodescend){
+			var consumed = ZeroOrMoreThingyRule.prototype.greedyConsume.apply(this,[ths], skip, nodescend);
 			if(consumed > 0){
 				return consumed;
 			}
@@ -686,11 +692,11 @@ YOURX.copyProperties(
 		TypedThingyRule.prototype.getType = function(){
 			return YOURX[this.typename]; 
 		}
-		TypedThingyRule.prototype.greedyConsume = function(ths, skip){
+		TypedThingyRule.prototype.greedyConsume = function(ths, skip, nodescend){
 			if(ths.length > 0){
 				var matchtype = this.getType();
 				var matchfun = function(candidate){ return candidate instanceof matchtype;};
-				var matchidx = ThingyUtil.greedyMatchIndex(matchfun, ths, skip);
+				var matchidx = ThingyUtil.greedyMatchIndex(matchfun, ths, skip, nodescend);
 				if(matchidx != -1){
 					return [matchidx]; //prescribed return format; array of match indices
 				}
@@ -708,8 +714,8 @@ YOURX.copyProperties(
 			TypedThingyRule.apply(this,[typename, children]);
 		}
 		NamedThingyRule.prototype = new TypedThingyRule();
-		NamedThingyRule.prototype.greedyConsume = function(ths, skip){
-			var consumed = TypedThingyRule.prototype.greedyConsume.apply(this,[ths, skip]);
+		NamedThingyRule.prototype.greedyConsume = function(ths, skip, nodescend){
+			var consumed = TypedThingyRule.prototype.greedyConsume.apply(this,arguments);
 			if(consumed.length == 1){
 				if(ths[consumed[0]].name == this.name){
 					return consumed;
@@ -767,63 +773,69 @@ YOURX.copyProperties(
 			}
 			return 1;
 		}
-		ElementThingyRule.prototype.greedyConsume = function(ths, skip){ //attribute matching and child matching is subsumed by element matching
-			var consumed = NamedThingyRule.prototype.greedyConsume.apply(this, [ths, skip]);
-			if(consumed.length == 1){
-				var candidate = ths[consumed[0]];
-				var attmap = candidate.getAttributes();
-				var otherths = candidate.getChildren();
-				var attrls = [], otherrls = [];
-				this.getChildren().forEach(function(item){
-					if(item instanceof AttributeThingyRule){
-						attrls.push(item);
-					}
-					else{
-						otherrls.push(item);
-					}
-				});
-				
-				var attconsumedmap = {};
-				attrls.forEach(function(rule){
-					var attthingy = candidate.getAttributeThingy(rule.name);
-					if(attthingy !== null){
-						var attconsumed = rule.greedyConsume([attthingy]);
-						if(attconsumed.length != 1){ //check all attribute rules are satisfied
-							throw new ThingyRuleError("ElementThingy match failed due to " + rule);
-						}
-						else if(rule.name in attconsumedmap){ //check only one attribute rule per attribute name
-							throw new ThingyRuleError("Invalid schema has more than one rule addressing the same attribute");
-						}
-						else{ //store for later check of unmatched attributes
-							attconsumedmap[rule.name] = attthingy;
-						}
-					}
-					else{
-						throw new ThingyRuleError("No matching attribute named " + rule.name);
-					}
-				});
-				
-				var attmap = candidate.getAttributes();
-				var attname;
-				for(attname in attmap){
-					if( ! (attname in attconsumedmap) ){
-						throw new ThingyRuleError("Unmatched attribute " + name);
-					}
-				}
-				
-				var otherconsumed = ThingyUtil.greedyConsumeSequence(otherrls,otherths,skip);
-				
-				//all attribute rules and child rules are satisfied (no exceptions thrown)
-				//check all items are consumed after satisfying the rules
-				if(otherconsumed.length == otherths.length){  
-					return consumed;
-				}
-				else{ //*consumed should never be greater than *ths.length
-					throw new ThingyRuleError("Unmatched child elements in " + this);
-				}
+		ElementThingyRule.prototype.greedyConsume = function(ths, skip, nodescend){ //attribute matching and child matching is subsumed by element matching
+			var consumed = NamedThingyRule.prototype.greedyConsume.apply(this, arguments);
+			if(nodescend){
+				return consumed
 			}
 			else{
-				throw new ThingyRuleError("Could not find match for " + this );
+				if(consumed.length == 1){
+					var candidate = ths[consumed[0]];
+					var attmap = candidate.getAttributes();
+					var otherths = candidate.getChildren();
+					var attrls = [], otherrls = [];
+					this.getChildren().forEach(function(item){
+						if(item instanceof AttributeThingyRule){
+							attrls.push(item);
+						}
+						else{
+							otherrls.push(item);
+						}
+					});
+					
+					var attconsumedmap = {};
+					attrls.forEach(function(rule){
+						var attthingy = candidate.getAttributeThingy(rule.name);
+						if(attthingy !== null){
+							var attconsumed = rule.greedyConsume([attthingy]);
+							if(attconsumed.length != 1){ //check all attribute rules are satisfied
+								throw new ThingyRuleError("ElementThingy match failed due to " + rule);
+							}
+							else if(rule.name in attconsumedmap){ //check only one attribute rule per attribute name
+								throw new ThingyRuleError("Invalid schema has more than one rule addressing the same attribute");
+							}
+							else{ //store for later check of unmatched attributes
+								attconsumedmap[rule.name] = attthingy;
+							}
+						}
+						else{
+							throw new ThingyRuleError("No matching attribute named " + rule.name);
+						}
+					});
+					
+					var attmap = candidate.getAttributes();
+					var attname;
+					for(attname in attmap){
+						if( ! (attname in attconsumedmap) ){
+							throw new ThingyRuleError("Unmatched attribute " + name);
+						}
+					}
+					
+					var otherconsumed = ThingyUtil.greedyConsumeSequence(otherrls,otherths);
+					
+					//all attribute rules and child rules are satisfied (no exceptions thrown)
+					//check all items are consumed after satisfying the rules
+					if(otherconsumed.length == otherths.length){  
+						return consumed;
+					}
+					else{ //*consumed should never be greater than *ths.length
+						throw new ThingyRuleError("Unmatched child elements in " + this);
+					}
+				}
+				else{
+					throw new ThingyRuleError("Could not find match for " + this );
+				}
+				
 			}
 		};
 		
@@ -872,8 +884,9 @@ YOURX.copyProperties(
 			"ThingyUtil",
 			"Thingy","ContainerThingy","ContentThingy","ElementThingy","AttributeThingy","TextThingy",
 			"ThingyGrammar","ThingyRule","ElementThingyRule","AttributeThingyRule","TextThingyRule","OptionalThingyRule","ZeroOrMoreThingyRule","OneOrMoreThingyRule",
-			"ThingyRuleError"
-		]));	
+			"ThingyRuleError", "UnsupportedOperationError"
+		]));
+			
 	}()),
 	'YOURX'
 );
