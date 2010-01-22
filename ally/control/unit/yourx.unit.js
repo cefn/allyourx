@@ -2,7 +2,7 @@ $(function() {
 	var UNITTEST = {}; //create namespace object for temporary unittest properties
 	executeTests([
 		["load schema from examples.001/team.rng", function(){
-			UNITTEST.grammar = YOURX.ThingyUtil.url2rule("../../lib/schema/yourx/examples.001/team.001.rng");
+			UNITTEST.grammar = YOURX.ThingyUtil.url2rule("../../schema/yourx/examples.001/team.001.rng");
 			var rule, rulechild0, rulechild1;
 			return (UNITTEST.grammar) instanceof YOURX.ThingyGrammar && 
 				   (rule = UNITTEST.grammar.getChildren()[0]) instanceof YOURX.ElementThingyRule && 
@@ -13,7 +13,7 @@ $(function() {
 				   rulechild1.name == "position"; 
 		}],
 		["load data from examples.001/team.001.xml to in-memory model", function(){
-			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("../../lib/schema/yourx/examples.001/team.001.xml");
+			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("../../schema/yourx/examples.001/team.001.xml");
 			var docthingy, docthingyatt0, docthingyatt1;
 			return ( (UNITTEST.thingy) instanceof YOURX.ContainerThingy) &&
 				   ( (docthingy = UNITTEST.thingy.getChildren()[0]) instanceof YOURX.ElementThingy) &&
@@ -31,19 +31,19 @@ $(function() {
 			return UNITTEST.thingy.matchRule(UNITTEST.grammar) === true;			
 		}],
 		["examples.001/team.001a.xml rejected by validation", function(){
-			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("../../lib/schema/yourx/examples.001/team.001a.xml");
+			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("../../schema/yourx/examples.001/team.001a.xml");
 			return UNITTEST.thingy.matchRule(UNITTEST.grammar) === false;
 		}],
 		["examples.001/team.001b.xml rejected by validation", function(){
-			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("../../lib/schema/yourx/examples.001/team.001b.xml");
+			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("../../schema/yourx/examples.001/team.001b.xml");
 			return UNITTEST.thingy.matchRule(UNITTEST.grammar) === false;
 		}],
 		["examples.001/team.001c.xml rejected by validation", function(){
-			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("../../lib/schema/yourx/examples.001/team.001c.xml");
+			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("../../schema/yourx/examples.001/team.001c.xml");
 			return UNITTEST.thingy.matchRule(UNITTEST.grammar) === false;
 		}],
 		["load schema from examples.001/team.002.rng", function(){
-			UNITTEST.grammar = YOURX.ThingyUtil.url2rule("../../lib/schema/yourx/examples.001/team.002.rng");
+			UNITTEST.grammar = YOURX.ThingyUtil.url2rule("../../schema/yourx/examples.001/team.002.rng");
 			var rule, rulechild0, rulechild1;
 			return (UNITTEST.grammar) instanceof YOURX.ThingyGrammar && 
 				   (rule = UNITTEST.grammar.getChildren()[0]) instanceof YOURX.ElementThingyRule && 
@@ -54,7 +54,7 @@ $(function() {
 				   rulechild1.name == "position"; 
 		}],
 		["load data from examples.001/team.002.xml to in-memory model", function(){
-			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("../../lib/schema/yourx/examples.001/team.002.xml");
+			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("../../schema/yourx/examples.001/team.002.xml");
 			var docthingy, docthingyatt0, docthingyatt1;
 			return ( (UNITTEST.thingy) instanceof YOURX.ContainerThingy) &&
 				   ( (docthingy = UNITTEST.thingy.getChildren()[0]) instanceof YOURX.ElementThingy) &&
@@ -74,15 +74,15 @@ $(function() {
 			return UNITTEST.thingy.matchRule(UNITTEST.grammar) === true;
 		}],
 		["examples.001/team.002a.xml rejected by validation", function(){
-			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("../../lib/schema/yourx/examples.001/team.002a.xml");
+			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("../../schema/yourx/examples.001/team.002a.xml");
 			return UNITTEST.thingy.matchRule(UNITTEST.grammar) === false;
 		}],
 		["examples.001/team.002b.xml rejected by validation", function(){
-			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("../../lib/schema/yourx/examples.001/team.002b.xml");
+			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("../../schema/yourx/examples.001/team.002b.xml");
 			return UNITTEST.thingy.matchRule(UNITTEST.grammar) === false;
 		}],
 		["examples.001/team.002c.xml rejected by validation", function(){
-			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("../../lib/schema/yourx/examples.001/team.002c.xml");
+			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("../../schema/yourx/examples.001/team.002c.xml");
 			return UNITTEST.thingy.matchRule(UNITTEST.grammar) === false;
 		}],
 /*		["insert required elements from examples.001/team.002.rng ", function(){

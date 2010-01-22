@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<!--  
+  Defines the minimal subset of RelaxNG which Allyourx can support in v001.
+  It is capable of expressing arbitrary named and labelled elements with arbitrary named and labelled attributes.
+  Order is limited to attribute definitions, followed by element definitions.
+  No validation of attribute values is supported. No recursive production rules exist (no ref and define elements),
+  No quantifiers are supported (no optional, zeroOrMore,oneOrMore) making all schema components required.
+-->
+<grammar datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes"
+  ns="http://relaxng.org/ns/structure/1.0"
+  xmlns="http://relaxng.org/ns/structure/1.0"
+  xmlns:a="http://allyourx.org" >
+  <start>
+    <element name="grammar" ns="http://relaxng.org/ns/structure/1.0" >
+      <attribute name="datatypeLibrary">
+        <value>http://www.w3.org/2001/XMLSchema-datatypes</value>
+      </attribute>
+      <attribute name="ns">
+        <value>http://relaxng.org/ns/structure/1.0</value>
+      </attribute>
+      <element name="start">
+        <ref name="element"/>
+      </element>
+    </element>      
+  </start>
+    
+  <define name="element">
+    <element name="element">
+      <attribute name="name"/>
+      <optional>
+        <attribute name="ns"/>
+      </optional>
+      <ref name="ally-control-atts" />
+      <oneOrMore>
+        <element name="attribute">
+          <attribute name="name"/>
+          <optional>
+            <attribute name="ns"/>
+          </optional>
+          <ref name="ally-control-atts" />
+        </element>
+      </oneOrMore>
+      <zeroOrMore>
+        <ref name="element"/>
+      </zeroOrMore>
+    </element>    
+  </define>
+                  
+  <define name="ally-control-atts" >
+    <optional>
+      <attribute name="a:label" />
+    </optional>
+  </define>
+
+</grammar>

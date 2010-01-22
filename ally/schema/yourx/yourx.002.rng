@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<!-- 
+  Defines the minimal subset of RelaxNG which Allyourx can support in v002.
+  Extends support of version v001 with quantifiers for attributes and elements
+  permitting them to be required/optional (in the case of attributes) and
+  to be required/optional/zeroOrMore/oneOrMore (in the case of elements).
+-->
+<grammar datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes"
+  ns="http://relaxng.org/ns/structure/1.0"
+  xmlns="http://relaxng.org/ns/structure/1.0"
+  xmlns:a="http://allyourx.org" >
+  <start>
+    <element name="grammar" ns="http://relaxng.org/ns/structure/1.0" >
+      <attribute name="datatypeLibrary">
+        <value>http://www.w3.org/2001/XMLSchema-datatypes</value>
+      </attribute>
+      <element name="start">
+        <ref name="element-quantifier-choice"/>
+      </element>
+    </element>      
+  </start>
+    
+  <define name="attribute">
+    <element name="attribute">
+      <attribute name="name"/>
+      <ref name="ally-control-atts" />
+    </element>
+  </define>
+  
+  <define name="element">
+    <element name="element">
+      <attribute name="name"/>
+      <ref name="ally-control-atts" />
+      <zeroOrMore>
+        <ref name="attribute-quantifier-choice"/>
+      </zeroOrMore>
+      <zeroOrMore>
+        <ref name="element-quantifier-choice"/>
+      </zeroOrMore>
+    </element>    
+  </define>  
+  
+  <define name="attribute-quantifier-choice">
+    <choice>
+      <ref name="attribute"/>
+      <element name="optional">
+        <ref name="attribute" />
+      </element>
+    </choice>
+  </define>
+  
+  <define name="element-quantifier-choice">
+    <choice>
+      <ref name="element"/>
+      <element name="optional">
+        <ref name="element" />
+      </element>
+      <element name="zeroOrMore">
+        <ref name="element" />
+      </element>
+      <element name="oneOrMore">
+        <ref name="element" />
+      </element>
+    </choice>
+  </define>
+            
+  <define name="ally-control-atts" >
+    <optional>
+      <attribute name="a:label" />
+    </optional>
+  </define>
+
+</grammar>

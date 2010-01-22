@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?oxygen RNGSchema="file:../../lib/schema/yourx/yourx.schema.001.rng" type="xml"?>
+<grammar xmlns="http://relaxng.org/ns/structure/1.0" datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes" ns="http://relaxng.org/ns/structure/1.0" 
+    xmlns:a="http://allyourx.org">
+    <start>
+        <element name="team">
+            <oneOrMore>
+                <element name="player">
+                    <attribute name="name"/>
+                    <attribute name="position"/>
+                </element>
+            </oneOrMore>
+        </element>
+    </start>
+</grammar>
