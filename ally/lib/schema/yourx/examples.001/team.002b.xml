@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<?oxygen RNGSchema="file:./team.002.rng" type="xml"?>
-<player name="Viswanathan Anand" position="Grand Master" >
-    <championship body="Fédération Internationale des Échecs" title="World Champion"/>
-    <championship body="Fédération Internationale des Échecs" title="World Champion"/>
-</player>
