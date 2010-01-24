@@ -1,5 +1,14 @@
 YOURX.copyProperties(
 	(function(){
+		
+		function queryOptions(options,name){
+			if(typeof options !== "undefined" && options !== null){
+				if(name in options){
+					return options[name];
+				}
+			}
+			return null;
+		}
 			
 		/** Utility methods in a 'static' library object */		
 		var ThingyUtil = { //TODO consider reusing single static DOMParser and XMLSerializer
@@ -88,11 +97,11 @@ YOURX.copyProperties(
 				return dom;
 			},
 			xmlStripComments:function(xml){return xml.replace(/<\?(.*?)\?>/g,"");}, /** From http://www.xml.com/pub/a/2007/11/28/introducing-e4x.html?page=4 */
-			greedyConsumeSequence:function(rls, ths, skip, nodescend) {
+			greedyConsumeSequence:function(rls, ths, options,logger) {
 				var origths = ths;
 				var rlidx = 0, totalconsumed = [];
 				while(rlidx < rls.length){
-					consumed = rls[rlidx].greedyConsume(ths, skip, nodescend);
+					consumed = rls[rlidx].greedyConsume(ths, options,logger);
 					if(consumed.length > 0){
 						ths = ths.slice(consumed[consumed.length-1], ths.length);
 						totalconsumed = totalconsumed.concat(consumed);
@@ -101,9 +110,9 @@ YOURX.copyProperties(
 				};
 				return totalconsumed;
 			},
-			greedyMatchIndex:function(matchfun,ths,skip){
+			greedyMatchIndex:function(matchfun,ths,options){
 				var pos;
-				for(pos = 0;(skip?pos==0:pos<ths.length);pos++){
+				for(pos = 0;(queryOptions(options,'skip')!==true?pos==0:pos<ths.length);pos++){
 					if(matchfun(ths[pos])){
 						return pos;
 					}
@@ -193,11 +202,12 @@ YOURX.copyProperties(
 				}
 				return this.data.dom;
 			},
-			matchRule:function(rule, nodescend){
+			matchRule:function(rule, options){
+				var logger = new ValidationConformanceLogger();
 				try{
-					var matchedindices = ThingyUtil.greedyConsumeSequence([rule],[this], false, nodescend);
+					var matchedindices = ThingyUtil.greedyConsumeSequence([rule],[this], options, logger);
 					if(matchedindices instanceof Array){
-						if(matchedindices.length == 1){
+						if(matchedindices.length === 1){
 							if(matchedindices[0] == 0){
 								return true;
 							}
@@ -568,12 +578,15 @@ YOURX.copyProperties(
 			autoPopulate:function(parent, caret, dryrun){ /** Populates descendants with the structural Thingys required by this rule. */
 				throw new UnsupportedOperationError("No autoPopulate function has been implemented for " + typeof(this));
 			},
-			/**@param {Thingy[]} ths A Thingy array of candidates to match.
-			 * @param {boolean} skip If true, skip non-matching items in order to find matching ones.
+			/** Logger can be configured to throw errors or specialise behaviour based on errors encountered during validation walk.
+			 * @param {Thingy[]} ths A Thingy array of candidates to match.
+			 * @param {Object} options If options.skip true, skip non-matching items in order to find matching ones.
+			 * If options.nodescend true, only evaluate the shallow match, ignoring children and attributes
 			 * @return {integer[]} Array containing the index of each candidate Thingy consumed by a single match to this rule. 
+			 * If the rule cannot be satisfied returns empty array.
 			 */
-			greedyConsume:function(ths, skip, nodescend){ /** 	@return if the rule has been satisfied the indexes of matched thingies 
-												 		if the rule cannot be satisfied, should throw error */
+			greedyConsume:function(ths, options,logger){ 
+				//TODO may want to check for duplicate indexes in consumed array returned
 				throw new UnsupportedOperationError("No production rule has been implemented for " + typeof(this));
 			},
 			getChildren:function(){
@@ -596,34 +609,18 @@ YOURX.copyProperties(
 			}
 		}
 		ThingyGrammar.prototype = new ThingyRule();
-		ThingyGrammar.prototype.autoPopulate = function(parent, caret, dryrun){
-			throw new UnsupportedOperationError("Not yet implemented");
-			caret = (caret == 0 ? 0 : caret);
-			var childnodes = YOURX.cloneArray(parent.getChildren());
-			var childrules = YOURX.cloneArray(this.getChildren());
-		}
-		ThingyGrammar.prototype.greedyConsume=function(ths, skip, nodescend){
+		ThingyGrammar.prototype.greedyConsume=function(ths,options,logger){
 			if(ths.length==1){ //match one node
-				if(ths[0] instanceof ContainerThingy){ //match root node
+				var candidate = ths[0];
+				if(candidate instanceof ContainerThingy){ //match root node
 					var consumed = [0];
-					if(nodescend){
-						return consumed;
-					}
-					else{
-						var documentnodes = ths[0].getChildren();
-						if(documentnodes.length == 1){
-							if(documentnodes[0] instanceof ElementThingy ){ //match singleton document node
-								ThingyUtil.greedyConsumeSequence(this.getChildren(),documentnodes);
-								return consumed;
-							}
-							else{
-								throw new ThingyRuleError("ThingyGrammar requires ContainerThingy to contain a singleton document ElementThingy");
-							}						
+					if(queryOptions(options,'nodescend')!==true){
+						var childconsumed = ThingyUtil.greedyConsumeSequence(this.getChildren(),candidate.getChildren(), options, logger);
+						if(childconsumed.length !== candidate.getChildren().length){ 
+							return [];
 						}
-						else{
-							throw new ThingyRuleError("ThingyGrammar requires a single document ElementThingy: " + documentnodes.length + " items provided.");
-						}						
 					}
+					return consumed;
 				}
 				else{
 					throw new ThingyRuleError("ThingyGrammar requires a root ContainerThingy.");
@@ -638,48 +635,16 @@ YOURX.copyProperties(
 			ThingyRule.apply(this,arguments);	
 		}
 		OptionalThingyRule.prototype = new ThingyRule();
-		OptionalThingyRule.prototype.greedyConsume=function(ths, skip, nodescend){
-			try{
-				ThingyUtil.greedyConsumeSequence(this.getChildren(),ths, skip, nodescend);
-			}
-			catch(e){
-				if(e instanceof ThingyRuleError){ //the Optional structure is not actually there - consume nothing
-					return 0;	
-				}
-				else{
-					throw e;
-				}
-			}
-		
-		}
 		
 		function ZeroOrMoreThingyRule(){ /** Repeats the consumption of its child rules until they stop consuming. */
 			ThingyRule.apply(this,arguments);	
 		}
-		ZeroOrMoreThingyRule.prototype = new ThingyRule();
-		ZeroOrMoreThingyRule.prototype.greedyConsume = function(ths, skip, nodescend){
-			var origths = ths, consumed = 0;
-			do{
-				consumed = ThingyUtil.greedyConsumeSequence(this.getChildren(),ths, skip, nodescend);
-				ths = ths.slice(consumed, ths.length);
-			} while((consumed > 0) &&  (ths.length > 0));
-			return origths.length - ths.length; //zero consumed is allowed
-		}
-		
+		ZeroOrMoreThingyRule.prototype = new ThingyRule();		
 		
 		function OneOrMoreThingyRule(){
 			ThingyRule.apply(this,arguments);	
 		}
 		OneOrMoreThingyRule.prototype = new ThingyRule();
-		OneOrMoreThingyRule.prototype.greedyConsume = function(ths, skip, nodescend){
-			var consumed = ZeroOrMoreThingyRule.prototype.greedyConsume.apply(this,[ths], skip, nodescend);
-			if(consumed > 0){
-				return consumed;
-			}
-			else{ //zero consumed is not allowed
-				throw new ThingyRuleError("One or more rule requires at least one item");
-			}
-		}
 		
 		function TypedThingyRule(typename, children){
 			this.typename = typename;
@@ -692,21 +657,16 @@ YOURX.copyProperties(
 		TypedThingyRule.prototype.getType = function(){
 			return YOURX[this.typename]; 
 		}
-		TypedThingyRule.prototype.greedyConsume = function(ths, skip, nodescend){
+		TypedThingyRule.prototype.greedyConsume = function(ths, options,logger){
 			if(ths.length > 0){
 				var matchtype = this.getType();
 				var matchfun = function(candidate){ return candidate instanceof matchtype;};
-				var matchidx = ThingyUtil.greedyMatchIndex(matchfun, ths, skip, nodescend);
+				var matchidx = ThingyUtil.greedyMatchIndex(matchfun, ths, options,logger);
 				if(matchidx != -1){
-					return [matchidx]; //prescribed return format; array of match indices
-				}
-				else{
-					throw new ThingyRuleError("No Thingy of the correct type : " + this.getTypeName() + " found");
+					return [matchidx];
 				}
 			}
-			else{
-				throw new ThingyRuleError("No available thingy");
-			}
+			return [];
 		}
 		
 		function NamedThingyRule(name, typename, children){
@@ -714,19 +674,14 @@ YOURX.copyProperties(
 			TypedThingyRule.apply(this,[typename, children]);
 		}
 		NamedThingyRule.prototype = new TypedThingyRule();
-		NamedThingyRule.prototype.greedyConsume = function(ths, skip, nodescend){
+		NamedThingyRule.prototype.greedyConsume = function(ths, options,logger){
 			var consumed = TypedThingyRule.prototype.greedyConsume.apply(this,arguments);
 			if(consumed.length == 1){
 				if(ths[consumed[0]].name == this.name){
 					return consumed;
 				}
-				else{
-					throw new ThingyRuleError("Thingy of correct type : " + this.getTypeName() + " has incorrect name : " + ths[consumed[0]].name);
-				}						
 			}
-			else{
-				throw new ThingyRuleError("Could not find match for " + this.getTypeName() + " " + ths[consumed[0]].name);
-			}
+			return [];
 		}
 		
 		function ElementThingyRule(){
@@ -757,29 +712,10 @@ YOURX.copyProperties(
 			}
 		}
 		ElementThingyRule.prototype = new NamedThingyRule();
-		ElementThingyRule.prototype.autoPopulate = function(parent, caret, dryrun){
-			if(!caret){
-				caret  = 0;
-			}
-			if(parent.getChildren().length > caret){
-				var candidate;
-				if((candidate = parent.getChildren()[caret]) instanceof ElementThingy && 
-					candidate.name == this.name){
-					return 0;
-				}
-			} 
-			if(!dryrun){
-				parent.addChild(new ElementThingy(this.name));				
-			}
-			return 1;
-		}
-		ElementThingyRule.prototype.greedyConsume = function(ths, skip, nodescend){ //attribute matching and child matching is subsumed by element matching
+		ElementThingyRule.prototype.greedyConsume = function(ths, options, logger){ //attribute matching and child matching is subsumed by element matching
 			var consumed = NamedThingyRule.prototype.greedyConsume.apply(this, arguments);
-			if(nodescend){
-				return consumed
-			}
-			else{
-				if(consumed.length == 1){
+			if(consumed.length == 1){
+				if(queryOptions(options,'nodescend')!==true){
 					var candidate = ths[consumed[0]];
 					var attmap = candidate.getAttributes();
 					var otherths = candidate.getChildren();
@@ -793,50 +729,50 @@ YOURX.copyProperties(
 						}
 					});
 					
+					//code duplication with OperationCaret possibly (solve with callback model?)
 					var attconsumedmap = {};
 					attrls.forEach(function(rule){
 						var attthingy = candidate.getAttributeThingy(rule.name);
 						if(attthingy !== null){
 							var attconsumed = rule.greedyConsume([attthingy]);
-							if(attconsumed.length != 1){ //check all attribute rules are satisfied
-								throw new ThingyRuleError("ElementThingy match failed due to " + rule);
-							}
-							else if(rule.name in attconsumedmap){ //check only one attribute rule per attribute name
-								throw new ThingyRuleError("Invalid schema has more than one rule addressing the same attribute");
-							}
-							else{ //store for later check of unmatched attributes
-								attconsumedmap[rule.name] = attthingy;
+							if (attconsumed.length === 1) { //check rule is satisfied
+								if(rule.name in attconsumedmap){ 
+									//check only one attribute rule per attribute name
+									throw new Error("Invalid schema : more than one rule addressing the same attribute");
+								}
+								else{ 
+									//store for later check of unmatched attributes
+									attconsumedmap[rule.name] = attthingy;
+									return;
+								}
 							}
 						}
-						else{
-							throw new ThingyRuleError("No matching attribute named " + rule.name);
-						}
+						//record non-conformance to logger
+						logger.requireAttribute(rule.name);
 					});
 					
 					var attmap = candidate.getAttributes();
 					var attname;
 					for(attname in attmap){
 						if( ! (attname in attconsumedmap) ){
-							throw new ThingyRuleError("Unmatched attribute " + name);
+							logger.rejectAttribute(attname);
 						}
 					}
 					
-					var otherconsumed = ThingyUtil.greedyConsumeSequence(otherrls,otherths);
+					var otherconsumed = ThingyUtil.greedyConsumeSequence(otherrls,otherths,options,logger);
 					
 					//all attribute rules and child rules are satisfied (no exceptions thrown)
 					//check all items are consumed after satisfying the rules
-					if(otherconsumed.length == otherths.length){  
-						return consumed;
+					if(otherconsumed.length !== otherths.length){
+						return [];
 					}
-					else{ //*consumed should never be greater than *ths.length
-						throw new ThingyRuleError("Unmatched child elements in " + this);
-					}
+					
 				}
-				else{
-					throw new ThingyRuleError("Could not find match for " + this );
-				}
-				
 			}
+			else{
+				logger.requireElement(this.name);
+			}
+			return consumed;
 		};
 		
 		function AttributeThingyRule(){
@@ -864,26 +800,75 @@ YOURX.copyProperties(
 			}
 		}
 		AttributeThingyRule.prototype = new NamedThingyRule();
-		AttributeThingyRule.prototype.autoPopulate = function(parent, caret){
-			if(parent.hasAttribute(this.name)){
-				return 0;
+		AttributeThingyRule.prototype.greedyConsume = function(ths, options, logger){
+			var consumed = NamedThingyRule.prototype.greedyConsume.apply(this,arguments);
+			if(consumed.length === 1){
+				return consumed;
 			}
-			if(!dryrun){
-				parent.addAttribute(this.name,"");
+			else{
+				logger.requireAttribute(this.name);
 			}
-			return 1;
 		}
-		
+
 		function TextThingyRule(){
 			TypedThingyRule.apply(this,['TextThingy',[]]); //Text rules have no children - empty child array
 		}
 		TextThingyRule.prototype = new TypedThingyRule();
+		
+		
+		/** A ConformanceLogger allows pluggable exception throwing and termination behaviour
+		 * for validation routines. When a schema rule requires a change to a parent node
+		 * it can invoke the corresponding method on this object and, depending on the 
+		 * validation scenario, the model may choose to accept the change, or terminate 
+		 * immediately with it's choice of exception to flag the state to enclosing code. 
+		 * 
+		 * In this way, match and validation routines can be stricter (immediate termination) 
+		 * than autocompletion routines (which may continue to accept a sequence of required changes).  
+		 * 
+		 */ 
+		function ConformanceLogger(){};
+		ConformanceLogger.prototype.requireAttribute = function(name){
+			throw new UnsupportedOperationError("requireAttribute() not yet implemented");
+		};
+		ConformanceLogger.prototype.requireElement = function(name,caretpos){
+			throw new UnsupportedOperationError("requireElement() not yet implemented");
+		};
+		ConformanceLogger.prototype.requireText = function(caretpos){
+			throw new UnsupportedOperationError("requireText() not yet implemented");
+		};
+		ConformanceLogger.prototype.rejectAttribute = function(name){
+			throw new UnsupportedOperationError("rejectAttribute() not yet implemented");
+		};
+		ConformanceLogger.prototype.rejectChild = function(caretpos){
+			throw new UnsupportedOperationError("rejectElement() not yet implemented");
+		};
+		
+		function ValidationConformanceLogger(){ 
+			ConformanceLogger.apply(this,arguments);
+		}
+		ValidationConformanceLogger.prototype = new ConformanceLogger();
+		ValidationConformanceLogger.prototype.requireElement = function(name,caretpos){
+			throw new ThingyRuleError("Element named " + name + " required in position " + caretpos);
+		};
+		ValidationConformanceLogger.prototype.requireAttribute = function(name){
+			throw new ThingyRuleError("Attribute named " + name + " required here");
+		};
+		ValidationConformanceLogger.prototype.requireText = function(caretpos){
+			throw new ThingyRuleError("Text required in position " + caretpos);
+		};
+		ValidationConformanceLogger.prototype.rejectAttribute = function(name){
+			throw new ThingyRuleError("Attribute named " + name + " unexpected here");
+		};
+		ValidationConformanceLogger.prototype.rejectChild = function(caretpos){
+			throw new ThingyRuleError("Unexpected child in position " + caretpos);
+		};
 
 		//evaluate the export function in this scope	
 		return eval(YOURX.writeScopeExportCode([
 			"ThingyUtil",
 			"Thingy","ContainerThingy","ContentThingy","ElementThingy","AttributeThingy","TextThingy",
 			"ThingyGrammar","ThingyRule","ElementThingyRule","AttributeThingyRule","TextThingyRule","OptionalThingyRule","ZeroOrMoreThingyRule","OneOrMoreThingyRule",
+			"ConformanceLogger",
 			"ThingyRuleError", "UnsupportedOperationError"
 		]));
 			
