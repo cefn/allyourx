@@ -28,7 +28,6 @@ $(function() {
 				   ( docthingy.getAttributes()['position'].value  === 'Grand Master');
 		}],
 		["examples.001/team.001.xml accepted by validation", function(){
-			var sthg = UNITTEST.grammar;
 			return UNITTEST.grammar.matchThingy(UNITTEST.thingy) === true;
 		}],
 		["examples.001/team.001a.xml rejected by validation", function(){
@@ -57,7 +56,7 @@ $(function() {
 		["load data from examples.001/team.002.xml to in-memory model", function(){
 			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("../../schema/yourx/examples.001/team.002.xml");
 			var docthingy, docthingyatt0, docthingyatt1;
-			return ( (UNITTEST.thingy) instanceof YOURX.ContainerThingy) &&
+			return ( (UNITTEST.thingy) instanceof YOURX.RootThingy) &&
 				   ( (docthingy = UNITTEST.thingy.getChildren()[0]) instanceof YOURX.ElementThingy) &&
 				   ( (docthingyatt0=docthingy.getAttributeThingy('name')) instanceof YOURX.AttributeThingy) &&
 				   ( (docthingyatt1=docthingy.getAttributeThingy('position')) instanceof YOURX.AttributeThingy) &&
@@ -87,7 +86,7 @@ $(function() {
 			return UNITTEST.grammar.matchThingy(UNITTEST.thingy) === false;
 		}],
 /*		["insert required elements from examples.001/team.002.rng ", function(){
-			UNITTEST.thingy = new YOURX.ContainerThingy();
+			UNITTEST.thingy = new YOURX.RootThingy();
 			UNITTEST.grammar.autoPopulate(UNITTEST.thingy);
 			return thingy.getChildren()[0].getName() == "player";
 		}], 

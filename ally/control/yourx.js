@@ -98,7 +98,7 @@ YOURX.copyProperties(
 				return -1;
 			},
 			putUniqueKey:function(targetmap, key, value,allmaps){
-				if(ThingyUtil.mapWithKey(allmaps,key) === -1){
+				if(ThingyUtil.mapWithKey(key,allmaps) === -1){
 					targetmap[key] = value;
 					return true;
 				}
@@ -115,7 +115,7 @@ YOURX.copyProperties(
 			walkSequenceWithRulesOrReject:function(rls,sequence,walker,enforcer){
 				//arrange to store walk results
 				var cachingwalker = new CachingWalker();
-				var compoundwalker = new CompoundWalker([walker,cachingwalker]);
+				var compoundwalker = new CompoundWalker([cachingwalker,walker]);
 				
 				//walk
 				ThingyUtil.walkSequenceWithRules(rls,sequence,compoundwalker);
@@ -136,10 +136,10 @@ YOURX.copyProperties(
 			walkMapWithRulesOrReject:function(rls, map, walker, enforcer){
 				//arrange to store walk results
 				var cachingwalker = new CachingWalker();
-				var compoundwalker = new CompoundWalker(walker,cachingwalker);
+				var compoundwalker = new CompoundWalker([cachingwalker,walker]);
 				
 				//walk
-				ThingyUtil.walkMapWithRules(rls,sequence,compoundwalker);
+				ThingyUtil.walkMapWithRules(rls,map,compoundwalker);
 				
 				//rejected unmatched names on behalf of the enforcing (parent?) rule
 				for(name in map){
@@ -162,14 +162,7 @@ YOURX.copyProperties(
 		    this.name = "ThingyRuleError";
 		    this.message = (message || "");
 		}
-		ThingyRuleError.prototype = Error.prototype;
-	
-		function ThingyParseError(message) {
-		    this.name = "ThingyRuleError";
-		    this.message = (message || "");
-		}
-		ThingyRuleError.prototype = Error.prototype;
-		
+		ThingyRuleError.prototype = Error.prototype;		
 		
 		/** An entity which represents the tree structure of a javascript object or XML document
 		 * These have a canonical XML, E4X and DOM form, a snapshot of which can be lazily created
@@ -610,13 +603,13 @@ YOURX.copyProperties(
 		ContainerThingyRule.prototype.walkChildren = function(thingy,childwalker) {
 			var childths = thingy.getChildren();
 			var childrls = this.getChildren().filter(function(rule){return ! rule instanceof AttributeThingyRule });
-			ThingyUtil.walkSequenceOrReject(childrls,childths,childwalker,this);
+			ThingyUtil.walkSequenceWithRulesOrReject(childrls,childths,childwalker,this);
 		}
 		ContainerThingyRule.prototype.matchThingy=function(thingy, shallow){
 			try{
 				if(!shallow){
-					var walker = new RecursiveValidationWalker();
-					var nonattributerules = this.getChildren().filter(function(child){return ! child instanceof AttributeThingyRule; })
+					var walker = new RecursiveValidationWalker(thingy);
+					var nonattributerules = this.getChildren().filter(function(child){return ! (child instanceof AttributeThingyRule);});
 					ThingyUtil.walkSequenceWithRulesOrReject(nonattributerules, thingy.getChildren(), walker);
 					return true;
 				} 
@@ -728,12 +721,12 @@ YOURX.copyProperties(
 		}
 		
 		ElementThingyRule.prototype.walkSequence = function(sequence,walker,startidx){
-			if(this.matchThingy(sequence[startidx])){
-				walker.posAccepted(startidx);
+			if(this.matchThingy(sequence[startidx], true)){
+				walker.posAccepted(startidx, this);
 			}
 			else{
-				walker.posRejected(startidx);
-				walker.posRequired(startidx);
+				walker.posRejected(startidx, this);
+				walker.posRequired(startidx, this);
 			}
 		}
 		
@@ -873,32 +866,32 @@ YOURX.copyProperties(
 			var proto = new ElementWalker();
 			YOURX.copyProperties({
 				posAccepted:function(pos, rule){ 
-					if(!putUniqueKey(this.acceptedpos, pos, rule,this.arraysbypos)){
+					if(!ThingyUtil.putUniqueKey(this.acceptedpos, pos, rule,this.arraysbypos)){
 						throw new ThingyRuleError("Pos " + pos + " already claimed by another rule");
 					}
 				},
 				posRejected:function(pos, rule){ 
-					if(!putUniqueKey(this.rejectedpos, pos, rule,this.arraysbypos)){
+					if(!ThingyUtil.putUniqueKey(this.rejectedpos, pos, rule,this.arraysbypos)){
 						throw new ThingyRuleError("Pos " + pos + " already claimed by another rule");
 					}
 				},
 				posRequired:function(pos, rule){ 
-					if(!putUniqueKey(this.requiredpos, pos, rule, this.arraysbypos)){
+					if(!ThingyUtil.putUniqueKey(this.requiredpos, pos, rule, this.arraysbypos)){
 						throw new ThingyRuleError("Pos " + pos + " already claimed by another rule");
 					}
 				},
 				nameAccepted:function(name, rule){ 
-					if(!putUniqueKey(this.acceptedname, name, rule,this.arraysbyname)){
+					if(!ThingyUtil.putUniqueKey(this.acceptedname, name, rule,this.arraysbyname)){
 						throw new ThingyRuleError("Name " + name + " already claimed by another rule");
 					}
 				},
 				nameRejected:function(name, rule){ 
-					if(!putUniqueKey(this.rejectedname, name, rule,this.arraysbyname)){
+					if(!ThingyUtil.putUniqueKey(this.rejectedname, name, rule,this.arraysbyname)){
 						throw new ThingyRuleError("Name " + name + " already claimed by another rule");
 					}
 				},
 				nameRequired:function(name, rule){ 
-					if(!putUniqueKey(this.requiredname, name, rule, this.arraysbyname)){
+					if(!ThingyUtil.putUniqueKey(this.requiredname, name, rule, this.arraysbyname)){
 						throw new ThingyRuleError("Name " + name + " already claimed by another rule");
 					}
 				}
@@ -933,7 +926,18 @@ YOURX.copyProperties(
 		RecursiveValidationWalker.prototype = new ValidationWalker();
 		RecursiveValidationWalker.prototype.posAccepted = function(pos,rule){
 			var child = this.parent.getChildren()[pos];
-			ThingyUtil.walkSequence(child.getChildren(),rule.getChildren(),new RecursiveValidationWalker(child));
+			if(child instanceof ContainerThingy){
+				//create new recursive walker for the scope of this container
+				var walker = new RecursiveValidationWalker(child);
+				//traverse attributes if an element
+				if(child instanceof ElementThingy){
+					var attributerules = rule.getChildren().filter(function(rule){ return rule instanceof AttributeThingyRule;});
+					ThingyUtil.walkMapWithRulesOrReject(attributerules,child.getAttributes(),walker, rule);					
+				}
+				//traverse children for all containers
+				var childrules = rule.getChildren().filter(function(rule){ return ! (rule instanceof AttributeThingyRule);});
+				ThingyUtil.walkSequenceWithRulesOrReject(childrules,child.getChildren(),walker, rule);
+			}
 		}
 		
 		function CompoundWalker(wrapped){
@@ -941,7 +945,9 @@ YOURX.copyProperties(
 		};
 		CompoundWalker.prototype = new ElementWalker();
 		CompoundWalker.prototype.nameAccepted = function(name,rule){
-			this.wrapped.forEach(function(walker){walker.nameAccepted(name,rule);});
+			this.wrapped.forEach(function(walker){
+				walker.nameAccepted(name,rule);
+			});
 		}
 		CompoundWalker.prototype.nameRejected = function(name,rule){
 			this.wrapped.forEach(function(walker){walker.nameRejected(name,rule);});
@@ -959,15 +965,13 @@ YOURX.copyProperties(
 			this.wrapped.forEach(function(walker){walker.posRequired(pos,rule);});
 		}
 		
-		var toeval = YOURX.writeScopeExportCode([
+		//evaluate the export function in this scope	
+		return eval(YOURX.writeScopeExportCode([
 			"ThingyUtil",
-			"Thingy","RootThingy","ContentThingy","ElementThingy","AttributeThingy","TextThingy",
+			"Thingy","ContainerThingy","ContentThingy","RootThingy","ElementThingy","AttributeThingy","TextThingy",
 			"ThingyGrammar","ThingyRule","ElementThingyRule","AttributeThingyRule","TextThingyRule","OptionalThingyRule","ZeroOrMoreThingyRule","OneOrMoreThingyRule",
 			"ThingyRuleError", "UnsupportedOperationError"
-		]);
-		
-		//evaluate the export function in this scope	
-		return eval(toeval);
+		]));
 			
 	}()),
 	'YOURX'
