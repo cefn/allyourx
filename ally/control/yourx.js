@@ -88,18 +88,28 @@ YOURX.copyProperties(
 				return dom;
 			},
 			xmlStripComments:function(xml){return xml.replace(/<\?(.*?)\?>/g,"");}, /** From http://www.xml.com/pub/a/2007/11/28/introducing-e4x.html?page=4 */
-			mapWithKey:function(key,allmaps){
-				var idx;
-				for(idx = 0; idx < allmaps.length;idx++){
-					if(key in allmaps[idx]){
-						return idx;
+			mapWithKey:function(allmaps,itemkey){
+				if(typeof allmaps === "array"){
+					var idx;
+					for(idx = 0; idx < allmaps.length;idx++){
+						if(itemkey in allmaps[idx]){
+							return idx;
+						}
 					}
 				}
-				return -1;
+				else if(typeof allmaps === "object"){
+					var name;
+					for(name in allmaps){
+						if(itemkey in allmaps[name]){
+							return name;
+						}
+					}
+				}
+				return null;
 			},
-			putUniqueKey:function(targetmap, key, value,allmaps){
-				if(ThingyUtil.mapWithKey(key,allmaps) === -1){
-					targetmap[key] = value;
+			putUniqueKey:function(allmaps, mapkey, itemkey, item){
+				if(ThingyUtil.mapWithKey(allmaps,itemkey) === null){
+					allmaps[mapkey][itemkey] = item;
 					return true;
 				}
 				else{
@@ -123,7 +133,7 @@ YOURX.copyProperties(
 				//rejected unmatched positions on behalf of the enforcing (parent?) rule
 				var pos;
 				for(pos = 0; pos < sequence.length; pos++){
-					if(ThingyUtil.mapWithKey(pos,cachingwalker.arraysbypos) === -1){
+					if(cachingwalker.getCacheStatus(pos) === null){
 						walker.posRejected(pos,enforcer);
 					}
 				}
@@ -143,7 +153,7 @@ YOURX.copyProperties(
 				
 				//rejected unmatched names on behalf of the enforcing (parent?) rule
 				for(name in map){
-					if(ThingyUtil.mapWithKey(name,cachingwalker.arraysbyname) === -1){ 
+					if(cachingwalker.getCacheStatus(name) === null){ 
 						walker.nameRejected(name, enforcer);
 					}
 				}				
@@ -601,16 +611,15 @@ YOURX.copyProperties(
 		 * @param {Object} childwalker
 		 */
 		ContainerThingyRule.prototype.walkChildren = function(thingy,childwalker) {
+			var childrls = this.getChildren().filter(function(rule){return ! (rule instanceof AttributeThingyRule); });
 			var childths = thingy.getChildren();
-			var childrls = this.getChildren().filter(function(rule){return ! rule instanceof AttributeThingyRule });
 			ThingyUtil.walkSequenceWithRulesOrReject(childrls,childths,childwalker,this);
 		}
 		ContainerThingyRule.prototype.matchThingy=function(thingy, shallow){
 			try{
 				if(!shallow){
 					var walker = new RecursiveValidationWalker(thingy);
-					var nonattributerules = this.getChildren().filter(function(child){return ! (child instanceof AttributeThingyRule);});
-					ThingyUtil.walkSequenceWithRulesOrReject(nonattributerules, thingy.getChildren(), walker);
+					this.walkChildren(thingy,walker);
 					return true;
 				} 
 				else{
@@ -740,7 +749,7 @@ YOURX.copyProperties(
 		 */
 		ElementThingyRule.prototype.walkAttributes= function(thingy,attwalker) {
 			var attrls = this.getChildren().filter(function(rule){return rule instanceof AttributeThingyRule;});
-			ThingyUtil.walkMapWithRulesOrReject(attrls,this.getAttributes(),attwalker);
+			ThingyUtil.walkMapWithRulesOrReject(attrls,thingy.getAttributes(),attwalker, this);
 		}
 				
 		function AttributeThingyRule(){
@@ -851,50 +860,67 @@ YOURX.copyProperties(
 		}());
 		
 		function CachingWalker(){
-			//child arrays indexed by position
-			this.acceptedpos = {}; 
-			this.rejectedpos = {};
-			this.requiredpos = {};
-			this.arraysbypos = [this.acceptedpos,this.rejectedpos,this.requiredpos];
-			//attribute arrays indexed by name
-			this.acceptedname = {};
-			this.rejectedname = {};
-			this.requiredname = {};
-			this.arraysbyname = [this.acceptedname,this.rejectedname,this.requiredname];
+			//indexed by name
+			this.mapsbyname = {
+				accepted:{},
+				rejected:{},
+				required:{}
+			}
+			//indexed by position
+			this.mapsbypos = {
+				accepted:{},
+				rejected:{},
+				required:{}
+			}
 		};
 		CachingWalker.prototype = (function(){
 			var proto = new ElementWalker();
 			YOURX.copyProperties({
-				posAccepted:function(pos, rule){ 
-					if(!ThingyUtil.putUniqueKey(this.acceptedpos, pos, rule,this.arraysbypos)){
+				putCache:function(allmaps,mapkey,rulekey,rule){
+					if(!ThingyUtil.putUniqueKey(allmaps,mapkey,rulekey,rule)){
 						throw new ThingyRuleError("Pos " + pos + " already claimed by another rule");
+					}					
+				},
+				getCacheStatus:function(rulekey){
+					if(typeof rulekey === "string"){
+						//by name
+						return ThingyUtil.mapWithKey(this.mapsbyname,rulekey);
+					}
+					else if(typeof rulekey === "number"){
+						//by pos
+						return ThingyUtil.mapWithKey(this.mapsbypos,rulekey);
+					}
+					else{
+						throw new Error("Unexpected key type");
 					}
 				},
-				posRejected:function(pos, rule){ 
-					if(!ThingyUtil.putUniqueKey(this.rejectedpos, pos, rule,this.arraysbypos)){
-						throw new ThingyRuleError("Pos " + pos + " already claimed by another rule");
+				getCache:function(rulekey){
+					var mapkey;
+					if(typeof rulekey  === "string"){
+						//by name
+						mapkey = ThingyUtil.mapWithKey(this.mapsbyname,rulekey);
+						if(mapkey !== null){
+							return this.mapsbyname[mapkey][rulekey];
+						}
 					}
+					else if(typeof rulekey  === "number"){
+						//by pos
+						mapkey = ThingyUtil.mapWithKey(this.mapsbypos,rulekey);
+						if(mapkey !== null){
+							return this.mapsbypos[mapkey][rulekey];
+						}
+					}
+					else{
+						throw new Error("Unexpected key type");
+					}
+					return null;							
 				},
-				posRequired:function(pos, rule){ 
-					if(!ThingyUtil.putUniqueKey(this.requiredpos, pos, rule, this.arraysbypos)){
-						throw new ThingyRuleError("Pos " + pos + " already claimed by another rule");
-					}
-				},
-				nameAccepted:function(name, rule){ 
-					if(!ThingyUtil.putUniqueKey(this.acceptedname, name, rule,this.arraysbyname)){
-						throw new ThingyRuleError("Name " + name + " already claimed by another rule");
-					}
-				},
-				nameRejected:function(name, rule){ 
-					if(!ThingyUtil.putUniqueKey(this.rejectedname, name, rule,this.arraysbyname)){
-						throw new ThingyRuleError("Name " + name + " already claimed by another rule");
-					}
-				},
-				nameRequired:function(name, rule){ 
-					if(!ThingyUtil.putUniqueKey(this.requiredname, name, rule, this.arraysbyname)){
-						throw new ThingyRuleError("Name " + name + " already claimed by another rule");
-					}
-				}
+				posAccepted:function(pos, rule){ this.putCache(this.mapsbypos, "accepted", pos, rule); },
+				posRejected:function(pos, rule){ this.putCache(this.mapsbypos, "rejected", pos, rule); },
+				posRequired:function(pos, rule){ this.putCache(this.mapsbypos, "required", pos, rule); },
+				nameAccepted:function(name, rule){ this.putCache(this.mapsbyname, "accepted", name, rule); },
+				nameRejected:function(name, rule){ this.putCache(this.mapsbyname, "rejected", name, rule); },
+				nameRequired:function(name, rule){ this.putCache(this.mapsbyname, "required", name, rule); }
 			},proto);
 			return proto;
 		}());
@@ -929,14 +955,12 @@ YOURX.copyProperties(
 			if(child instanceof ContainerThingy){
 				//create new recursive walker for the scope of this container
 				var walker = new RecursiveValidationWalker(child);
-				//traverse attributes if an element
 				if(child instanceof ElementThingy){
-					var attributerules = rule.getChildren().filter(function(rule){ return rule instanceof AttributeThingyRule;});
-					ThingyUtil.walkMapWithRulesOrReject(attributerules,child.getAttributes(),walker, rule);					
+					//traverse attributes if an element
+					rule.walkAttributes(child,walker);
 				}
 				//traverse children for all containers
-				var childrules = rule.getChildren().filter(function(rule){ return ! (rule instanceof AttributeThingyRule);});
-				ThingyUtil.walkSequenceWithRulesOrReject(childrules,child.getChildren(),walker, rule);
+				rule.walkChildren(child,walker);				
 			}
 		}
 		
@@ -970,6 +994,7 @@ YOURX.copyProperties(
 			"ThingyUtil",
 			"Thingy","ContainerThingy","ContentThingy","RootThingy","ElementThingy","AttributeThingy","TextThingy",
 			"ThingyGrammar","ThingyRule","ElementThingyRule","AttributeThingyRule","TextThingyRule","OptionalThingyRule","ZeroOrMoreThingyRule","OneOrMoreThingyRule",
+			"CachingWalker","CompoundWalker",
 			"ThingyRuleError", "UnsupportedOperationError"
 		]));
 			
