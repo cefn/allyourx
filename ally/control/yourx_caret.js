@@ -51,15 +51,36 @@ YOURX.copyProperties(
 		 * parallel expansions can creat ThingyEdits with a very large number of alternatives.
 		 * 
 		 */
-		function OperationCaret(parentthingy, parentrule){
-			this.setParentThingy(parentthingy);
+		function OperationCaret(parentrule,parentthingy){
 			this.setParentRule(parentrule);
+			this.setParentThingy(parentthingy);
+		}
+
+		OperationCaret.prototype.setParentThingy = function(parentthingy){
+			if(this.parentthingy){ //already a previous parentthingy - unbind events
+				if("getChildren" in this.parentthingy){
+					this.parentthingy.unbind('childadded',this.updateOperationCache);
+					this.parentthingy.unbind('childremoved',this.updateOperationCache);
+				}
+				if("getAttributes" in this.parentthingy){				 
+					this.parentthingy.unbind('attributeadded',this.updateOperationCache);
+					this.parentthingy.unbind('attributeremoved',this.updateOperationCache);
+				}				
+			}
+			this.parentthingy = parentthingy;
+			if("getChildren" in this.parentthingy){
+				this.parentthingy.bind('childadded',this.updateOperationCache);
+				this.parentthingy.bind('childremoved',this.updateOperationCache);
+			}
+			if("getAttributes" in this.parentthingy){				 
+				this.parentthingy.bind('attributeadded',this.updateOperationCache);
+				this.parentthingy.bind('attributeremoved',this.updateOperationCache);
+			}
+			this.updateOperationCache();				
 		}
 		OperationCaret.prototype.setParentRule = function(parentrule){
 			this.parentrule = parentrule;
-			
-			this.updateOperationCache();
-
+			this.updateOperationCache();				
 		}
 		OperationCaret.prototype.getParentThingy = function(){
 			return this.parentthingy;
@@ -67,102 +88,102 @@ YOURX.copyProperties(
 		OperationCaret.prototype.getParentRule = function(){
 			return this.parentrule;
 		}
-		OperationCaret.prototype.updateOperationCache(){
+		OperationCaret.prototype.updateOperationCache = function(){
+			var caretthis = this; //allows closures to access caret properties
 			
-			//First establish if an involuntary operation is needed 
-			
-			//create ElementWalker which caches operations required at this level
-			
-			var involuntaryops = {};
-			var termination = {};
-			
-			var involuntarywalker = new YOURX.CachingWalker();
-			involuntarywalker.nameAccepted=function(name,rule){ /* do nothing */}
-			involuntarywalker.nameRejected=function(name,rule){ involuntaryops[name] = new ThingyDeletion(rule); throw termination;}
-			involuntarywalker.nameRequired=function(name,rule){ involuntaryops[name] = new ThingyAddition(rule); throw termination;}
-			involuntarywalker.posAccepted=function(name,rule){ /* do nothing */}
-			involuntarywalker.posRejected=function(name,rule){ involuntaryops[pos] = new ThingyDeletion(rule); throw termination;}
-			involuntarywalker.posRequired=function(name,rule){ involuntaryops[pos] = new ThingyAddition(rule); throw termination;}
-			
-			
-			
-			//Then establish what voluntary operations are available at the various caret positions
-
-			//create CachingWalker which allows multiple entries per key
-			/*
-			var cachingwalker = new YOURX.CachingWalker();
-			cachingwalker.putCache = function(allmaps,mapkey,key,item){
-				var itemarray = this.getCache(key);
-				if(itemarray === null){
-					itemarray = [];
-					CachingWalker.prototype.putCache.apply(this, [allmaps,mapkey,key,itemarray]);
+			if(this.parentrule && this.parentthingy){
+				
+				//Either voluntary or involuntary operations will be produced, should never be both
+	
+				this.involuntaryoperations = {}; //indexed by name (string) and pos (number)
+				this.voluntaryoperations = {}; //indexed by name (string) and pos (number)
+				
+				//test to see if tree is not valid - i.e. involuntary operations are required
+				
+				//create ElementWalker which caches operations required at this level
+				var caretwalker = new YOURX.ElementWalker();
+				var opfound = {};
+				caretwalker.nameAccepted=function(name,rule){ /* do nothing */}
+				caretwalker.nameRejected=function(name,rule){ 
+					caretthis.involuntaryoperations[name] = new YOURX.ThingyDeletion(rule); 
+					throw opfound;
 				}
-				itemarray.push(item);
-			}
-			*/
-
-		}
-		
-		/** 
-		 * @param {integer} pos The caret position being queried for expansion. 
-		 * If this value is -1, then the caret position being queried is in the attribute axis, not the child axis.
-		 */
-		
-		/** In order to complete a valid tree at this level (by manipulating the children and attributes of the parentthingy)
-		 * a series of involuntary operations may be needed. Keep requesting and executing operations until this method
-		 * returns null, and the tree should have shallow validity.
-		 * 
-		 * @param {Object} rule The childrule which is being evaluated at the given position.
-		 * If null or undefined, it is assumed that all rules with satisfied precedents should be evaluated in parallel.
-		 * @param {Object} caretpos The child position at which the operations are to be executed, -1 indicates the attribute axis. 
-		 * If null or undefined, it is assumed that all caret positions with satisfied precedents should be evaluated in parallel.
-		 */
-		OperationCaret.prototype.getInvoluntaryOperation = function(key){
-			var childthingyarray = this.parentthingy.getChildren();
-
-			if(key === null ||  typeof key === 'undefined'){
-				//if key unspecified recurse through all possible keys in series for any involuntary operation
+				caretwalker.nameRequired=function(name,rule){ 
+					caretthis.involuntaryoperations[name] = new YOURX.ThingyAddition(rule); 
+					throw opfound;
+				}
+				caretwalker.posAccepted=function(pos,rule){ /* do nothing */}
+				caretwalker.posRejected=function(pos,rule){ 
+					caretthis.involuntaryoperations[pos] = new YOURX.ThingyDeletion(rule); 
+					throw opfound;
+				}
+				caretwalker.posRequired=function(pos,rule){ 
+					caretthis.involuntaryoperations[pos] = new YOURX.ThingyAddition(rule); 
+					throw opfound;
+				}
 				
-				//get all keys from attribute thingies
-				
-				//get all keys from attribute rules
-				
-				//get all positions of existing children, plus the final position - space for a missing child?				
-				
-			}
-			else if(key === -1){
-				//if key is -1 results should be limited to the attribute axis
-			}
-			else{
-				if(this.parentthingy instanceof ContainerThingy){
-																			
-					if(typeof key === "string"){
-						//key can be interpreted as name (mapping to attributes)
-						this.parentrule.walkAttributes(this.parentthingy,cachingwalker);
-						var name;
-						for(name in cachingwalker.mapsbyname["rejected"]){
-							return 
-						}						
+				//Walk to find involuntary operations available at various caret positions
+				//terminate early when first operation is found
+				try{
+					YOURX.ThingyUtil.walkBelow(this.parentrule,this.parentthingy, caretwalker);
+					
+					//if this line is reached then there are no involuntary operations, 
+					//can proceed to assess voluntary ones
+	
+					//create CachingWalker which allows multiple entries per key
+					/*
+					var cachingwalker = new YOURX.CachingWalker();
+					cachingwalker.putCache = function(allmaps,mapkey,key,item){
+						var itemarray = this.getCache(key);
+						if(itemarray === null){
+							itemarray = [];
+							CachingWalker.prototype.putCache.apply(this, [allmaps,mapkey,key,itemarray]);
+						}
+						itemarray.push(item);
 					}
-					else if(typeof key === "number"){
-						//key can be interpreted as position (mapping to children)
-					}
-					else{
-						throw new Error("Unexpected key type passed to OperationCaret#getInvoluntaryOperation()");
-					}
+					*/
 					
 				}
+				catch(e){
+					if(e !== opfound){
+						throw e;
+					}
+				}
 				
+	
+			}			
+		}
+		
+		OperationCaret.prototype.nextInvoluntaryOperation = function(){
+			var key;
+			for(key in this.involuntaryoperations){
+				return this.involuntaryoperations[key];
 			}
-			
+			return null;
+		}
+		
+		OperationCaret.prototype.nextInvoluntaryKey = function(){
+			var key;
+			for(key in this.involuntaryoperations){
+				return key;
+			}
+			return null;			
+		}
+		
+		OperationCaret.prototype.doInvoluntaryOperation = function(){
+			var key;
+			for(key in this.involuntaryoperations){
+				var op = this.involuntaryoperations[key];
+				op.operate(this.parentthingy,key);
+			}
+			return null;			
 		}
 		
 		/**
-		 * @param {Thingy} parentthingy The thingy which matched the parent rule 
-		 * @param {integer} caretpos The child position for the expansion 
-		 * If caretpos is -1, then query addresses the attribute axis, not the child axis.
+		 * @param {integer,string} key The key for the expansion, which may be an 
+		 * attribute name (string) or an child position (integer) 
 		 */
-		OperationCaret.prototype.getVoluntaryOperations = function(rule, caretpos){
+		OperationCaret.prototype.getVoluntaryOperations = function(key){
 			throw new YOURX.UnsupportedOperationError("getVoluntaryOperations() not (yet) implemented.");	
 		}
 		
@@ -179,46 +200,15 @@ YOURX.copyProperties(
 		}
 		/** This function will trigger interactive requests to get user input until 
 		 * sufficient unknowns have been provided to proceed with the operation. 
-		 * Calling this function on Operations which are not interactive may throw an exception.
 		 * Operations which represent a compound set may pass the user object to their component ThingyEdits.
 		 * @param {YOURX.User} user
 		 */
 		ThingyOperation.prototype.interactWithUser = function(user){
 			throw new YOURX.UnsupportedOperationError("interactWithUser() is not yet implemented for this Operation");
 		}
-		
-		function ThingyOperationSet(rule, msg, operations){
-			ThingyOperation.apply(this,arguments);
-			this.operations = operations;
-		}
-		ThingyOperationSet.prototype = new ThingyOperation();
-		ThingyOperationSet.prototype.getLabel = function(){
-			var label = "[ ";
-			var idx;
-			
-			for(idx = 0;idx < this.operations.length; idx++){
-				label += "[ " + this.operations[idx].getLabel() + " ]";
-			}
-			label += " ]";
-			return label;
-		}		
-		ThingyOperationSet.prototype.isInteractive = function(){
-			var idx;
-			for(idx = 0;idx < this.operations.length; idx++){
-				if(this.operations[idx].isInteractive()){
-					return true;
-				}
-			}
-			return false;
-		}
-		ThingyOperationSet.prototype.operate = function(parentthingy, caretpos){
-			operations.forEach(function(operation){
-				caretpos = operation.operate(parentthingy,caretpos);
-			});
-		}
-		
+				
 		/** @param {ThingyRule} rule The rule which this Contraction is trying to satisfy */
-		function ThingyDeletion(rule, msg){
+		function ThingyDeletion(rule){
 			ThingyOperation.apply(this,arguments);
 		}
 		ThingyDeletion.prototype = new ThingyOperation();
@@ -248,7 +238,7 @@ YOURX.copyProperties(
 		}
 		
 		/** @param {ThingyRule} rule The rule which this Expansion is trying to satisfy */
-		function ThingyAddition(rule, msg){
+		function ThingyAddition(rule){
 			ThingyOperation.apply(this,arguments);
 		}
 		ThingyAddition.prototype = new ThingyOperation();

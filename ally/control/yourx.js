@@ -117,7 +117,7 @@ YOURX.copyProperties(
 				}
 			},
 			walkSequenceWithRules:function(rls,sequence,walker){ //todo consider meaningful return value
-				var startidx = 0;	
+				var startidx = 0;
 				rls.forEach(function(rule){
 					startidx = rule.walkSequence(sequence, walker, startidx);
 				});
@@ -136,6 +136,19 @@ YOURX.copyProperties(
 					if(cachingwalker.getCacheStatus(pos) === null){
 						walker.posRejected(pos,enforcer);
 					}
+				}
+			},
+			canWalkBelow:function(rule){
+				return ("walkAttributes" in rule) || ("walkChildren" in rule);
+			},
+			walkBelow:function(rule,thingy,walker){
+				if('walkAttributes' in rule){
+					//traverse attributes if an element
+					rule.walkAttributes(thingy,walker);
+				}
+				if('walkChildren' in rule){
+					//traverse children for all containers
+					rule.walkChildren(thingy,walker);				
 				}
 			},
 			walkMapWithRules:function(rls,map,walker){ //todo consider meaningful return value
@@ -243,7 +256,7 @@ YOURX.copyProperties(
 				}
 				this.listeners[name].push(fun);
 			},
-			unbind:function(name,fun){ //removes singe instance of fun from listener array named 'name' 
+			unbind:function(name,fun){ //removes single instance of fun from listener array named 'name' 
 				var found = false;
 				if('listeners' in this){
 					if(name in this.listeners){
@@ -280,17 +293,19 @@ YOURX.copyProperties(
 		
 		function ContainerThingy(){
 			this.children = [];
-			if(arguments[0] instanceof Node){ //creation from values in DOM node
-				var container = this;
-				YOURX.cloneArray(arguments[0].childNodes).forEach(function(item){
-					var thingy = YOURX.ThingyUtil.dom2thingy(item);
-					if(thingy !== null){
-						container.addThingy(thingy);						
-					}
-				});
-			}
-			else{
-				this.children = this.children.concat(arguments[0]);
+			if(arguments.length > 0){
+				if(arguments[0] instanceof Node){ //creation from values in DOM node
+					var container = this;
+					YOURX.cloneArray(arguments[0].childNodes).forEach(function(item){
+						var thingy = YOURX.ThingyUtil.dom2thingy(item);
+						if(thingy !== null){
+							container.addThingy(thingy);						
+						}
+					});
+				}
+				else {
+					this.children = this.children.concat(arguments[0]);
+				}				
 			}
 			Thingy.apply(this,[]);
 		}
@@ -730,11 +745,16 @@ YOURX.copyProperties(
 		}
 		
 		ElementThingyRule.prototype.walkSequence = function(sequence,walker,startidx){
-			if(this.matchThingy(sequence[startidx], true)){
-				walker.posAccepted(startidx, this);
+			if(sequence.length > startidx){ //check there is a candidate at all
+				if(this.matchThingy(sequence[startidx], true)){
+					walker.posAccepted(startidx, this);
+				}
+				else{
+					walker.posRejected(startidx, this);
+					walker.posRequired(startidx, this);
+				}				
 			}
 			else{
-				walker.posRejected(startidx, this);
 				walker.posRequired(startidx, this);
 			}
 		}
@@ -952,15 +972,9 @@ YOURX.copyProperties(
 		RecursiveValidationWalker.prototype = new ValidationWalker();
 		RecursiveValidationWalker.prototype.posAccepted = function(pos,rule){
 			var child = this.parent.getChildren()[pos];
-			if(child instanceof ContainerThingy){
-				//create new recursive walker for the scope of this container
+			if(ThingyUtil.canWalkBelow(rule)){
 				var walker = new RecursiveValidationWalker(child);
-				if(child instanceof ElementThingy){
-					//traverse attributes if an element
-					rule.walkAttributes(child,walker);
-				}
-				//traverse children for all containers
-				rule.walkChildren(child,walker);				
+				ThingyUtil.walkBelow(rule,child, walker);				
 			}
 		}
 		
@@ -994,7 +1008,7 @@ YOURX.copyProperties(
 			"ThingyUtil",
 			"Thingy","ContainerThingy","ContentThingy","RootThingy","ElementThingy","AttributeThingy","TextThingy",
 			"ThingyGrammar","ThingyRule","ElementThingyRule","AttributeThingyRule","TextThingyRule","OptionalThingyRule","ZeroOrMoreThingyRule","OneOrMoreThingyRule",
-			"CachingWalker","CompoundWalker",
+			"ElementWalker","CachingWalker","CompoundWalker",
 			"ThingyRuleError", "UnsupportedOperationError"
 		]));
 			

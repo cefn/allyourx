@@ -2,15 +2,17 @@ $(function(){
     var UNITTEST = {}; //create namespace object for temporary unittest properties
     UNITTEST.viewportq = $("#UNITTEST"); //target this element when binding controls
     executeTests([
-		/*
 		["OperationCaret Involuntary List Returns Correct Ops on Empty Container", function(){
 			UNITTEST.grammar = YOURX.ThingyUtil.url2rule("../../schema/yourx/examples.001/team.001.rng");
-			UNITTEST.rule = UNITTEST.grammar.getChildren()[0]; //first rule matches document node (top level element)
-			UNITTEST.thingy = new YOURX.ContainerThingy(); //root thingy matches root node (empty container)
-			UNITTEST.caret = new YOURX.OperationCaret(UNITTEST.thingy);
-			var involuntary = UNITTEST.caret.getInvoluntaryOperation(UNITTEST.rule);
-			return false;				
+			UNITTEST.rule = UNITTEST.grammar; //first rule matches document node (top level element)
+			UNITTEST.thingy = new YOURX.RootThingy(); //root thingy matches root node (empty container)
+			UNITTEST.caret = new YOURX.OperationCaret(UNITTEST.rule,UNITTEST.thingy);
+			UNITTEST.involuntary = UNITTEST.caret.nextInvoluntaryOperation(UNITTEST.rule);
+			return 	(UNITTEST.involuntary instanceof YOURX.ThingyAddition) &&
+					(UNITTEST.involuntary.rule instanceof YOURX.ElementThingyRule) && 
+					(UNITTEST.involuntary.rule.name === "player");				
 	    }],
+		/*
 		["OperationCaret Involuntary List Returns No Ops on Valid Element", function(){
 			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("../../schema/yourx/examples.001/team.001.xml");
 			UNITTEST.caret = new YOURX.OperationCaret(UNITTEST.thingy);
