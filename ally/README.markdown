@@ -31,12 +31,12 @@ The AllyourX standard is designed expressly to capture the definition of an appl
 
 The project is planned with strict stages of increasingly complex RelaxNG, allowing clear unit tests and counterexamples to be identified. These subsets of RelaxNG are themselves defined using RelaxNG metaschema as follows...
 
-* v001 ([metaschema](lib/schema/yourx/yourx.001.rng)) ([unit testing examples](lib/schema/yourx/examples.001/))
-* v002 ([metaschema](lib/schema/yourx/yourx.002.rng)) (examples to be authored))
-* v003 ([metaschema](lib/schema/yourx/yourx.003.rng)) (examples to be authored)
-* v004 ([metaschema](lib/schema/yourx/yourx.004.rng)) (examples to be authored)
-* v005 ([metaschema](lib/schema/yourx/yourx.005.rng)) (examples to be authored)
-* Target ([metaschema](lib/schema/yourx/yourx.target.rng)) (examples to be authored)
+* v001 ([metaschema](schema/yourx/yourx.001.rng)) ([unit testing examples](schema/yourx/examples.001/))
+* v002 ([metaschema](schema/yourx/yourx.002.rng)) (examples to be authored))
+* v003 ([metaschema](schema/yourx/yourx.003.rng)) (examples to be authored)
+* v004 ([metaschema](schema/yourx/yourx.004.rng)) (examples to be authored)
+* v005 ([metaschema](schema/yourx/yourx.005.rng)) (examples to be authored)
+* Target ([metaschema](schema/yourx/yourx.target.rng)) (examples to be authored)
 
 Each schema complexity version should express a set of languages which includes the preceding set language as a strict subset. An editor which is conformant with a given version should be able to author every member of the given set of languages. An example of a schema which conforms to the schema 
 
