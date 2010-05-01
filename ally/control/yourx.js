@@ -64,7 +64,7 @@ YOURX.copyProperties(
                 }
                 xhttp.open("GET", url, false);
                 xhttp.send(null);
-				ThingyUtil.domStripSpace(xhttp.responseXML);			
+				ThingyUtil.domStripSpace(xhttp.responseXML);
 				return xhttp.responseXML;
 			},
 			url2thingy:function(url){
@@ -87,8 +87,14 @@ YOURX.copyProperties(
 				}).remove();
 				return dom;
 			},
-			xmlStripComments:function(xml){return xml.replace(/<\?(.*?)\?>/g,"");}, /** From http://www.xml.com/pub/a/2007/11/28/introducing-e4x.html?page=4 */
-			mapWithKey:function(allmaps,itemkey){
+			/** E4X cant handle XML processing instructions. Strip them out. From http://www.xml.com/pub/a/2007/11/28/introducing-e4x.html?page=4 */
+			xmlStripComments:function(xml){return xml.replace(/<\?(.*?)\?>/g,"");}, 
+			/** Iterates over the members of allmaps until one is found containing the given key. 
+			 * @param {Array or Object} allmaps A collection which contains maps as members 
+			 * @param {String or Integer} itemkey The member sought should have itemkey in its properties
+			 * @return The key (position or name) which retrieves the member from allmaps which contains itemkey  
+			 */
+			mapWithKey:function(allmaps,itemkey){ 
 				if(typeof allmaps === "array"){
 					var idx;
 					for(idx = 0; idx < allmaps.length;idx++){
@@ -107,6 +113,12 @@ YOURX.copyProperties(
 				}
 				return null;
 			},
+			/** Checks if a key exists in any member of allmaps before running allmaps[mapkey][itemkey] = item.
+			 * @param {Array or Object} allmaps The collection containing maps
+			 * @param {String or Integer} mapkey The key of the given map in allmaps, into which the item should be inserted
+			 * @param {String or Integer} itemkey The key to insert the item under
+			 * @param {Object} item The item to insert
+			 */
 			putUniqueKey:function(allmaps, mapkey, itemkey, item){
 				if(ThingyUtil.mapWithKey(allmaps,itemkey) === null){
 					allmaps[mapkey][itemkey] = item;
@@ -116,12 +128,25 @@ YOURX.copyProperties(
 					return false;
 				}
 			},
+			/** Walks a set of rules over a sequence of Thingies (stored by position), notifying validation events 
+			 * @param {Array} rls The rules to validate the Thingies
+			 * @param {Array} sequence The Thingies
+			 * @param {Walker} walker The walker which monitors the validation events and decides what to do
+			 * @return Nothing meaningful yet
+			 */
 			walkSequenceWithRules:function(rls,sequence,walker){ //todo consider meaningful return value
 				var startidx = 0;
 				rls.forEach(function(rule){
 					startidx = rule.walkSequence(sequence, walker, startidx);
 				});
 			},
+			/** Walks a set of rules over a sequence of Thingies (stored by position), notifying validation events 
+			 * and fires a rejection event for any Thingies which are not positively accepted by a rule once the walk has completed.
+			 * @param {Array} rls The rules to validate the Thingies
+			 * @param {Array} sequence The Thingies
+			 * @param {Walker} walker The walker to monitor validation events
+			 * @param {Object} enforcer The entity on behalf of which the rejection is fired
+			 */
 			walkSequenceWithRulesOrReject:function(rls,sequence,walker,enforcer){
 				//arrange to store walk results
 				var cachingwalker = new CachingWalker();
@@ -138,9 +163,18 @@ YOURX.copyProperties(
 					}
 				}
 			},
+			/** Tests if a rule has duck-typing to do a recursive validation walk on descendant Thingies
+			 * @param {ThingyRule} rule The rule to walk descendants.
+			 */
 			canWalkBelow:function(rule){
 				return ("walkAttributes" in rule) || ("walkChildren" in rule);
 			},
+			/** Executes the validation walk on descendant Thingies for a given rule, using
+			 * duck-typing to establish the descendants to walk. 
+			 * @param {ThingyRule} rule The rule coordinating the validation walk
+			 * @param {Thingy} thingy The thingy whose descendants will be walked
+			 * @param {Walker} walker The walker monitoring validation events during the walk
+			 */
 			walkBelow:function(rule,thingy,walker){
 				if('walkAttributes' in rule){
 					//traverse attributes if an element
@@ -151,11 +185,23 @@ YOURX.copyProperties(
 					rule.walkChildren(thingy,walker);				
 				}
 			},
+			/** Walks a set of rules over a map of Thingies (stored by name), notifying validation events 
+			 * @param {Array} rls The rules which should validate the Thingies
+			 * @param {Object} map The map of Thingies
+			 * @param {Walker} walker The walker monitoring validation events and deciding what to do
+			 */
 			walkMapWithRules:function(rls,map,walker){ //todo consider meaningful return value
 				rls.forEach(function(rule){
 					rule.walkMap(map, walker);
 				});
 			},
+			/** Walks a set of rules over a map of Thingies (stored by name), notifying validation events 
+			 * and fires a rejection event for any Thingies which are not positively accepted by a rule once the walk has completed.
+			 * @param {Array} rls The rules validating the Thingies
+			 * @param {Object} map The map of Thingies
+			 * @param {Walker} walker The walker monitoring validation events and deciding what to do
+			 * @param {Object} enforcer The entity on behalf of which the rejection is fired
+			 */
 			walkMapWithRulesOrReject:function(rls, map, walker, enforcer){
 				//arrange to store walk results
 				var cachingwalker = new CachingWalker();
@@ -169,7 +215,7 @@ YOURX.copyProperties(
 					if(cachingwalker.getCacheStatus(name) === null){ 
 						walker.nameRejected(name, enforcer);
 					}
-				}				
+				}
 			}
 		};
 		
@@ -191,7 +237,9 @@ YOURX.copyProperties(
 		 * These have a canonical XML, E4X and DOM form, a snapshot of which can be lazily created
 		 * at will when a given form of representation is needed.
 		 */
-		//todo use closures to protect Thingy's private member variables
+		
+		//TODO use closures to protect Thingy's private member variables
+		//TODO implement basic unit tests for e4x, xml and dom transformations 
 		
 		function Thingy(){
 			this.data = {};
@@ -247,6 +295,10 @@ YOURX.copyProperties(
 				}
 				return this.data.dom;
 			},
+			/** Binds objects or functions to arbitrary event names triggered by this Thingy, by storing them in dynamically created arrays.
+			 * @param {Object} name The event name to bind against
+			 * @param {Object} fun The object or function to subscribed to the event name
+			 */
 			bind:function(name,fun){
 				if(! ('listeners' in this)){
 					this.listeners = {};
@@ -256,6 +308,11 @@ YOURX.copyProperties(
 				}
 				this.listeners[name].push(fun);
 			},
+			/** Unbinds objects or functions from arbitrary event names triggered by this Thingy, by removing them from dynamically created arrays 
+			 * and disposing of the arrays when empty.
+			 * @param {Object} name The event name to unbind from
+			 * @param {Object} fun The object or function to unsubscribe from the event name
+			 */
 			unbind:function(name,fun){ //removes single instance of fun from listener array named 'name' 
 				var found = false;
 				if('listeners' in this){
@@ -282,6 +339,10 @@ YOURX.copyProperties(
 				}
 				return found;
 			},
+			/** Executes the given function once for each listener object or function found in the binding array for the event name.
+			 * @param {Object} name The event name
+			 * @param {Object} fun The function to invoke for each listener
+			 */
 			traverseListeners:function(name,fun){
 				if('listeners' in this){
 					if(name in this.listeners){
@@ -291,6 +352,10 @@ YOURX.copyProperties(
 			},
 		}
 		
+		/** Represents a Thingy which can contain a sequence of children, each of which has a numerical position, starting at 0 
+		 * Can be constructed by passing a DOM whose tree should be recursively replicated in terms of Thingies, 
+		 * or an array of child Thingies to store. 
+		 */
 		function ContainerThingy(){
 			this.children = [];
 			if(arguments.length > 0){
@@ -310,6 +375,10 @@ YOURX.copyProperties(
 			Thingy.apply(this,[]);
 		}
 		ContainerThingy.prototype = new Thingy();
+		/** Can be invoked empty to just return the array of children,  
+		 * passing one function to get childadded events for all children now and in the future
+		 * or passing two functions to get childremoved events in the future too 
+		 */
 		ContainerThingy.prototype.getChildren = function(){
 			if(arguments.length > 0 && arguments[0] instanceof Function){ //traverse and subscribe for future new children
 				var onadd = arguments[0];
@@ -325,12 +394,15 @@ YOURX.copyProperties(
 			}
 			return this.children;				
 		}
+		/** Alias for addChild, given all descendants of a generic ContainerThingy are its children. */
 		ContainerThingy.prototype.addThingy = function(thingy){
 			return this.addChild(thingy);
 		}
+		/** Alias for removeChild, given all descendants of a generic ContainerThingy are its children. */
 		ContainerThingy.prototype.removeThingy = function(thingy){
 			return this.removeChild(thingy);
 		}
+		/** Adds a child and notifies listeners. */
 		ContainerThingy.prototype.addChild = function(){
 			if(arguments.length > 0){
 				if(arguments[0] instanceof Thingy){
@@ -346,6 +418,7 @@ YOURX.copyProperties(
 				}
 			}
 		}
+		/** Removes a child and notifies listeners. */
 		ContainerThingy.prototype.removeChild = function(){
 			if(arguments.length > 0){
 				if(arguments[0] instanceof Thingy){
@@ -372,17 +445,21 @@ YOURX.copyProperties(
 				}
 			}
 		}
+		/** Adds a thingy constructed dynamically to mirror a given DOM node. */
 		ContainerThingy.prototype.addNode=function(node){
-			var thingy = ThingyUtil.dom2thingy(node);
-			this.addChild(thingy);
+			this.addThingy(ThingyUtil.dom2thingy(node));
 		}		
 		
+		/** Represents a content item which simply stores a value, such as an Attribute or a Text node. 
+		 * @param {Object} value The value to store
+		 */
 		function ContentThingy(value){
 			this.value = value;
 			this.setvaluelisteners = [];
 			Thingy.apply(this,[]);
 		}
 		ContentThingy.prototype = new Thingy();
+		/** Returns the value stored by this content item. */
 		ContentThingy.prototype.getValue = function(){
 			if(arguments.length == 1 && arguments[0] instanceof Function){
 				var callback = arguments[0];
@@ -393,6 +470,7 @@ YOURX.copyProperties(
 				return this.value;
 			}
 		}
+		/** Sets the value stored by this content item. */
 		ContentThingy.prototype.setValue = function(value){
 			var oldvalue = this.value;
 			this.value = value;
@@ -402,11 +480,20 @@ YOURX.copyProperties(
 			});
 		}
 		
+		/** Represents the top level container, equivalent to the XML root node. It can have
+		 * no attributes or features of its own. 
+		 */
 		function RootThingy(){
 			ContainerThingy.apply(this,arguments);
 		}
 		RootThingy.prototype = new ContainerThingy();
 		
+		/** Represents a container thingy which can have a sequence of children ElementThingies and 
+		 * TextThingies accessed by position, but also AttributeThingies which are accessed by name.
+		 * 
+		 * Can be constructed from a DOM node, as an empty Element with a name, or with name plus an array of children, 
+		 * or a name, plus an attribute map containing name:value pairs, followed by the array of children.
+		 */
 		function ElementThingy(){
 			this.attributes = {}; //hashmap for indexing AttributeThingy children
 			if(arguments[0] instanceof Element){ //creation from values in DOM node
@@ -427,11 +514,12 @@ YOURX.copyProperties(
 				var children;
 				if(arguments[1] instanceof Array){
 					children = [].concat(arguments[1]);
-					ContainerThingy.apply(this,[arguments[2]]);
+					ContainerThingy.apply(this,[children]);
 					return this;
 				}
 				else if(arguments[1] !== null && arguments[2] instanceof Array){
-					ContainerThingy.apply(this,[arguments[2]]);
+					children = [].concat(arguments[2]);
+					ContainerThingy.apply(this,[children]);
 					for(name in arguments[1]){
 						addAttribute(name,attributes[name]);
 					}
@@ -441,18 +529,11 @@ YOURX.copyProperties(
 			throw new Error("Malformed invocation of ElementThingy constructor");
 		}
 		ElementThingy.prototype = new ContainerThingy();
+		/** Returns the name. */
 		ElementThingy.prototype.getName = function(){
 			return this.name;
 		}
-		ElementThingy.prototype.addNode=function(node){
-			var thingy = ThingyUtil.dom2thingy(node);
-			if(thingy instanceof AttributeThingy){
-				this.addAttribute(thingy);			
-			}
-			else{
-				ContainerThingy.prototype.addNode.apply(this,arguments);
-			}
-		}		
+		/** Adds an attribute and notifies listeners. Can accept an AttributeThingy or a String name and Object value*/
 		ElementThingy.prototype.addAttribute = function(){ //adds attributethingy child
 			var name,value,thingy;
 			if(arguments.length == 1 && 
@@ -478,6 +559,7 @@ YOURX.copyProperties(
 				listener(source,thingy);
 			});
 		}
+		/** Removes an attribute and notifies listeners. Can accept an AttributeThingy or a String name. */
 		ElementThingy.prototype.removeAttribute = function(){ //removes attributethingy child
 			if(arguments.length == 1){
 				var name;
@@ -517,6 +599,7 @@ YOURX.copyProperties(
 				throw new Error("Malformed invocation of ElementThingy#removeAttribute()");				
 			}
 		}
+		/** Returns the AttributeThingy stored against the given name. */
 		ElementThingy.prototype.getAttributeThingy = function(name){
 			if(name in this.attributes){
 				return this.attributes[name];				
@@ -525,9 +608,11 @@ YOURX.copyProperties(
 				return null;
 			}
 		}
+		/** Returns true iff there is an AttributeThingy stored against the given name. */
 		ElementThingy.prototype.hasAttribute = function(name){
 			return name in this.attributes;
 		}
+		/** Returns the value in the AttributeThingy stored against the given name. */
 		ElementThingy.prototype.getAttribute = function(name){
 			if (name in this.attributes) {
 				return this.attributes[name].value;
@@ -536,6 +621,10 @@ YOURX.copyProperties(
 				return null;
 			}
 		}
+		/**  Can be invoked empty to just return the map of AttributeThingies,  
+		 * passing one function to get attributeadded events for all attributes now and in the future
+		 * or passing two functions to get attributeremoved events in the future too 
+		 */
 		ElementThingy.prototype.getAttributes = function(){
 			if(arguments.length > 0 && arguments[0] instanceof Function){ //traverse and subscribe for future new attributes
 				var onadd = arguments[0];
@@ -551,14 +640,16 @@ YOURX.copyProperties(
 			}
 			return this.attributes;				
 		}
+		/** Used to store a descendant Thingy (ElementThingy,TextThingy or AttributeThingy). */
 		ElementThingy.prototype.addThingy = function(){
 			if(arguments[0] instanceof AttributeThingy){
 				return this.addAttribute(arguments[0]);
 			}
 			else{
-				return ContainerThingy.prototype.addChild.apply(this,arguments); //call superclass addChild							
+				return ContainerThingy.prototype.addThingy.apply(this,arguments); //call superclass addThingy							
 			}
 		}
+		/** Used to remove a descendant Thingy (ElementThingy,TextThingy or AttributeThingy). */
 		ElementThingy.prototype.removeThingy = function(){
 			if(arguments[0] instanceof AttributeThingy){
 				return this.removeAttribute(arguments[0]);
@@ -568,6 +659,10 @@ YOURX.copyProperties(
 			}
 		}
 		
+		/** Represents a content thingy which can store a text value and is a descendant of an ElementThingy, stored as a property, by name.
+		 * 
+		 * Can be constructed from a DOM node, or a String name and String value.
+		 */
 		function AttributeThingy(){
 			if(arguments.length == 1 && arguments[0] instanceof Attr){ //creation from values in DOM node
 				var att = arguments[0];
@@ -585,10 +680,16 @@ YOURX.copyProperties(
 			ContentThingy.apply(this,[value]);
 		}
 		AttributeThingy.prototype = new ContentThingy();
+		/** Returns the name of this AttributeThingy. */
 		AttributeThingy.prototype.getName = function(){
 			return this.name;
 		}
 		
+		
+		/** Represents a content thingy which can store a text value and is a descendant of an ElementThingy, stored as a child by position.
+		 * 
+		 * Can be constructed from a DOM node, or a String value.
+		 */
 		function TextThingy(){
 			if(arguments.length > 0 && arguments[0] instanceof Text){  //creation from values in DOM node
 				var value = arguments[0].data;
@@ -599,6 +700,7 @@ YOURX.copyProperties(
 			ContentThingy.apply(this,[value]);
 		}
 		TextThingy.prototype = new ContentThingy();
+		
 		
 		function ThingyRule(children){
 			this.children = [].concat(children);

@@ -32,20 +32,20 @@ YOURX.copyProperties(
 		 * using specialised subclasses of ThingyOperation representing a compound set.
 		 * 
 		 * ThingyOperations for which #isInteractive() returns false are deterministic enough to proceed
-		 * without any user input, introducing or removing ElementThingy,AttributeThingy and TextThingy objects to the tree. 
+		 * without any user input, introducing or removing ElementThingy,AttributeThingy and TextThingy objects to the tree.
 		 * 
 		 * ThingyOperations for which #isInteractive() returns true require the user to make a selection, 
-		 * or provide a value before they can proceed. Calling interactWithUser on such a ThingyOperation triggers callbacks
-		 * on the user object to get information.
+		 * or provide a value before they can proceed. Passing a user object into ThingyOperation's interactWithUser method 
+		 * then triggers callbacks to get information.
 		 * 
-		 * The getInvoluntaryOperation() function will return operations until the Tree passes shallow validation. If no 
+		 * The getInvoluntaryOperation() method will return operations until the Tree passes shallow validation. If no 
 		 * further operations are required to satisfy validation then it will return null;
 		 * 
-		 * The getVoluntaryOperation() function may return operations only if the Tree has already passed shallow validation,
+		 * The getVoluntaryOperation() method may return operations only if the Tree has already passed shallow validation,
 		 * and may throw an exception if this is not the case. If all production rules are finite and already satisfied, 
-		 * then it will return null;
+		 * then the method will return null;
 		 * 
-		 * @projectDescription Scenarios to note. Sequences of zeroOrMore element with no matching children
+		 * @projectDescription Scenarios to note. Sequences of multiple zeroOrMore elements with no matching children
 		 * are effectively active in parallel at the same caret position. Attribute rules are effectively 
 		 * active in parallel. Any child rules of an Interleave structure are active in parallel. Highly 
 		 * parallel expansions can creat ThingyEdits with a very large number of alternatives.
@@ -68,19 +68,29 @@ YOURX.copyProperties(
 				}				
 			}
 			this.parentthingy = parentthingy;
-			if("getChildren" in this.parentthingy){
-				this.parentthingy.bind('childadded',this.updateOperationCache);
-				this.parentthingy.bind('childremoved',this.updateOperationCache);
+			if(this.parentthingy){
+				if("getChildren" in this.parentthingy){
+					this.parentthingy.bind('childadded',this.updateOperationCache);
+					this.parentthingy.bind('childremoved',this.updateOperationCache);
+				}
+				if("getAttributes" in this.parentthingy){				 
+					this.parentthingy.bind('attributeadded',this.updateOperationCache);
+					this.parentthingy.bind('attributeremoved',this.updateOperationCache);
+				}
+				this.updateOperationCache();								
 			}
-			if("getAttributes" in this.parentthingy){				 
-				this.parentthingy.bind('attributeadded',this.updateOperationCache);
-				this.parentthingy.bind('attributeremoved',this.updateOperationCache);
+			else{
+				throw new Error("null parentthingy set in OperationCaret");
 			}
-			this.updateOperationCache();				
 		}
 		OperationCaret.prototype.setParentRule = function(parentrule){
 			this.parentrule = parentrule;
-			this.updateOperationCache();				
+			if(this.parentrule){
+				this.updateOperationCache();		
+			}
+			else{
+				throw new Error("null parentrule set in OperationCaret");
+			}
 		}
 		OperationCaret.prototype.getParentThingy = function(){
 			return this.parentthingy;
@@ -207,7 +217,7 @@ YOURX.copyProperties(
 			throw new YOURX.UnsupportedOperationError("interactWithUser() is not yet implemented for this Operation");
 		}
 				
-		/** @param {ThingyRule} rule The rule which this Contraction is trying to satisfy */
+		/** @param {ThingyRule} rule The rule which this Deletion is trying to satisfy */
 		function ThingyDeletion(rule){
 			ThingyOperation.apply(this,arguments);
 		}
@@ -221,7 +231,7 @@ YOURX.copyProperties(
 					parentthingy.removeChild(key);
 				}
 				else{
-					throw new Error("Key should be an integer number");
+					throw new Error("Key for child operations should be an integer number identifying the position");
 				}					
 			}
 			else if(this.rule instanceof YOURX.AttributeThingyRule){
@@ -229,7 +239,7 @@ YOURX.copyProperties(
 					parent.removeAttribute(key);
 				}
 				else{
-					throw new YOURX.ThingyRuleError("Attribute key should be a text string");
+					throw new YOURX.ThingyRuleError("Key for attribute operations should be a text string identifying the name");
 				}
 			}
 			else{
