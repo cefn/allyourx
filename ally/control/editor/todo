@@ -1,0 +1,3 @@
+Use OperationCaret as combined record of thingy and rule in RawEditor, associated with DOM through JQuery.data()
+Establish event layering for key and mouse navigation (through Thingy or not? If not, how are invalid changes reversed)
+Identify focus caret for editor, and use this to control contentEditable setting and keyboard eventing dynamically 

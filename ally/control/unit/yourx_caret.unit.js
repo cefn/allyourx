@@ -37,7 +37,7 @@ $(function(){
 					op.rule instanceof YOURX.AttributeThingyRule &&
 					op.rule.name === "name"
 	    }],
-		["Shallow Fix (AttributeThingy addition) reports success", function(){
+		["Shallow Fix (AttributeThingy additions) reports success", function(){
 			return UNITTEST.caret.shallowFix(); //future attribute rules may require input (to satisfy non-empty validation)
 		}],
 		["Executing shallowFix creates correct attributes", function(){
