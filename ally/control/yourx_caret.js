@@ -55,28 +55,87 @@ YOURX.copyProperties(
 			this.setParentRule(parentrule);
 			this.setParentThingy(parentthingy);
 		}
+		
+		OperationCaret.prototype.nextInvoluntaryKey = function(){
+			var key;
+			for(key in this.involuntaryoperations){
+				return key;
+			}
+			return null;
+		};
 
-		OperationCaret.prototype.setParentThingy = function(parentthingy){
-			if(this.parentthingy){ //already a previous parentthingy - unbind events
-				if("getChildren" in this.parentthingy){
-					this.parentthingy.unbind('childadded',this.updateOperationCache);
-					this.parentthingy.unbind('childremoved',this.updateOperationCache);
+
+		OperationCaret.prototype.nextInvoluntaryOperation = function(){
+			var key = this.nextInvoluntaryKey();
+			if(key){
+				return this.involuntaryoperations[key];
+			}
+			else{
+				return null;				
+			}
+		};
+		
+		OperationCaret.prototype.shallowFix = function(user){
+			var key, op;
+			while(key=this.nextInvoluntaryKey()){
+				op = this.involuntaryoperations[key];
+				if(!op.isInteractive()){
+					op.act(this.parentthingy,key);
 				}
-				if("getAttributes" in this.parentthingy){				 
-					this.parentthingy.unbind('attributeadded',this.updateOperationCache);
-					this.parentthingy.unbind('attributeremoved',this.updateOperationCache);
-				}				
+				else if(user){
+					op.interact(this.parentthingy,key,user);
+				}
+				else{
+					return false;
+				}
+			}
+			return true;
+		};
+		
+		OperationCaret.prototype.dispose = function(){
+			
+		}
+		
+		OperationCaret.prototype.getRecacheFunction = function(){
+			//lazy create a function which causes 'this' to update operation cache
+			//this is executed on any local change to the tree
+			//future implementations can update operation cache more smartly
+			var caretthis = this; //allows use of this in function closure
+			return (this.refreshFunction ? this.refreshFunction : (this.refreshFunction = function(){caretthis.updateOperationCache();}));
+		};
+		
+		OperationCaret.prototype.startListeningTo = function(thingy){
+			var listener = this.getRecacheFunction();
+			if("getChildren" in thingy){
+				thingy.bind('childadded',listener);
+				thingy.bind('childremoved',listener);
+			}
+			if("getAttributes" in thingy){				 
+				thingy.bind('attributeadded',listener);
+				thingy.bind('attributeremoved',listener);
+			}
+		};
+
+		OperationCaret.prototype.stopListeningTo = function(thingy){
+			var listener = this.getRecacheFunction();
+			if("getChildren" in thingy){
+				thingy.unbind('childadded',listener);
+				thingy.unbind('childremoved',listener);
+			}
+			if("getAttributes" in thingy){				 
+				thingy.unbind('attributeadded',listener);
+				thingy.unbind('attributeremoved',listener);
+			}				
+		};
+
+		OperationCaret.prototype.setParentThingy = function(parentthingy){			
+			///store and subscribe parentthingy
+			if(this.parentthingy){ //already a previous parentthingy - unbind events
+				this.stopListeningTo(this.parentthingy);
 			}
 			this.parentthingy = parentthingy;
 			if(this.parentthingy){
-				if("getChildren" in this.parentthingy){
-					this.parentthingy.bind('childadded',this.updateOperationCache);
-					this.parentthingy.bind('childremoved',this.updateOperationCache);
-				}
-				if("getAttributes" in this.parentthingy){				 
-					this.parentthingy.bind('attributeadded',this.updateOperationCache);
-					this.parentthingy.bind('attributeremoved',this.updateOperationCache);
-				}
+				this.startListeningTo(this.parentthingy);
 				this.updateOperationCache();								
 			}
 			else{
@@ -162,32 +221,33 @@ YOURX.copyProperties(
 				
 	
 			}			
+		}		
+		
+		/** Gets an involuntary operation at a given position
+		 * @param {integer,string} key The key for the operation, which may be an 
+		 * attribute name (string) or an child position (integer) 
+		 */
+		OperationCaret.prototype.getInvoluntaryOperation = function(key){
+			return this.involuntaryoperations[key];
 		}
 		
-		OperationCaret.prototype.nextInvoluntaryOperation = function(){
-			var key;
-			for(key in this.involuntaryoperations){
-				return this.involuntaryoperations[key];
-			}
-			return null;
-		}
-		
-		OperationCaret.prototype.nextInvoluntaryKey = function(){
-			var key;
-			for(key in this.involuntaryoperations){
-				return key;
-			}
-			return null;			
-		}
-		
-		OperationCaret.prototype.doInvoluntaryOperation = function(){
-			var key;
-			for(key in this.involuntaryoperations){
-				var op = this.involuntaryoperations[key];
-				op.operate(this.parentthingy,key);
-			}
-			return null;			
-		}
+		OperationCaret.prototype.involuntaryKeys = function(filterfun){
+		   var keys = [];
+		   for(var key in this.involuntaryoperations){
+		      if(!filterfun || filterfun(key)){
+			      keys.push(key);
+			  }
+		   }
+		   return keys;
+		};
+
+		OperationCaret.prototype.involuntaryAttributeKeys = function(){
+			return this.involuntaryKeys(function(key){return isNaN(key);});
+		};
+
+		OperationCaret.prototype.involuntaryChildKeys = function(){
+			return this.involuntaryKeys(function(key){return !isNaN(key);});
+		};
 		
 		/**
 		 * @param {integer,string} key The key for the expansion, which may be an 
@@ -196,6 +256,7 @@ YOURX.copyProperties(
 		OperationCaret.prototype.getVoluntaryOperations = function(key){
 			throw new YOURX.UnsupportedOperationError("getVoluntaryOperations() not (yet) implemented.");	
 		}
+
 		
 		function ThingyOperation(rule){
 			this.rule = rule;
@@ -208,13 +269,20 @@ YOURX.copyProperties(
 		ThingyOperation.prototype.isInteractive = function(){
 			throw new YOURX.UnsupportedOperationError("isDeterministic() is not yet implemented for this Operation");
 		}
-		/** This function will trigger interactive requests to get user input until 
-		 * sufficient unknowns have been provided to proceed with the operation. 
-		 * Operations which represent a compound set may pass the user object to their component ThingyEdits.
+
+		/** Triggers non-interactive operations
+		 */
+		ThingyOperation.prototype.act = function(user){
+			throw new YOURX.UnsupportedOperationError("act() is not implemented for this Operation. Check the value of isInteractive()");
+		}
+
+		/** Triggers interactive operations
+		 * Fires requests to get user input until sufficient unknowns have been provided to proceed.
+		 * Operations which represent a compound set may pass the user object to their components.
 		 * @param {YOURX.User} user
 		 */
-		ThingyOperation.prototype.interactWithUser = function(user){
-			throw new YOURX.UnsupportedOperationError("interactWithUser() is not yet implemented for this Operation");
+		ThingyOperation.prototype.interact = function(user){
+			throw new YOURX.UnsupportedOperationError("interact() is not implemented for this Operation. Check the value of isInteractive().");
 		}
 				
 		/** @param {ThingyRule} rule The rule which this Deletion is trying to satisfy */
@@ -225,7 +293,7 @@ YOURX.copyProperties(
 		ThingyDeletion.prototype.isInteractive = function(){
 			return false; //all scenarios for v001 are non-interactive
 		}
-		ThingyDeletion.prototype.operate = function(parentthingy, key){
+		ThingyDeletion.prototype.act = function(parentthingy, key){
 			if(this.rule instanceof YOURX.ElementThingyRule){
 				if(typeof(key) === "number"){
 					parentthingy.removeChild(key);
@@ -259,18 +327,18 @@ YOURX.copyProperties(
 		 * @param {Thingy} parentthingy The thingy which matched the parent rule 
 		 * @param {integer} key The child key indicating where expansion should take place (string=name,integer=pos)
 		 */
-		ThingyAddition.prototype.operate = function(parentthingy, key){
+		ThingyAddition.prototype.act = function(parentthingy, key){
 			if(this.rule instanceof YOURX.ElementThingyRule){
-				if(typeof(key) === "number"){
-					parentthingy.addChild(new ElementThingy(this.rule.getName()), key);
+				if(!isNaN(key)){ //key is element position
+					parentthingy.addChild(new YOURX.ElementThingy(this.rule.name), parseInt(key));
 				}
 				else{
 					throw new Error("Key should be an integer number");
 				}					
 			}
 			else if(this.rule instanceof YOURX.AttributeThingyRule){
-				if(typeof(key) === "string"){
-					parent.addAttribute(new AttributeThingy(key));
+				if(isNaN(key)){ //key is attribute name
+					parentthingy.addAttribute(new YOURX.AttributeThingy(this.rule.name));
 				}
 				else{
 					throw new YOURX.ThingyRuleError("Attribute key should be a text string");

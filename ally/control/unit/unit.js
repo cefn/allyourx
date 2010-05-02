@@ -1,3 +1,14 @@
+function AssertException(message) { this.message = message; }
+AssertException.prototype.toString = function () {
+  return 'AssertException: ' + this.message;
+};
+
+function assert(exp, message) {
+  if (exp !== true) {
+    throw new AssertException(message);
+  }
+}
+
 function testReport(desc,classes,report){
 	$('#results').append("<div class='test " + classes + "'><h1>" + desc + "</h1><p>" + report  + "</p></div>");
 }

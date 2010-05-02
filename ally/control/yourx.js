@@ -496,35 +496,46 @@ YOURX.copyProperties(
 		 */
 		function ElementThingy(){
 			this.attributes = {}; //hashmap for indexing AttributeThingy children
-			if(arguments[0] instanceof Element){ //creation from values in DOM node
-				var el = arguments[0];
-				this.name = el.nodeName;
-				ContainerThingy.apply(this,[el]);
-				var elthingy = this;
-				YOURX.cloneArray(el.attributes).forEach(function(item){
-					var thingy = ThingyUtil.dom2thingy(item);
-					if(thingy !== null){
-						elthingy.addAttribute(thingy);						
-					}
-				});
-				return this;
-			}
-			else if(arguments[0] instanceof String){ //creation from values directly
-				this.name = arguments[0];
-				var children;
-				if(arguments[1] instanceof Array){
-					children = [].concat(arguments[1]);
-					ContainerThingy.apply(this,[children]);
+			if(arguments.length > 0){
+				if(arguments[0] instanceof Element){ //creation from values in DOM node
+					var el = arguments[0];
+					this.name = el.nodeName;
+					ContainerThingy.apply(this,[el]);
+					var elthingy = this;
+					YOURX.cloneArray(el.attributes).forEach(function(item){
+						var thingy = ThingyUtil.dom2thingy(item);
+						if(thingy !== null){
+							elthingy.addAttribute(thingy);						
+						}
+					});
 					return this;
 				}
-				else if(arguments[1] !== null && arguments[2] instanceof Array){
-					children = [].concat(arguments[2]);
-					ContainerThingy.apply(this,[children]);
-					for(name in arguments[1]){
-						addAttribute(name,attributes[name]);
+				else if(typeof(arguments[0]) === "string"){ //creation from values directly
+					this.name = arguments[0];
+					var children;
+					if(arguments.length === 1){ //name
+						children = [];
+						ContainerThingy.apply(this,[children]);
+						return this;
 					}
-					return this;
-				}				
+					if(arguments.length === 2){ //name and children
+						if(arguments[1] instanceof Array){
+							children = [].concat(arguments[1]);
+							ContainerThingy.apply(this,[children]);
+							return this;
+						}
+					}
+					else if(arguments.length === 3){ //name and attributes and children
+						if(arguments[1] !== null && arguments[2] instanceof Array){
+							children = [].concat(arguments[2]);
+							ContainerThingy.apply(this,[children]);
+							for(name in arguments[1]){
+								addAttribute(name,attributes[name]);
+							}
+							return this;
+						}					
+					}
+				}
 			}
 			throw new Error("Malformed invocation of ElementThingy constructor");
 		}
@@ -542,8 +553,8 @@ YOURX.copyProperties(
 				value=thingy.value;
 			}
 			else if(arguments.length == 2 && 
-				(name = arguments[0]) instanceof String && 
-				(value = arguments[1]) instanceof String){
+				typeof(name = arguments[0]) === "string" && 
+				typeof(value = arguments[1]) === "string"){
 				thingy = new AttributeThingy(name,value);
 			}
 			else{
@@ -568,7 +579,7 @@ YOURX.copyProperties(
 					oldthingy = arguments[0];
 					name=oldthingy.name;
 				}
-				else if(arguments[0] instanceof String ){
+				else if(typeof(arguments[0]) === "string"){
 					name = arguments[0];
 				}
 				else{
@@ -664,20 +675,24 @@ YOURX.copyProperties(
 		 * Can be constructed from a DOM node, or a String name and String value.
 		 */
 		function AttributeThingy(){
-			if(arguments.length == 1 && arguments[0] instanceof Attr){ //creation from values in DOM node
-				var att = arguments[0];
-				this.name = att.name;
-				var value = att.value;
+			if(arguments.length > 0){
+				if (arguments.length === 1 && arguments[0] instanceof Attr) { //creation from values in DOM node
+					var att = arguments[0];
+					this.name = att.name;
+					return ContentThingy.apply(this, [att.value]);
+				}
+				else if(typeof(arguments[0]) === "string") { //creation from values directly
+					this.name = arguments[0];
+					if( arguments.length === 1){
+						return ContentThingy.apply(this, [""]); //TODO check if empty string is better than null (loses info?)
+					}
+					if (arguments.length === 2 && typeof(arguments[1]) === "string") {
+						return ContentThingy.apply(this, [arguments[1]]);
+					}
+				}
 			}
-			else if(arguments.length == 2 && arguments[0] instanceof String && arguments[1] instanceof String){ //creation from values directly
-				this.name = arguments[0];
-				var value = arguments[1];
-			}
-			else{
-				throw new Error("Malformed arguments to AttributeThingy constructor");
-			}
+			throw new Error("Malformed arguments to AttributeThingy constructor");
 
-			ContentThingy.apply(this,[value]);
 		}
 		AttributeThingy.prototype = new ContentThingy();
 		/** Returns the name of this AttributeThingy. */
@@ -822,8 +837,8 @@ YOURX.copyProperties(
 					throw new Error("Cannot populate ElementThingyRule with DOM element called " + el.nodeName);
 				}
 			}
-			else if(arguments[0] instanceof String){
-				NamedThingyRule.apply(this,[arguments[0] /*name*/, "ElementThingy", arguments[1] /*children*/]);				
+			else if(typeof(arguments[0]) === "string"){
+				NamedThingyRule.apply(this,[arguments[0] /*name*/, "ElementThingy" /*typename*/ , arguments[1] /*children*/]);				
 			}
 			else{
 				throw new Error("Malformed arguments to ElementThingyRule constructor");
@@ -891,7 +906,7 @@ YOURX.copyProperties(
 					throw new Error("Cannot populate AttributeThingyRule with DOM element called " + el.nodeName);
 				}
 			}
-			else if(arguments[0] instanceof String){
+			else if(typeof(arguments[0]) === "string"){
 				NamedThingyRule.apply(this,[arguments[0] /*name*/, "AttributeThingy", children]); 
 			}
 			else{
