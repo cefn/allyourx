@@ -11,6 +11,12 @@ YOURX.copyProperties(
 		 * to subtrees (provided through JQuery sets for convenience). 
 		 */
 		function Editor(){}
+		
+		/** Acquire listener implementations from YOURX.Thingy */
+		Editor.prototype.bind = YOURX.Thingy.prototype.bind;
+		Editor.prototype.unbind = YOURX.Thingy.prototype.unbind;
+
+		
 		/** Binds a thingy to the element identified by the JQuery selection. 
 		 * The contents of the element will then be updated according to Thingy
 		 * events which indicating a change of state or relationships in the tree.
@@ -123,9 +129,12 @@ YOURX.copyProperties(
 		 */
 		SpanEditor.prototype.createThingyWrapper = function(thingy){
 			var elq = $("<span/>");
-										
-			//bind thingy and add structural elements
+			
+			/** //OperationCaret  should be stored in place of the thingy directly		
 			elq.data("xthingy",thingy);
+			**/
+
+			//bind thingy and add structural elements
 
 			//assign classes depending on Thingy type
 			if(thingy instanceof YOURX.ContainerThingy){

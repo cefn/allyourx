@@ -56,6 +56,9 @@ YOURX.copyProperties(
 			this.setParentThingy(parentthingy);
 		}
 		
+		//TODO consider how OperationCaret should bind to ContentThingies (Attributes and Text) - Position cld be character position? What is name hashmap for?
+		//position representation could be more efficient using integers/arrays than strings/hashmap
+		
 		OperationCaret.prototype.nextInvoluntaryKey = function(){
 			var key;
 			for(key in this.involuntaryoperations){

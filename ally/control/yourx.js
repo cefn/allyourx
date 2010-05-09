@@ -3,6 +3,7 @@ YOURX.copyProperties(
 					
 		/** Utility methods in a 'static' library object */		
 		var ThingyUtil = { //TODO consider reusing single static DOMParser and XMLSerializer
+			hasher:new Guid(),
 			log:function(msg){$(function(){$('body').prepend(msg + "<br/>")});},
 			xml2e4x:function(xml){ return new XML(ThingyUtil.xmlStripComments(xml));},
 			xml2dom:function(xml){ return (new DOMParser()).parseFromString(xml,"text/xml");},
@@ -242,58 +243,76 @@ YOURX.copyProperties(
 		//TODO implement basic unit tests for e4x, xml and dom transformations 
 		
 		function Thingy(){
-			this.data = {};
+			this.source = {};
+			this.map = {};
+			
+			//privately stored lazily created hashcode
+			var hash = null;
+			this.hashCode = function(){
+				if(!hash){
+					hash = ThingyUtil.hasher.generate();
+				}
+				return hash;
+			}
 		}
 		Thingy.prototype = {
 			toString:function(){ return "Thingy"},
 			serialiser:new XMLSerializer(),
+			/** Always returns existing value for key. Overwrites new value if provided. Purpose similar to JQuery data() function. */
+			data:function(key, newval){
+				var oldval = (key in map ? map[key] : null); 
+				if(newval){
+					map[key] = newval;
+				}
+				return oldval;
+			},
 			setE4X:function(e4x){
-				this.data.e4x = ex4;
-				this.data.xml = null;
-				this.data.dom = null;
+				this.source.e4x = ex4;
+				this.source.xml = null;
+				this.source.dom = null;
 			},
 			setXML:function(xml){
-				this.data.e4x = null;
-				this.data.xml = xml;
-				this.data.dom = null;
+				this.source.e4x = null;
+				this.source.xml = xml;
+				this.source.dom = null;
 			},
 			setDOM:function(dom){
-				this.data.e4x = null;
-				this.data.xml = null;
-				this.data.dom = dom;
+				this.source.e4x = null;
+				this.source.xml = null;
+				this.source.dom = dom;
 			},
 			asE4X:function(){
-				if( ! ("e4x" in this.data)){
-					if("xml" in this.data){
-						this.data.e4x = ThingyUtil.xml2e4x(this.data.xml);
+				if( ! ("e4x" in this.source)){
+					if("xml" in this.source){
+						this.source.e4x = ThingyUtil.xml2e4x(this.source.xml);
 					}
-					else if("dom" in this.data){
-						this.data.e4x = ThingyUtil.dom2e4x(this.data.dom);
+					else if("dom" in this.source){
+						this.source.e4x = ThingyUtil.dom2e4x(this.source.dom);
 					}
 				}
-				return this.data.e4x;
+				return this.source.e4x;
 			},
 			asXML:function(){
-				if( ! ("xml" in this.data)){
-					if("e4x" in this.data){
-						this.data.xml = ThingyUtil.e4x2xml(this.data.e4x);
+				if( ! ("xml" in this.source)){
+					if("e4x" in this.source){
+						this.source.xml = ThingyUtil.e4x2xml(this.source.e4x);
 					}
-					else if("dom" in this.data){
-						this.data.xml = ThingyUtil.dom2xml(this.data.dom);
+					else if("dom" in this.source){
+						this.source.xml = ThingyUtil.dom2xml(this.source.dom);
 					}
 				}
-				return this.data.xml;
+				return this.source.xml;
 			},
 			asDOM:function(){
-				if( ! ("dom" in this.data)){
-					if("e4x" in this.data){
-						this.data.dom = ThingyUtil.e4x2dom(this.data.e4x);
+				if( ! ("dom" in this.source)){
+					if("e4x" in this.source){
+						this.source.dom = ThingyUtil.e4x2dom(this.source.e4x);
 					}
-					else if("xml" in this.data){
-						this.data.dom = ThingyUtil.xml2dom(this.data.xml);
+					else if("xml" in this.source){
+						this.source.dom = ThingyUtil.xml2dom(this.source.xml);
 					}
 				}
-				return this.data.dom;
+				return this.source.dom;
 			},
 			/** Binds objects or functions to arbitrary event names triggered by this Thingy, by storing them in dynamically created arrays.
 			 * @param {Object} name The event name to bind against
@@ -404,26 +423,38 @@ YOURX.copyProperties(
 		}
 		/** Adds a child and notifies listeners. */
 		ContainerThingy.prototype.addChild = function(){
-			if(arguments.length > 0){
-				if(arguments[0] instanceof Thingy){
-					var child = arguments[0]; 
-					var childidx = this.children.push(child);
-					var parent = this;
-					this.traverseListeners('childadded', function(listener){
-						listener(parent,child,childidx);
-					});
+			var child = null;
+			var childidx = -1;
+			if(arguments.length > 0 && arguments[0] instanceof Thingy){
+				child = arguments[0]; 
+				if(arguments.length === 1){
+					childidx = this.children.push(child);
 				}
-				else {
-					 throw new Error("Malformed invocation of ContainerThingy#addChild()");
-				}
+				else if(arguments.length === 2 && typeof(arguments[1]) === "number"){
+					childidx = arguments[1];
+					this.children.splice(childidx,0,child);
+				} 
 			}
-		}
+			
+			if(child && childidx !== -1){
+				//notify listeners if successful
+				var parent = this;
+				this.traverseListeners('childadded', function(listener){
+					listener(parent,child,childidx);
+				});
+				return child;				
+			}
+			else{
+				throw new Error("Malformed invocation of ContainerThingy#addChild()");									
+			}
+		};
 		/** Removes a child and notifies listeners. */
 		ContainerThingy.prototype.removeChild = function(){
-			if(arguments.length > 0){
+			var child = null;
+			var childidx = -1;
+			if(arguments.length === 1){
 				if(arguments[0] instanceof Thingy){
-					var child = arguments[0];
-					var childidx = -1;
+					child = arguments[0];
 					this.children = this.children.filter(function(item,idx){
 						if(item === child){
 							childidx = idx;
@@ -433,18 +464,27 @@ YOURX.copyProperties(
 							return true;
 						}
 					});
-					if(childidx != -1){
-						var parent = this;
-						this.traverseListeners('childremoved', function(listener){
-							listener(parent,child,childidx);
-						});						
-					}
 				}
-				else {
-					 throw new Error("Malformed invocation of ContainerThingy#addChild()");
+				else if(typeof(arguments[0]) === "number"){
+					childidx = arguments[0];
+					child = children[childidx];
+					this.children.splice(childidx,1);
 				}
+
 			}
-		}
+
+			if(child && childidx != -1){
+				var parent = this;
+				this.traverseListeners('childremoved', function(listener){
+					listener(parent,child,childidx);
+				});		
+				return child;				
+			}
+			else{
+				throw new Error("Malformed invocation of ContainerThingy#addChild()");				
+			}
+			
+		};
 		/** Adds a thingy constructed dynamically to mirror a given DOM node. */
 		ContainerThingy.prototype.addNode=function(node){
 			this.addThingy(ThingyUtil.dom2thingy(node));
@@ -1118,6 +1158,120 @@ YOURX.copyProperties(
 		}
 		CompoundWalker.prototype.posRequired = function(pos,rule){
 			this.wrapped.forEach(function(walker){walker.posRequired(pos,rule);});
+		}
+		
+		/** Maintains a data structure to accelerate traversal and retrieval requests below the specified thingy. 
+		 * @param {Object} node
+		 */
+		function ThingyTree(thingy){
+			this.metadata = new Hashtable();
+			this.trackThingy(thingy);
+		}
+		
+		/** Lazily creates metadata storage for the thingy.*/
+		ThingyTree.prototype.getMetadata = function(thingy){
+			var metadata = this.metadata.get(thingy);
+			if(!metadata){
+				metadata = {};
+				this.metadata.put(thingy,metadata);
+			}
+			return metadata;
+		}
+		
+		ThingyTree.prototype.childAdded = function(parent,child,childidx){
+			this.getMetadata(child)['parent'] = parent;
+			this.parents.put(child,parent);
+			this.trackThingy(child);
+		}
+
+		ThingyTree.prototype.childRemoved = function(parent,child,childidx){
+			this.getMetadata(child)['parent'] = null;
+			this.untrackThingy(child);			
+		}
+
+		ThingyTree.prototype.attributeAdded = function(parent,att){
+			this.getMetadata(att)['parent'] = parent;
+			this.trackThingy(att);			
+		}
+
+		ThingyTree.prototype.attributeRemoved = function(parent,att){
+			this.getMetadata(att)['parent'] = null;
+			this.untrackThingy(att);
+		}
+		
+		ThingyTree.prototype.trackThingy = function(thingy){
+			if(thingy instanceof ContainerThingy){
+				thingy.bind("childadded", this.childAdded);
+				thingy.bind("childremoved", this.childRemoved);
+			}
+			if(thingy instanceof ElementThingy){
+				thingy.bind("attributeadded", this.attributeAdded);
+				thingy.bind("attributeremoved", this.attributeRemoved);
+			}
+		} 
+
+		ThingyTree.prototype.untrackThingy = function(thingy){
+			purgeMetadata(thingy);
+			if(thingy instanceof ContainerThingy){
+				thingy.unbind("childadded", this.childAdded);
+				thingy.unbind("childremoved", this.childRemoved);
+			}
+			if(thingy instanceof ElementThingy){
+				thingy.unbind("attributeadded", this.attributeAdded);
+				thingy.unbind("attributeremoved", this.attributeRemoved);
+			}
+		} 
+				
+		ThingyTree.prototype.getParent = function(thingy){
+			return this.getMetadata(thingy)['parent'];
+		}
+
+		/** Todo consider efficiency of caching by monitoring child insertion/removal. */
+		ThingyTree.prototype.getPosition = function(thingy){
+			if(!thingy instanceof AttributeThingy){
+				var parent = getParent(thingy);
+				if(parent){
+					var count;
+					for(count=0; count < parent.children.length; count++){
+						if(parent.children[count]===thingy){
+							return count;
+						}
+					}					
+				}
+			}
+			else{
+				return -1; //Attribute thingies don't have a position
+			}
+		}
+		
+		ThingyTree.prototype.depthFirstUntil = function(totest, testfun){
+			var result;
+			while(totest){
+				result = testfun(totest);
+				if(result){
+					return result;
+				}
+				else{
+					//try to descend
+					if(totest instanceof ContainerThingy){
+						if(totest.children.length){
+							totest = totest.children[0];
+							continue;
+						}
+					}
+					//try to find siblings or ascend
+					var parent, pos;
+					do{
+						parent = this.getParent(totest);
+						pos = this.getPosition(totest);
+					}while(parent && (pos === parent.children.length -1));
+					if(parent){
+						totest = parent[pos+1];
+						continue;
+					}
+				}
+			}
+			return null;
 		}
 		
 		//evaluate the export function in this scope	
