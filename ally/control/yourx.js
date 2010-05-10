@@ -1171,7 +1171,7 @@ YOURX.copyProperties(
 		/** Lazily creates metadata storage for the thingy.*/
 		ThingyTree.prototype.getMetadata = function(thingy){
 			var metadata = this.metadata.get(thingy);
-			if(!metadata){
+			if(!metadata){ //nothing yet stored
 				metadata = {};
 				this.metadata.put(thingy,metadata);
 			}
@@ -1228,20 +1228,18 @@ YOURX.copyProperties(
 
 		/** Todo consider efficiency of caching by monitoring child insertion/removal. */
 		ThingyTree.prototype.getPosition = function(thingy){
-			if(!thingy instanceof AttributeThingy){
+			if(!thingy instanceof AttributeThingy){ //Attribute thingies don't have a position
 				var parent = getParent(thingy);
-				if(parent){
+				if(parent){ //Unparented thingies don't have a position
 					var count;
 					for(count=0; count < parent.children.length; count++){
-						if(parent.children[count]===thingy){
+						if(parent.children[count]===thingy){ //found the position
 							return count;
 						}
 					}					
 				}
 			}
-			else{
-				return -1; //Attribute thingies don't have a position
-			}
+			return -1; 
 		}
 		
 		ThingyTree.prototype.depthFirstUntil = function(totest, testfun){
