@@ -3,6 +3,12 @@ YOURX.copyProperties(
 					
 		/** Utility methods in a 'static' library object */		
 		var ThingyUtil = { //TODO consider reusing single static DOMParser and XMLSerializer
+			methodHandoffFunction:function(obj,name){
+				return function(){
+					var fun = obj[name];
+					fun.apply(obj, arguments);
+				};
+			},
 			hasher:new Guid(),
 			log:function(msg){$(function(){$('body').prepend(msg + "<br/>")});},
 			xml2e4x:function(xml){ return new XML(ThingyUtil.xmlStripComments(xml));},
@@ -1163,109 +1169,155 @@ YOURX.copyProperties(
 		/** Maintains a data structure to accelerate traversal and retrieval requests below the specified thingy. 
 		 * @param {Object} node
 		 */
-		function ThingyTree(thingy){
+		function ThingyTracker(){
 			this.metadata = new Hashtable();
-			this.trackThingy(thingy);
-		}
+			this.childAddedListener = ThingyUtil.methodHandoffFunction(this, "childAdded");
+			this.childRemovedListener = ThingyUtil.methodHandoffFunction(this, "childRemoved");
+			this.attributeAddedListener = ThingyUtil.methodHandoffFunction(this, "attributeAdded");
+			this.attributeRemovedListener = ThingyUtil.methodHandoffFunction(this, "attributeRemoved");
+			this.valueChangedListener = ThingyUtil.methodHandoffFunction(this, "valueChanged");
+		};
 		
-		/** Lazily creates metadata storage for the thingy.*/
-		ThingyTree.prototype.getMetadata = function(thingy){
-			var metadata = this.metadata.get(thingy);
-			if(!metadata){ //nothing yet stored
-				metadata = {};
-				this.metadata.put(thingy,metadata);
+		/** Accesses metadata storage for a thingy previously tracked.*/
+		ThingyTracker.prototype.getMetadata = function(thingy){
+			var data = this.metadata.get(thingy);
+			if(data !== null){
+				return data;
 			}
-			return metadata;
-		}
+			else{
+				throw new Error("Thingy is not yet being tracked by this tracker");
+			}
+		};
+
+		ThingyTracker.prototype.isTracked = function(thingy){
+			return this.metadata.containsKey(thingy);
+		}		
 		
-		ThingyTree.prototype.childAdded = function(parent,child,childidx){
-			this.getMetadata(child)['parent'] = parent;
-			this.parents.put(child,parent);
+		ThingyTracker.prototype.childAdded = function(parent,child,childidx){
 			this.trackThingy(child);
-		}
+			this.getMetadata(child)['parent'] = parent;
+		};
 
-		ThingyTree.prototype.childRemoved = function(parent,child,childidx){
-			this.getMetadata(child)['parent'] = null;
+		ThingyTracker.prototype.childRemoved = function(parent,child,childidx){
 			this.untrackThingy(child);			
-		}
+		};
 
-		ThingyTree.prototype.attributeAdded = function(parent,att){
-			this.getMetadata(att)['parent'] = parent;
+		ThingyTracker.prototype.attributeAdded = function(parent,att){
 			this.trackThingy(att);			
-		}
+			this.getMetadata(att)['parent'] = parent;
+		};
 
-		ThingyTree.prototype.attributeRemoved = function(parent,att){
-			this.getMetadata(att)['parent'] = null;
+		ThingyTracker.prototype.attributeRemoved = function(parent,att){
 			this.untrackThingy(att);
-		}
-		
-		ThingyTree.prototype.trackThingy = function(thingy){
-			if(thingy instanceof ContainerThingy){
-				thingy.bind("childadded", this.childAdded);
-				thingy.bind("childremoved", this.childRemoved);
-			}
-			if(thingy instanceof ElementThingy){
-				thingy.bind("attributeadded", this.attributeAdded);
-				thingy.bind("attributeremoved", this.attributeRemoved);
-			}
-		} 
+		};
 
-		ThingyTree.prototype.untrackThingy = function(thingy){
-			purgeMetadata(thingy);
-			if(thingy instanceof ContainerThingy){
-				thingy.unbind("childadded", this.childAdded);
-				thingy.unbind("childremoved", this.childRemoved);
+		ThingyTracker.prototype.valueChanged = function(thingy, newval, oldval){
+			//superclass does nothing
+		};
+		
+		ThingyTracker.prototype.trackThingy = function(thingy, data){ //can optionally pass in an initial metadata structure
+			if(!this.isTracked(thingy)){
+				if(!data){
+					data = {};	
+				}
+				this.metadata.put(thingy,data);
+				if(thingy instanceof ContainerThingy){
+					thingy.getChildren(this.childAddedListener, this.childRemovedListener);
+				}
+				if(thingy instanceof ElementThingy){
+					thingy.getAttributes(this.attributeAddedListener, this.attributeRemovedListener);
+				}
+				if(thingy instanceof ContentThingy){
+					thingy.getValue(this.valueChangedListener);
+				}
+				return data;
 			}
-			if(thingy instanceof ElementThingy){
-				thingy.unbind("attributeadded", this.attributeAdded);
-				thingy.unbind("attributeremoved", this.attributeRemoved);
+			else{
+				throw new Error("Thingy is already being tracked");				
+			}
+		};
+
+		ThingyTracker.prototype.untrackThingy = function(thingy){
+			if(this.isTracked(thingy)){				
+				if(thingy instanceof ContainerThingy){
+					thingy.unbind("childadded", this.childAddedListener);
+					thingy.unbind("childremoved", this.childRemovedListener);
+				}
+				if(thingy instanceof ElementThingy){
+					thingy.unbind("attributeadded", this.attributeAddedListener);
+					thingy.unbind("attributeremoved", this.attributeRemovedListener);
+				}
+				if(thingy instanceof ContentThingy){
+					thingy.unbind("valuechanged", this.valueChangedListener);
+				}
+				var data = this.metadata.remove(thingy);
+				return data;
+			}
+			else{
+				throw new Error("Thingy is not being tracked");
 			}
 		} 
 				
-		ThingyTree.prototype.getParent = function(thingy){
+		ThingyTracker.prototype.getParent = function(thingy){
 			return this.getMetadata(thingy)['parent'];
 		}
 
 		/** Todo consider efficiency of caching by monitoring child insertion/removal. */
-		ThingyTree.prototype.getPosition = function(thingy){
-			if(!thingy instanceof AttributeThingy){ //Attribute thingies don't have a position
-				var parent = getParent(thingy);
+		ThingyTracker.prototype.getPosition = function(thingy){
+			if(!(thingy instanceof AttributeThingy)){ //Attribute thingies don't have a position
+				var parent = this.getParent(thingy);
 				if(parent){ //Unparented thingies don't have a position
 					var count;
 					for(count=0; count < parent.children.length; count++){
 						if(parent.children[count]===thingy){ //found the position
 							return count;
 						}
-					}					
+					}
 				}
 			}
 			return -1; 
 		}
 		
-		ThingyTree.prototype.depthFirstUntil = function(totest, testfun){
+		/** Performs a document order traversal, visiting elements in sequence 
+		 * of their first appearance in the document. Siblings are visited after 
+		 * their preceding sibling and its descendants. If the test function returns
+		 * a truthy value, then the traversal is terminated early. 
+		 * @param {Object} totest The item at which the traversal should start
+		 * @param {Object} testfun The function which  should be used to visit each thingy
+		 * @return The truthy value returned by the test function, or null if the traversal was not terminated.
+		 */ 
+		ThingyTracker.prototype.traverseDocumentOrder = function(totest, testfun){
 			var result;
-			while(totest){
+			visitloop: while (totest) { //loop which triggers a test function call each round
 				result = testfun(totest);
-				if(result){
+				if (result) {
 					return result;
 				}
-				else{
+				else {
 					//try to descend
-					if(totest instanceof ContainerThingy){
-						if(totest.children.length){
+					if (totest instanceof ContainerThingy) {
+						if (totest.children.length) {
 							totest = totest.children[0];
-							continue;
+							continue visitloop;
 						}
 					}
-					//try to find siblings or ascend
 					var parent, pos;
-					do{
+					ascendloop: while (totest) { //loop which ascends until available siblings
 						parent = this.getParent(totest);
 						pos = this.getPosition(totest);
-					}while(parent && (pos === parent.children.length -1));
-					if(parent){
-						totest = parent[pos+1];
-						continue;
+						if (parent) { //item is a child
+							if (pos !== parent.children.length - 1) { //siblings available; traverse the next one
+								totest = parent.children[pos + 1];
+								continue visitloop;
+							}
+							else { //no more siblings; try to find siblings of ancestors 
+								totest = parent;
+								continue ascendloop;
+							}
+						}
+						else { //backed up to root node; end traversal
+							totest = null;
+						}
 					}
 				}
 			}
@@ -1278,6 +1330,7 @@ YOURX.copyProperties(
 			"Thingy","ContainerThingy","ContentThingy","RootThingy","ElementThingy","AttributeThingy","TextThingy",
 			"ThingyGrammar","ThingyRule","ElementThingyRule","AttributeThingyRule","TextThingyRule","OptionalThingyRule","ZeroOrMoreThingyRule","OneOrMoreThingyRule",
 			"ElementWalker","CachingWalker","CompoundWalker",
+			"ThingyTracker",
 			"ThingyRuleError", "UnsupportedOperationError"
 		]));
 			

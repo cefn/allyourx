@@ -8,7 +8,8 @@ $(function(){
 	    }],
 		["bindThingy adds some text nodes", function(){
 	        UNITTEST.editor = new ALLY.RawEditor();
-	        UNITTEST.boundq = UNITTEST.editor.createThingyWrapper(UNITTEST.rootthingy);
+			UNITTEST.editor.trackThingy(UNITTEST.rootthingy);
+	        UNITTEST.boundq = UNITTEST.editor.getBoundSelection(UNITTEST.rootthingy);
 	        UNITTEST.viewportq.append(UNITTEST.boundq);
 	        var counttext = UNITTEST.viewportq.find(".xtext").size();
 	        return counttext === 14;
@@ -32,8 +33,8 @@ $(function(){
 		["bindThingy: Removing attribute nodes removes all descendants bound to attributes", function(){
 	        UNITTEST.boundq.find(".xattribute").each(function(){
 				var thisq = $(this);
-	            var attthingy = thisq.data("xthingy");
-	            var elthingy = thisq.parents(".xelement:first").data("xthingy");
+	            var attthingy = UNITTEST.editor.getBoundThingy(thisq);
+				var elthingy = UNITTEST.editor.getParent(attthingy);
 	            elthingy.removeAttribute(attthingy);
 	        });
 	        return UNITTEST.boundq.find(".xattribute").length === 0;

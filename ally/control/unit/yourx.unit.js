@@ -85,6 +85,16 @@ $(function() {
 			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("../../schema/yourx/examples.001/team.002c.xml");
 			return UNITTEST.grammar.matchThingy(UNITTEST.thingy) === false;
 		}],
+		["Document order traversal visits all items", function(){
+	        UNITTEST.rootthingy = YOURX.ThingyUtil.url2thingy("../../data/data.xml");
+	        UNITTEST.tracker = new YOURX.ThingyTracker();
+			UNITTEST.tracker.trackThingy(UNITTEST.rootthingy);
+			var thingies = [];
+			UNITTEST.tracker.traverseDocumentOrder(UNITTEST.rootthingy, function(thingy){
+				thingies.push(thingy);
+			});
+			return thingies.length === 33;
+	    }],
 /*		["insert required elements from examples.001/team.002.rng ", function(){
 			UNITTEST.thingy = new YOURX.RootThingy();
 			UNITTEST.grammar.autoPopulate(UNITTEST.thingy);
