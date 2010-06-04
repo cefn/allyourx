@@ -185,13 +185,180 @@ YOURX.copyProperties(
 				}					
 			}
 			else if (thingy instanceof YOURX.ContentThingy){
-				this.queryContentWrapper(superq).attr("contentEditable",true);
 				if(thingy instanceof YOURX.AttributeThingy){
 					this.queryContentWrapper(superq).before(' <span class="xname">' + thingy.getName() +'</span>="');
 					this.queryContentWrapper(superq).after('"');
 				}
 			}
 			return superq;
+		}
+
+		/** Only works for NamedThingy subclasses. */
+		RawEditor.prototype.queryNameWrapper = function(elq){
+			return elq.children().filter(".xname");
+		}
+
+		function CompletionEditor(){
+			RawEditor.apply(this,arguments);
+		}
+		CompletionEditor.prototype = new RawEditor();
+		
+		CompletionEditor.prototype.setFocus = function(focusthingy, focuscaret){
+			//remove previous focus
+			var focusq = this.getFocusedSelection();
+			if(focusq && focusq.size()){
+				focusq.blur();
+				focusq.removeAttr("contenteditable");
+			}
+			//sanitise submitted focuscaret value
+			if(focuscaret){
+				if(!isNaN(focuscaret)){ //turn integer into proper focuscaret structure
+					focuscaret = {start:focuscaret,end:focuscaret};
+				}
+				else if("start" in focuscaret && !isNaN(focuscaret.start)){ //duplicate end value for zero length selection
+					if(!("end" in focuscaret)){
+						focuscaret.end = focuscaret.start;
+					}
+				}
+				else{
+					throw new Error("Malformed invocation of setFocus(). Improper focuscaret.");
+				}
+			}
+			else{
+				focuscaret = {start:0,end:0};
+			}
+			//set new values
+			this.focusthingy = focusthingy;
+			this.focuscaret = focuscaret;
+			//add focus again
+			var focusq = this.getFocusedSelection();
+			if(focusq && focusq.size()){
+				focusq.attr("contenteditable", "true");
+				focusq.focus();
+				focusq.caret(this.getDomCaret());
+			}
+		}
+
+		/** Calculates the start and end of the selection in the actual DOM element, since focuscaret values use negative values symbolically. */
+		CompletionEditor.prototype.getDomCaret = function(){
+			if (this.focuscaret) {
+				if (this.focuscaret.start === this.focuscaret.end) {
+					if (this.focuscaret.start >= 0) { //cursor position is focused in content
+						if (this.focusthingy instanceof YOURX.ContainerThingy) {
+							if (this.focuscaret.start === 0) {
+								return this.focuscaret;
+							}
+							else {
+								//TODO, containers have no content as such, recurse to focus/create elements based on positive, 
+								//non-zero cursor position within their content
+								throw Error("Containers have no direct content, cursor position cannot be positive");
+							}
+						}
+						else 
+							if (this.focusthingy instanceof YOURX.ContentThingy) {
+								return this.focuscaret; // content can have a positive 
+							}
+							else {
+								throw Error("Focus requested from unexpected element");
+							}
+					}
+					else { //cursor position is focused in name
+						//negative offset according to the length of the name
+						return {
+							start: (this.focuscaret.start + this.focusthingy.name.length + 1),
+							end: (this.focuscaret.end + this.focusthingy.name.length + 1)
+						};
+					}
+				}
+				else {
+					throw Error("Multiple selection currently not implemented");
+				}
+			}
+			else {
+				throw Error("No focus caret is set.");
+			}
+		}
+
+		CompletionEditor.prototype.getFocusedSelection = function(){
+			if (this.focusthingy) { 
+				var boundq = this.getBoundSelection(this.focusthingy);
+				if(this.focuscaret) {
+					if (this.focuscaret.start === this.focuscaret.end) {
+						var cursorpos = this.focuscaret.start;
+						if (cursorpos >= 0) {
+							if(this.focusthingy instanceof YOURX.ContainerThingy){
+								//cursor is in descendant wrapper
+								return this.queryDescendantWrapper(boundq);								
+							}
+							else if (this.focusthingy instanceof ContentThingy){
+								//cursor is just in the content
+								return this.queryContentWrapper(boundq);								
+							}
+						}
+						else { 
+							//field cursor is in name
+							return this.queryNameWrapper(boundq);								
+						}
+					}
+					else {
+						throw new Error("Multiple character selection currently not implemented");
+					}
+				}
+			}
+			return null;
+		}
+
+		
+		CompletionEditor.prototype.trackThingy = function(thingy){
+			//superclass tracking
+			RawEditor.prototype.trackThingy.apply(this,arguments);
+			//create listener for keydowns
+			var editorthis = this;
+			var keydownListener = function(evt){
+				return editorthis.handleKeydown.apply(editorthis,[evt]);
+			};
+			//wire into bound selection
+			var boundq = this.getBoundSelection(thingy);
+			boundq.focus(function(evt){
+				boundq.bind('keydown', keydownListener);				
+			});
+			boundq.blur(function(evt){
+				boundq.unbind('keydown', keydownListener);				
+			});
+		}
+
+		CompletionEditor.prototype.untrackThingy = function(){ //TODO, consider unbinding focus and key listeners
+			RawEditor.prototype.untrackThingy.apply(this,arguments);			
+		}
+		
+		/** Handles a new key pressed in the context of a given...
+		 * @param {Object} whichkey the key to handle
+		 * @return The thingy which should acquire focus, or null if no focus
+		 */
+		CompletionEditor.prototype.handleKeydown = function(evt){
+			//TODO : wire into operationcaret's list of available operations
+			if(this.focusthingy){
+				switch(evt.which){
+					case 16: // shift key - do nothing
+						return;
+					break;
+					case 188: // '<' beginning of open tag
+						if(this.focusthingy instanceof YOURX.ContainerThingy){
+							var newthingy = new YOURX.ElementThingy("");
+							this.focusthingy.addChild(newthingy);
+							this.setFocus(newthingy, -1);
+							evt.preventDefault();
+							evt.stopPropagation();
+						}
+					break;
+					case '>': //
+					break;
+					default:
+					throw new Error("Character '" + evt.which + "' unhandled by any Controller case. Should have returned by now." );
+					break;
+				}
+			}
+			return true;
 		}
 			
 		/*
@@ -201,7 +368,7 @@ YOURX.copyProperties(
 		*/
 		
 		return eval(YOURX.writeScopeExportCode([
-			'RecursiveEditor', 'SpanEditor', 'RawEditor']
+			'RecursiveEditor', 'SpanEditor', 'RawEditor', 'CompletionEditor']
 		));	
 		
 	}()),
