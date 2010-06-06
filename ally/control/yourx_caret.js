@@ -1,42 +1,41 @@
 YOURX.copyProperties(
 	(function(){		
 		/** 
-		 * @param {Thingy} parentthingy A parent thingy which, along with all ancestors and preceding siblings, shallow-validates 
-		 * against the corresponding ThingyRule in the grammar.
+		 * @param {Thingy} parentthingy A parent thingy which, it is assumed, shallow-validates 
+		 * against the corresponding ThingyRule in the grammar, as do all its ancestors and preceding siblings.
 		 * @param {ThingyRule} parentrule The corresponding ThingyRule which parentthingy statisfies.
 		 * 
 		 * @classDescription  An OperationCaret applies to the attributes and children of one Thingy in an existing tree, 
 		 * represented by 'parentthingy'. For the proper functioning of the OperationCaret it is assumed that all ancestors
-		 * including the parentthingy, and all preceding sibling thingies have passed shallow validation (validation only at 
-		 * their own level; e.g. rule#matchThingy(thingy, shallow=true) ).
+		 * including the parentthingy, and all preceding sibling thingies have passed shallow validation (validation only 
+		 * up to and including their own level; e.g. rule#matchThingy(thingy, shallow=true) ).
 		 * 
-		 * Operations are expansions or contractions of the tree which can or must be executed 
-		 * at a given position and which create or maintain a tree which will pass shallow validation for all attributes 
-		 * and children of the parentthingy.
+		 * Operations are expansions or contractions of the tree which can or must be executed  at a given position, creating
+		 * or maintaining a tree which will pass shallow validation for all attributes and children of the parentthingy.
 		 * 
 		 * The OperationCaret monitors changing rule, attribute and child assignment to that Thingy
 		 * and updates its estimate of available Operations accordingly.
 		 *  
 		 * You can use the OperationCaret to automatically construct one of two Operations for you.
 		 * 
-		 * The 'involuntary' operation will execute a set of changes which MUST be applied to a partially invalid tree in 
+		 * The 'involuntary' operation will execute changes which MUST be applied to a partially invalid tree in 
 		 * order to make the tree pass shallow validation.
 		 * 
 		 * The 'voluntary' operation will execute a set of changes which MAY be applied to a valid tree
-		 * such that it will still pass shallow validation.  
+		 * such that it will still pass shallow validation.
 		 * 
 		 * Each operation may have to be re-evaluated after a change to the Thingy tree, including the changes applied 
 		 * by applying an Operation, so these results should not be cached.
 		 * 
 		 * Operations are composed from atomic ThingyAdditions, ThingyDeletions, and ThingyEdits, and may be aggregated
-		 * using specialised subclasses of ThingyOperation representing a compound set.
+		 * using specialised subclasses of ThingyOperation which represent a compound set.
 		 * 
 		 * ThingyOperations for which #isInteractive() returns false are deterministic enough to proceed
 		 * without any user input, introducing or removing ElementThingy,AttributeThingy and TextThingy objects to the tree.
 		 * 
-		 * ThingyOperations for which #isInteractive() returns true require the user to make a selection, 
-		 * or provide a value before they can proceed. Passing a user object into ThingyOperation's interactWithUser method 
-		 * then triggers callbacks to get information.
+		 * ThingyOperations for which #isInteractive() returns true require the user to make a selection or provide a value 
+		 * before they can proceed. Passing a user object into ThingyOperation's interactWithUser method triggers callbacks
+		 * to get information.
 		 * 
 		 * The getInvoluntaryOperation() method will return operations until the Tree passes shallow validation. If no 
 		 * further operations are required to satisfy validation then it will return null;
@@ -48,17 +47,24 @@ YOURX.copyProperties(
 		 * @projectDescription Scenarios to note. Sequences of multiple zeroOrMore elements with no matching children
 		 * are effectively active in parallel at the same caret position. Attribute rules are effectively 
 		 * active in parallel. Any child rules of an Interleave structure are active in parallel. Highly 
-		 * parallel expansions can creat ThingyEdits with a very large number of alternatives.
+		 * parallel expansions can creat ThingyOperations which embody a very large number of alternative sub-operations.
 		 * 
 		 */
 		function OperationCaret(parentrule,parentthingy){
+			this.treeUpdatedListener = YOURX.ThingyUtil.methodHandoffFunction(this, "updateOperationCache"); 
 			this.setParentRule(parentrule);
 			this.setParentThingy(parentthingy);
 		}
 		
-		//TODO consider how OperationCaret should bind to ContentThingies (Attributes and Text) - Position cld be character position? What is name hashmap for?
-		//position representation could be more efficient using integers/arrays than strings/hashmap
-		
+		//TODO consider how OperationCaret should bind to ContentThingies (Attributes and Text) where validation rules are highly granular (e.g. RegExp)
+		// Position cld be character position? What is name hashmap for? 
+		//TODO position representation for large number of positions (e.g. text blocks) could be more efficient using integers/arrays than
+		//strings/hashmap
+
+		/** Returns the key of the next involuntary operation. If this is a number, then the operation will act at a given
+		 * numbered position (e.g. act on a child node). If it is a string, then the operation will act at a given named 
+		 * position (e.g. act on an attribute). The operation itself can be retrieved using nextInvoluntaryOperation()
+		 */	
 		OperationCaret.prototype.nextInvoluntaryKey = function(){
 			var key;
 			for(key in this.involuntaryoperations){
@@ -67,7 +73,9 @@ YOURX.copyProperties(
 			return null;
 		};
 
-
+		/** Returns the next involuntary operation. It simply returns the operation stored at the next key in interation order. 
+		 * The sequence of returned operations is therefore dependent on the implementation and should be assumed to be arbitrary.
+		 */
 		OperationCaret.prototype.nextInvoluntaryOperation = function(){
 			var key = this.nextInvoluntaryKey();
 			if(key){
@@ -78,6 +86,11 @@ YOURX.copyProperties(
 			}
 		};
 		
+		/** Retrieves and executes all involuntary operations required to make the thingy validate. This is likely to be 
+		 * the first operation executed on a thingy tree in an editor. Some involuntary operations will require interactions 
+		 * with the provided user object.
+		 * @param {Object} user
+		 */
 		OperationCaret.prototype.shallowFix = function(user){
 			var key, op;
 			while(key=this.nextInvoluntaryKey()){
@@ -95,42 +108,43 @@ YOURX.copyProperties(
 			return true;
 		};
 		
+		/** TODO, should be implemented to unbind all listeners and dispose of all returning references to this object which it
+		 * has put in place to ensure it is garbage collected.
+		 */
 		OperationCaret.prototype.dispose = function(){
 			
 		}
-		
-		OperationCaret.prototype.getRecacheFunction = function(){
-			//lazy create a function which causes 'this' to update operation cache
-			//this is executed on any local change to the tree
-			//future implementations can update operation cache more smartly
-			var caretthis = this; //allows use of this in function closure
-			return (this.refreshFunction ? this.refreshFunction : (this.refreshFunction = function(){caretthis.updateOperationCache();}));
-		};
-		
+				
+		/** Binds changes in the thingy to a refresh of the operation cache. */
 		OperationCaret.prototype.startListeningTo = function(thingy){
-			var listener = this.getRecacheFunction();
 			if("getChildren" in thingy){
-				thingy.bind('childadded',listener);
-				thingy.bind('childremoved',listener);
+				thingy.bind('childadded',this.treeUpdatedListener);
+				thingy.bind('childremoved',this.treeUpdatedListener);
 			}
 			if("getAttributes" in thingy){				 
-				thingy.bind('attributeadded',listener);
-				thingy.bind('attributeremoved',listener);
+				thingy.bind('attributeadded',this.treeUpdatedListener);
+				thingy.bind('attributeremoved',this.treeUpdatedListener);
 			}
 		};
 
+		/** Unsubscribes all listener relationships for a given thingy. */
 		OperationCaret.prototype.stopListeningTo = function(thingy){
 			var listener = this.getRecacheFunction();
 			if("getChildren" in thingy){
-				thingy.unbind('childadded',listener);
-				thingy.unbind('childremoved',listener);
+				thingy.unbind('childadded',this.treeUpdatedListener);
+				thingy.unbind('childremoved',this.treeUpdatedListener);
 			}
 			if("getAttributes" in thingy){				 
-				thingy.unbind('attributeadded',listener);
-				thingy.unbind('attributeremoved',listener);
+				thingy.unbind('attributeadded',this.treeUpdatedListener);
+				thingy.unbind('attributeremoved',this.treeUpdatedListener);
 			}				
 		};
 
+		/** Used to configure the parentthingy of the OperationCaret. In principle this means
+		 * that an OperationCaret can be reused for multiple points in the tree, although
+		 * this should be tested. 
+		 * @param {Object} parentthingy The thingy monitored
+		 */
 		OperationCaret.prototype.setParentThingy = function(parentthingy){			
 			///store and subscribe parentthingy
 			if(this.parentthingy){ //already a previous parentthingy - unbind events
@@ -145,6 +159,11 @@ YOURX.copyProperties(
 				throw new Error("null parentthingy set in OperationCaret");
 			}
 		}
+		/** Used to configure the parentrule of the OperationCaret. In principle this means
+		 * that an OperationCaret can be reused through different validation scenarios for the 
+		 * same thingy, although this should be tested. 
+		 * @param {Object} parentrule The rule monitored
+		 */
 		OperationCaret.prototype.setParentRule = function(parentrule){
 			this.parentrule = parentrule;
 			if(this.parentrule){
@@ -154,12 +173,24 @@ YOURX.copyProperties(
 				throw new Error("null parentrule set in OperationCaret");
 			}
 		}
+		
+		/** Returns the parentthingy which this OperationCaret is testing validity for.*/
 		OperationCaret.prototype.getParentThingy = function(){
 			return this.parentthingy;
 		}
+
+		/** Returns the parentrule which this OperationCaret is validating against.*/
 		OperationCaret.prototype.getParentRule = function(){
 			return this.parentrule;
 		}
+		
+		/** Refreshes the set of possible valid operations on the current parentthingy given
+		 * the current parentrule. Typically this is re-executed after every change in 
+		 * the tree. It will either create a set of involuntary operations if the tree is not 
+		 * yet valid, or voluntary ones, if the tree is valid, but optional operations are 
+		 * available. Currently, it terminates after it has found the next involuntary operation,
+		 * and does not search for voluntary operations.
+		 */ 
 		OperationCaret.prototype.updateOperationCache = function(){
 			var caretthis = this; //allows closures to access caret properties
 			
@@ -195,12 +226,12 @@ YOURX.copyProperties(
 				}
 				
 				//Walk to find involuntary operations available at various caret positions
-				//terminate early when first operation is found
+				//terminating early using 'opfound' exception hack when first operation is found
 				try{
 					YOURX.ThingyUtil.walkBelow(this.parentrule,this.parentthingy, caretwalker);
 					
 					//if this line is reached then there are no involuntary operations, 
-					//can proceed to assess voluntary ones
+					//as no exception was thrown. Can proceed to assess voluntary ones
 	
 					//create CachingWalker which allows multiple entries per key
 					/*
@@ -226,7 +257,7 @@ YOURX.copyProperties(
 			}			
 		}		
 		
-		/** Gets an involuntary operation at a given position
+		/** Gets an involuntary operation against a given key
 		 * @param {integer,string} key The key for the operation, which may be an 
 		 * attribute name (string) or an child position (integer) 
 		 */
@@ -234,6 +265,7 @@ YOURX.copyProperties(
 			return this.involuntaryoperations[key];
 		}
 		
+		/** Gets the list of keys for which there are involuntary operations. */ 
 		OperationCaret.prototype.involuntaryKeys = function(filterfun){
 		   var keys = [];
 		   for(var key in this.involuntaryoperations){
@@ -244,15 +276,17 @@ YOURX.copyProperties(
 		   return keys;
 		};
 
+		/** Gets the attribute keys for which involuntary operations are required. */ 
 		OperationCaret.prototype.involuntaryAttributeKeys = function(){
 			return this.involuntaryKeys(function(key){return isNaN(key);});
 		};
 
+		/** Gets the child keys for which involuntary operations are required. */ 
 		OperationCaret.prototype.involuntaryChildKeys = function(){
 			return this.involuntaryKeys(function(key){return !isNaN(key);});
 		};
 		
-		/**
+		/** 
 		 * @param {integer,string} key The key for the expansion, which may be an 
 		 * attribute name (string) or an child position (integer) 
 		 */
@@ -261,14 +295,17 @@ YOURX.copyProperties(
 		}
 
 		
+		/** A ThingyOperation represents a change to the children or attributes of the thingy. 
+		 * @param {Object} rule The rule which this operation attempts to satisfy.
+		 */
 		function ThingyOperation(rule){
 			this.rule = rule;
 		}
-		/** @return {String} The text label which should be shown to describe this expansion */
+		/** @return {String} The text label which should be shown to describe this operation */
 		ThingyOperation.prototype.getLabel = function(){
 			throw new YOURX.UnsupportedOperationError("getLabel() is not yet implemented for this Operation");	
 		}		
-		/** @return {boolean} Whether this operation needs user input to proceed*/
+		/** @return {boolean} True iff the operation needs user input to proceed. */
 		ThingyOperation.prototype.isInteractive = function(){
 			throw new YOURX.UnsupportedOperationError("isDeterministic() is not yet implemented for this Operation");
 		}
@@ -296,6 +333,7 @@ YOURX.copyProperties(
 		ThingyDeletion.prototype.isInteractive = function(){
 			return false; //all scenarios for v001 are non-interactive
 		}
+		/** Executes the deletion of the invalid child. */
 		ThingyDeletion.prototype.act = function(parentthingy, key){
 			if(this.rule instanceof YOURX.ElementThingyRule){
 				if(typeof(key) === "number"){
@@ -326,7 +364,7 @@ YOURX.copyProperties(
 		ThingyAddition.prototype.isInteractive = function(){
 			return false; //all scenarios for v001 are non-interactive
 		}
-		/**
+		/** Executes the addition of a child required by the rule.
 		 * @param {Thingy} parentthingy The thingy which matched the parent rule 
 		 * @param {integer} key The child key indicating where expansion should take place (string=name,integer=pos)
 		 */

@@ -12,14 +12,12 @@ $(function(){
 			UNITTEST.editable = $("*[contenteditable=true]"); //try to identify focused element
 			return UNITTEST.editable.size() === 1;
 		}],
-		/*
-		["Send less-than key creates element", function(){
+		["Keydown angle-bracket creates element", function(){
 			var evt = $.Event('keydown');
-			evt.which = 38; // '<' character
-			UNITTTEST.editable.trigger(evt);
-			return false;
+			evt.which = 188; // '<' character
+			UNITTEST.editable.trigger(evt);
+			return UNITTEST.thingy.getChildren().length === 1;
 		}],
-		*/
 		["Undefined", function(){
 			return false;
 		}],
