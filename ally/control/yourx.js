@@ -262,7 +262,7 @@ YOURX.copyProperties(
 			}
 		}
 		Thingy.prototype = {
-			toString:function(){ return "Thingy"},
+			toString:function(){ return "Generic Thingy - toString should be implemented.";},
 			serialiser:new XMLSerializer(),
 			/** Always returns existing value for key. Overwrites new value if provided. Purpose similar to JQuery data() function. */
 			data:function(key, newval){
@@ -400,6 +400,15 @@ YOURX.copyProperties(
 			Thingy.apply(this,[]);
 		}
 		ContainerThingy.prototype = new Thingy();
+		
+		ContainerThingy.prototype.toString = function(){ 
+			var formatted = "";
+			this.getChildren().forEach(function(child){
+				formatted += child.toString();
+			});
+			return formatted;
+		};
+
 		/** Can be invoked empty to just return the array of children,  
 		 * passing one function to get childadded events for all children now and in the future
 		 * or passing two functions to get childremoved events in the future too 
@@ -505,6 +514,11 @@ YOURX.copyProperties(
 			Thingy.apply(this,[]);
 		}
 		ContentThingy.prototype = new Thingy();
+
+		ContentThingy.prototype.toString = function(){ 
+			return "ContentThingy - toString should be implemented.";
+		};
+
 		/** Returns the value stored by this content item. */
 		ContentThingy.prototype.getValue = function(){
 			if(arguments.length == 1 && arguments[0] instanceof Function){
@@ -586,6 +600,15 @@ YOURX.copyProperties(
 			throw new Error("Malformed invocation of ElementThingy constructor");
 		}
 		ElementThingy.prototype = new ContainerThingy();
+		ElementThingy.prototype.toString = function(){ 
+			var formatted = "<" + this.name ;
+			if(this.children.length > 0){
+				return formatted + ">" + ContainerThingy.prototype.toString.apply(this) + "</" + this.name + ">";
+			}
+			else{
+				return formatted + "/>";
+			}
+		};
 		/** Returns the name. */
 		ElementThingy.prototype.getName = function(){
 			return this.name;
@@ -741,6 +764,9 @@ YOURX.copyProperties(
 
 		}
 		AttributeThingy.prototype = new ContentThingy();
+		AttributeThingy.prototype.toString = function(){ 
+			return this.name + "=\"" + this.value + "\"";
+		};
 		/** Returns the name of this AttributeThingy. */
 		AttributeThingy.prototype.getName = function(){
 			return this.name;
@@ -761,7 +787,9 @@ YOURX.copyProperties(
 			ContentThingy.apply(this,[value]);
 		}
 		TextThingy.prototype = new ContentThingy();
-		
+		TextThingy.prototype.toString = function(){ 
+			return this.value;
+		};
 		
 		function ThingyRule(children){
 			this.children = [].concat(children);

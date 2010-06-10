@@ -2,7 +2,7 @@ $(function(){
     var UNITTEST = {}; //create namespace object for temporary unittest properties
     UNITTEST.viewportq = $("#UNITTEST"); //target this element when binding controls
     executeTests([
-		["Create editor and find focus", function(){
+		["Create editor without grammar and find focus", function(){
 			UNITTEST.thingy = new YOURX.RootThingy(); //empty root element
 			UNITTEST.editor = new ALLY.CompletionEditor(); //create a raw editor
 			UNITTEST.editor.trackThingy(UNITTEST.thingy);
@@ -12,22 +12,47 @@ $(function(){
 			UNITTEST.editable = $("*[contenteditable=true]"); //try to identify focused element
 			return UNITTEST.editable.size() === 1;
 		}],
-		["Keydown angle-bracket creates element", function(){
-			var evt = $.Event('keydown');
-			evt.which = 188; // '<' character
-			UNITTEST.editable.trigger(evt);
-			return UNITTEST.thingy.getChildren().length === 1;
+		["Keydown left angle-bracket where editable creates and focuses element", function(){
+			var evt = $.Event('keypress');
+			evt.which = 60; // '<' character
+			$("*[contenteditable=true]").trigger(evt);
+			return UNITTEST.thingy.getChildren().length === 1 && $(document.activeElement).hasClass("xname"); //add test for focus [document.activeElement]
+		}],		
+		["Keydown alpha modifies element name", function(){
+			var evt = $.Event('keypress');
+			evt.which = 97;
+			$("*[contenteditable=true]").trigger(evt);
+			var name = UNITTEST.thingy.getChildren()[0].getName();
+			return name ==="a"; //fails because focus event bubbles and multiple focus handlers are watching 
 		}],
-		["Undefined", function(){
+		["Keydown space creates and focuses attribute name", function(){
 			return false;
 		}],
-		["Undefined", function(){
+		["Keydown alpha modifies attribute value", function(){
 			return false;
 		}],
-		["Undefined", function(){
+		["Keydown equals moves focus to attribute value", function(){
 			return false;
 		}],
-		["Undefined", function(){
+		["Keydown quote returns focus to open tag", function(){
+			return false;
+		}],
+		["Keydown right angle-bracket moves focus to descendants", function(){
+			return false;
+		}],
+		["Keydown backspace on structural character deletes structure", function(){
+			return false;
+		}],
+		["Validating; Editor with grammar creates OperationCaret for focus", function(){
+			return false;
+		}],
+		["Validating; OperationCaret updated following focus change", function(){
+			return false;
+		}],
+		["Validating noninteractive; Keydown angle-bracket autocompletes involuntary operations", function(){
+			return false;
+		}],
+		["Validating interactive; Keydown angle-bracket prompts operations ", function(){
 			return false;
 		}],
 	]);

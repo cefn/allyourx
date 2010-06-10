@@ -312,23 +312,63 @@ YOURX.copyProperties(
 		CompletionEditor.prototype.trackThingy = function(thingy){
 			//superclass tracking
 			RawEditor.prototype.trackThingy.apply(this,arguments);
-			//create listener for keydowns
+			//create listeners for key events
 			var editorthis = this;
 			var keydownListener = function(evt){
-				return editorthis.handleKeydown.apply(editorthis,[evt]);
+				return editorthis.handleKeydown(evt);
+			};
+			var keypressListener = function(evt){
+				return editorthis.handleKeypress(evt);
 			};
 			//wire into bound selection
 			var boundq = this.getBoundSelection(thingy);
 			boundq.focus(function(evt){
-				boundq.bind('keydown', keydownListener);				
+				boundq.bind('keydown', keydownListener);
+				boundq.bind('keypress', keypressListener);
+				evt.stopPropagation();//consider more elegant way of differentiating if evt is for this level																	
 			});
 			boundq.blur(function(evt){
-				boundq.unbind('keydown', keydownListener);				
+				boundq.unbind('keydown', keydownListener);
+				boundq.unbind('keypress', keypressListener);
+				evt.stopPropagation(); //consider more elegant way of differentiating if evt is for this level																
 			});
 		}
 
 		CompletionEditor.prototype.untrackThingy = function(){ //TODO, consider unbinding focus and key listeners
 			RawEditor.prototype.untrackThingy.apply(this,arguments);			
+		}
+
+
+		/** Handles a new key pressed in the context of a given...
+		 * @param {Object} whichkey the key to handle
+		 * @return The thingy which should acquire focus, or null if no focus
+		 */
+		CompletionEditor.prototype.handleKeypress = function(evt){
+			//TODO : wire into operationcaret's list of available operations
+			var charpress = String.fromCharCode(evt.which);
+			if(this.focusthingy){
+				if(evt.which === 16){ // shift key - do nothing
+				}
+				else if(charpress === '<'){ // '<' beginning of open tag
+					if(this.focusthingy instanceof YOURX.ContainerThingy){
+						var newthingy = new YOURX.ElementThingy("");
+						this.focusthingy.addChild(newthingy);
+						this.setFocus(newthingy, -1);
+						evt.preventDefault();
+					}
+				}
+				else if(charpress.match(/[A-Za-z]/)){ //alpha 
+					if(this.focuscaret.start < 0){ //check if in name section
+						var domcaret = this.getDomCaret();
+						var name = this.focusthingy.name;
+						this.focusthingy.name = name.slice(0,domcaret.start) + charpress + name.slice(domcaret.end, name.length);
+					}
+				}
+				else{
+					throw new Error("Character '" + evt.which + "' unhandled by any Controller case. Should have returned by now." );					
+				}
+			}
+			return true;
 		}
 		
 		/** Handles a new key pressed in the context of a given...
@@ -337,12 +377,13 @@ YOURX.copyProperties(
 		 */
 		CompletionEditor.prototype.handleKeydown = function(evt){
 			//TODO : wire into operationcaret's list of available operations
+			/*
 			if(this.focusthingy){
 				switch(evt.which){
 					case 16: // shift key - do nothing
 						return;
 					break;
-					case 188: // '<' beginning of open tag
+					case 188: // '<' key for beginning of open tag
 						if(this.focusthingy instanceof YOURX.ContainerThingy){
 							var newthingy = new YOURX.ElementThingy("");
 							this.focusthingy.addChild(newthingy);
@@ -358,6 +399,7 @@ YOURX.copyProperties(
 					break;
 				}
 			}
+			*/
 			return true;
 		}
 			

@@ -58,6 +58,9 @@ $(function(){
 			UNITTEST.boundq.remove();
 			return UNITTEST.viewportq.children().length === 0;
 	    }], 
+		["Element name change modifies open and close tag of SpanEditor", function(){
+			return false;
+	    }], 
 	]);
 });
 
