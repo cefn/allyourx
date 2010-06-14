@@ -62,10 +62,15 @@
 				var s=t.selectionStart,
 					e=t.selectionEnd;
 			}
-			var te=t.value.substring(s,e);
-			return {start:s,end:e,text:te,replace:function(st){
-				return t.value.substring(0,s)+st+t.value.substring(e,t.value[len])
-			}}
+			var te = null;
+			var re = null;
+			if('value' in t){
+				te = t.value.substring(s,e);
+				re = function(st){
+					return t.value.substring(0,s)+st+t.value.substring(e,t.value[len])
+				}
+			}
+			return {start:s,end:e,text:te,replace:re}
 		}
 	}
 })(jQuery,"length","createRange","duplicate");
