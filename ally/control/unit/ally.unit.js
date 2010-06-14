@@ -30,6 +30,22 @@ $(function(){
 	        var testtext = UNITTEST.viewportq.find(".xelement .xelement .xelement .xtext:first").text();
 	        return testtext === "Suggested Format";
 	    }], 
+		["Element name is in open and close tag of editor", function(){
+			UNITTEST.firstchild = UNITTEST.rootthingy.getChildren()[0];
+			var nameq = UNITTEST.editor.queryNameWrapper(UNITTEST.editor.getBoundSelection(UNITTEST.firstchild));
+			var firstname = UNITTEST.firstchild.getName();
+			var openname = nameq.eq(0).text();
+			var closename = nameq.eq(1).text();
+			return (openname === firstname) && (closename === firstname);
+	    }], 
+		["Element name change modifies open and close tag of SpanEditor", function(){
+			var newname = "something";
+			UNITTEST.firstchild.setName(newname);
+			var nameq = UNITTEST.editor.queryNameWrapper(UNITTEST.editor.getBoundSelection(UNITTEST.firstchild));
+			var openname = nameq.eq(0).text();
+			var closename = nameq.eq(1).text();
+			return (openname === newname) && (closename === newname);
+	    }], 
 		["bindThingy: Removing attribute nodes removes all descendants bound to attributes", function(){
 	        UNITTEST.boundq.find(".xattribute").each(function(){
 				var thisq = $(this);
@@ -57,9 +73,6 @@ $(function(){
 		["bindThingy: Removing Thingy wrapper altogether leaves empty element", function(){
 			UNITTEST.boundq.remove();
 			return UNITTEST.viewportq.children().length === 0;
-	    }], 
-		["Element name change modifies open and close tag of SpanEditor", function(){
-			return false;
 	    }], 
 	]);
 });
