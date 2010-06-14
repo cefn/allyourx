@@ -559,7 +559,7 @@ YOURX.copyProperties(
 			if(arguments.length > 0){
 				if(arguments[0] instanceof Element){ //creation from values in DOM node
 					var el = arguments[0];
-					this.name = el.nodeName;
+					this.setName(el.nodeName);
 					ContainerThingy.apply(this,[el]);
 					var elthingy = this;
 					YOURX.cloneArray(el.attributes).forEach(function(item){
@@ -571,7 +571,7 @@ YOURX.copyProperties(
 					return this;
 				}
 				else if(typeof(arguments[0]) === "string"){ //creation from values directly
-					this.name = arguments[0];
+					this.setName(arguments[0]);
 					var children;
 					if(arguments.length === 1){ //name
 						children = [];
@@ -609,10 +609,24 @@ YOURX.copyProperties(
 				return formatted + "/>";
 			}
 		};
-		/** Returns the name. */
+		/** Returns the name via return value or by triggering and subscribing listener function. */
 		ElementThingy.prototype.getName = function(){
+			if(arguments.length > 0 && arguments[0] instanceof Function){ //callback on function and subscribe for future name changes
+				var onsetname = arguments[0];
+				this.bind('namechanged',onsetname);
+				onsetname(this, this.name);					
+			}
 			return this.name;
 		}
+		/** Sets the name, notifying listeners. */
+		ElementThingy.prototype.setName = function(name){
+			var source = this;
+			this.name = name;
+			this.traverseListeners('namechanged',function(listener){
+				listener(source,name);
+			});			
+		}
+		
 		/** Adds an attribute and notifies listeners. Can accept an AttributeThingy or a String name and Object value*/
 		ElementThingy.prototype.addAttribute = function(){ //adds attributethingy child
 			var name,value,thingy;
@@ -747,11 +761,11 @@ YOURX.copyProperties(
 			if(arguments.length > 0){
 				if (arguments.length === 1 && arguments[0] instanceof Attr) { //creation from values in DOM node
 					var att = arguments[0];
-					this.name = att.name;
+					this.setName(att.name);
 					return ContentThingy.apply(this, [att.value]);
 				}
 				else if(typeof(arguments[0]) === "string") { //creation from values directly
-					this.name = arguments[0];
+					this.setName(arguments[0]);
 					if( arguments.length === 1){
 						return ContentThingy.apply(this, [""]); //TODO check if empty string is better than null (loses info?)
 					}
@@ -767,10 +781,10 @@ YOURX.copyProperties(
 		AttributeThingy.prototype.toString = function(){ 
 			return this.name + "=\"" + this.value + "\"";
 		};
-		/** Returns the name of this AttributeThingy. */
-		AttributeThingy.prototype.getName = function(){
-			return this.name;
-		}
+
+		/** Duplicate name getting and setting functionality from ElementThingy. */
+		AttributeThingy.prototype.getName = ElementThingy.prototype.getName;
+		AttributeThingy.prototype.setName = ElementThingy.prototype.setName;
 		
 		
 		/** Represents a content thingy which can store a text value and is a descendant of an ElementThingy, stored as a child by position.
@@ -1199,11 +1213,12 @@ YOURX.copyProperties(
 		 */
 		function ThingyTracker(){
 			this.metadata = new Hashtable();
+			this.nameChangedListener = ThingyUtil.methodHandoffFunction(this, "nameChanged");
+			this.valueChangedListener = ThingyUtil.methodHandoffFunction(this, "valueChanged");
 			this.childAddedListener = ThingyUtil.methodHandoffFunction(this, "childAdded");
 			this.childRemovedListener = ThingyUtil.methodHandoffFunction(this, "childRemoved");
 			this.attributeAddedListener = ThingyUtil.methodHandoffFunction(this, "attributeAdded");
 			this.attributeRemovedListener = ThingyUtil.methodHandoffFunction(this, "attributeRemoved");
-			this.valueChangedListener = ThingyUtil.methodHandoffFunction(this, "valueChanged");
 		};
 		
 		/** Accesses metadata storage for a thingy previously tracked.*/
@@ -1220,6 +1235,13 @@ YOURX.copyProperties(
 		ThingyTracker.prototype.isTracked = function(thingy){
 			return this.metadata.containsKey(thingy);
 		}		
+
+		ThingyTracker.prototype.nameChanged = function(thingy, newname){
+			//superclass does nothing
+		};
+		ThingyTracker.prototype.valueChanged = function(thingy, newval, oldval){
+			//superclass does nothing
+		};
 		
 		ThingyTracker.prototype.childAdded = function(parent,child,childidx){
 			this.trackThingy(child);
@@ -1238,10 +1260,6 @@ YOURX.copyProperties(
 		ThingyTracker.prototype.attributeRemoved = function(parent,att){
 			this.untrackThingy(att);
 		};
-
-		ThingyTracker.prototype.valueChanged = function(thingy, newval, oldval){
-			//superclass does nothing
-		};
 		
 		ThingyTracker.prototype.trackThingy = function(thingy, data){ //can optionally pass in an initial metadata structure
 			if(!this.isTracked(thingy)){
@@ -1250,13 +1268,21 @@ YOURX.copyProperties(
 				}
 				this.metadata.put(thingy,data);
 				if(thingy instanceof ContainerThingy){
+					//subscribe for child updates
 					thingy.getChildren(this.childAddedListener, this.childRemovedListener);
-				}
-				if(thingy instanceof ElementThingy){
-					thingy.getAttributes(this.attributeAddedListener, this.attributeRemovedListener);
+					//track names and attributes of elements
+					if(thingy instanceof ElementThingy){
+						thingy.getName(this.nameChangedListener);
+						thingy.getAttributes(this.attributeAddedListener, this.attributeRemovedListener);
+					}
 				}
 				if(thingy instanceof ContentThingy){
+					//subscribe for content updates
 					thingy.getValue(this.valueChangedListener);
+					//track names of attributes
+					if(thingy instanceof AttributeThingy){
+						thingy.getName(this.nameChangedListener);
+					}
 				}
 				return data;
 			}
