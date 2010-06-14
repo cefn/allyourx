@@ -1,6 +1,7 @@
-/** AXLE provides the Controller complementing the Model (YOURX) and View (ALLY)
- * It's coupled to the YOURX.OperationCaret, YOURX.ThingyTree and ALLY.Editor implementations.
- * 
+/** AXLE is the future home for the coordinating components like the OperationCaret and CompletionEditor. 
+ * These complementing core Model (YOURX) and View (ALLY) libraries. AXLE objects define smart behaviours for
+ * ALLY.Editor implementations and draw heavily on YOURX.ThingyTree storage structures. They define conventions
+ * for representing focus in ThingyTrees
  */
 YOURX.copyProperties(
 	(function(){	
@@ -10,14 +11,7 @@ YOURX.copyProperties(
 		 * where the caret and cursor is.  
 		 * 
 		 */ 
-		function Controller(editor){
-			this.editor = editor;
-		};
-						
-	
-		return eval(YOURX.writeScopeExportCode([
-			'Controller']
-		));	
+		return eval(YOURX.writeScopeExportCode([]));	
 		
 	}()),
 	'AXLE'
