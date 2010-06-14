@@ -178,10 +178,10 @@ YOURX.copyProperties(
 			superq.addClass("xraw");
 			if(thingy instanceof YOURX.ContainerThingy){
 				if(thingy instanceof YOURX.ElementThingy){
-					this.queryOpenWrapper(superq).before('&lt;<span class="xname">' + thingy.getName() +'</span>');					
-					this.queryOpenWrapper(superq).after("&gt;");					
-					this.queryCloseWrapper(superq).before("&lt;" + thingy.getName());					
-					this.queryCloseWrapper(superq).after("/&gt;");
+					this.queryOpenWrapper(superq).before('&lt;<span class="xname"></span>');					
+					this.queryOpenWrapper(superq).after('&gt;');					
+					this.queryCloseWrapper(superq).before('&lt;<span class="xname"></span>');					
+					this.queryCloseWrapper(superq).after('/&gt;');
 				}					
 			}
 			else if (thingy instanceof YOURX.ContentThingy){
@@ -193,9 +193,19 @@ YOURX.copyProperties(
 			return superq;
 		}
 
+		//TODO: Eliminate need to call getBoundSelection for queryXWrapper functions
+		//TODO: Promote common name wrapper functionality into SpanEditor
+		
+		//TODO ensure getValue/setValue in ThingyTracker matches getName/setName in behaviour
+
 		/** Only works for NamedThingy subclasses. */
 		RawEditor.prototype.queryNameWrapper = function(elq){
 			return elq.children().filter(".xname");
+		}
+
+		RawEditor.prototype.nameChanged = function(thingy,name){
+			SpanEditor.prototype.nameChanged.apply(this, arguments);
+			this.queryNameWrapper(this.getBoundSelection(thingy)).text(name); //set the text in the name spans
 		}
 
 		function CompletionEditor(){
@@ -203,7 +213,15 @@ YOURX.copyProperties(
 		}
 		CompletionEditor.prototype = new RawEditor();
 		
-		CompletionEditor.prototype.setFocus = function(focusthingy, focuscaret){
+		CompletionEditor.prototype.setFocus = function(focusthingy, focuscaret){			
+			/** Note this from http://www.w3.org/TR/2000/REC-DOM-Level-2-Traversal-Range-20001113/ranges.html
+			 * It is also possible to set a Range's position relative to nodes in the tree:
+			 *   void setStartBefore(in Node node); raises(RangeException);
+			 *   void setStartAfter(in Node node); raises(RangeException);
+			 *   void setEndBefore(in Node node); raises(RangeException);
+			 *   void setEndAfter(in Node node); raises(RangeException);
+			 */
+			
 			//remove previous focus
 			var focusq = this.getFocusedSelection();
 			if(focusq && focusq.size()){
@@ -235,7 +253,22 @@ YOURX.copyProperties(
 			if(focusq && focusq.size()){
 				focusq.attr("contenteditable", "true");
 				focusq.focus();
-				focusq.caret(this.getDomCaret());
+				
+				//TODO: This is heavily dependent on W3C implementation - will break in IE
+				var range = window.getSelection().getRangeAt(0);
+				var domcaret = this.getDomCaret();
+				//use focus node or first text node as anchor
+				var anchornode = focusq[0];
+				focusq.contents().each(function(){
+					if(this.nodeType === Node.TEXT_NODE){
+						anchornode = this;
+						return false;
+					}
+					return true;
+				});
+				//position cursor
+				range.setStart(anchornode, domcaret.start);
+				range.setEnd(anchornode, domcaret.start);
 			}
 		}
 
@@ -249,9 +282,9 @@ YOURX.copyProperties(
 								return this.focuscaret;
 							}
 							else {
-								//TODO, containers have no content as such, recurse to focus/create elements based on positive, 
-								//non-zero cursor position within their content
-								throw Error("Containers have no direct content, cursor position cannot be positive");
+								//containers' positive cursor positions correspond with child positions
+								//cursors between children should be before the child's open tag
+								return {start:0,end:0};
 							}
 						}
 						else 
@@ -264,9 +297,10 @@ YOURX.copyProperties(
 					}
 					else { //cursor position is focused in name
 						//negative offset according to the length of the name
+						var name = this.focusthingy.getName();
 						return {
-							start: (this.focuscaret.start + this.focusthingy.name.length + 1),
-							end: (this.focuscaret.end + this.focusthingy.name.length + 1)
+							start: (this.focuscaret.start + name.length + 1),
+							end: (this.focuscaret.end + name.length + 1)
 						};
 					}
 				}
@@ -296,8 +330,9 @@ YOURX.copyProperties(
 							}
 						}
 						else { 
-							//field cursor is in name
-							return this.queryNameWrapper(boundq);								
+							//field cursor is in name - place cursor in name part of open tag 
+							var namewrapper = this.queryNameWrapper(boundq); 
+							return namewrapper.eq(0);								
 						}
 					}
 					else {
@@ -338,34 +373,135 @@ YOURX.copyProperties(
 			RawEditor.prototype.untrackThingy.apply(this,arguments);			
 		}
 
+		CompletionEditor.prototype.insertAtFocusCaret = function(toinsert){
+			if (this.focusthingy instanceof YOURX.ContentThingy && 
+				this.focuscaret.start >= 0){ //in value section of object with setValue() method
+				var value = this.focusthingy.value;
+				//make change
+				this.focusthingy.setValue(value.slice(0,domcaret.start) + toinsert + value.slice(domcaret.end, value.length));
+				//move cursor forward
+				this.setFocus(this.focusthingy,domcaret.start + toinsert.length);				
+			}
+			else if(this.focuscaret.start < 0 && 
+					(this.focusthingy instanceof YOURX.ElementThingy || 
+					this.focusthingy instanceof YOURX.AttributeThingy)){ //in name section of an object with setName() method
+				var domcaret = this.getDomCaret();
+				var name = this.focusthingy.getName();
+				name = name.slice(0,domcaret.start) + toinsert + name.slice(domcaret.end, name.length);
+				this.focusthingy.setName(name);
+				this.setFocus(this.focusthingy, (domcaret.start + toinsert.length) - (name.length + 1));
+			}
+			else{
+				throw new Error("Editing event routing error: Illegal to insert at the current DOM position.");
+			}
+		}
 
 		/** Handles a new key pressed in the context of a given...
 		 * @param {Object} whichkey the key to handle
 		 * @return The thingy which should acquire focus, or null if no focus
 		 */
 		CompletionEditor.prototype.handleKeypress = function(evt){
+			//TODO: Replicate this functionality using character and keycode sets or regular expressions, ThingyOperation and focus values.
+			//this will expose the logic more straighforwardly
+			
+			/** PSEUDOCODE 
+			 * if(caret is in name area){
+			 * 		var qnameregexp = /[A-Za-z_]/
+			 * 		if(focus is an element or an attribute){
+			 * 			get name, and edit according to focus and key hit
+			 * 			check it conforms to regexp
+			 * 			if it conforms then create a NameChangeThingyOperation
+			 * 			else it must be a keypress intended for another later part of the logic
+			 * 		}
+			 * }
+			 * ...
+			 * //not an edit, must be a navigation
+			 * map keypresses to moves in the document, including arrow keys stepping between editable parts
+			 * may need a programmatic representation of the sequence of editable parts
+			 */
+			
+			/** Here's a NCName definition (element and attribute names) from http://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCNameChar
+			 *  An XML Name, minus the ":"
+			 * NCName 	 ::= 	(Letter | '_') (NCNameChar)*	 
+			 * NCNameChar 	::= 	Letter | Digit | '.' | '-' | '_' | CombiningChar | Extender
+			 */
+			
+			//TODO: Work out how to represent focus after different attributes in element to permit cursor-driven keyboard navigation
+			//possibly requires rethink of focus representation to allow keys as per operationcaret, could allow separation of 
+			//focuscaret representation from domcaret (e.g. drop start+end conceit since this doesn't currently work). 
+			
+			//TODO: consider possibility of using a ThingyTracker to keep an XML DOM in synchrony, permitting XPath to be used?
+			
 			//TODO : wire into operationcaret's list of available operations
+			
+			//TODO: make sure that focus cursor shows where characters are about to be inserted
+
+			//override default
+			//any edits will be triggered by model change and focus change
+			//any navigation will be explicitly triggered below
+			evt.preventDefault(); 
+
+			//future implementation can explicitly determine
+			// a ThingyOperation
+			// a focusthingy and focuscaret (new items created gain focus by default)
 			var charpress = String.fromCharCode(evt.which);
 			if(this.focusthingy){
-				if(evt.which === 16){ // shift key - do nothing
-				}
-				else if(charpress === '<'){ // '<' beginning of open tag
-					if(this.focusthingy instanceof YOURX.ContainerThingy){
+				if(charpress === '<'){ // '<' begin tag
+					if(this.focusthingy instanceof YOURX.ContainerThingy){ // '<' is tag insertion character
 						var newthingy = new YOURX.ElementThingy("");
 						this.focusthingy.addChild(newthingy);
-						this.setFocus(newthingy, -1);
-						evt.preventDefault();
+						this.setFocus(newthingy, -1); //move domcaret to name
 					}
 				}
-				else if(charpress.match(/[A-Za-z]/)){ //alpha 
-					if(this.focuscaret.start < 0){ //check if in name section
-						var domcaret = this.getDomCaret();
-						var name = this.focusthingy.name;
-						this.focusthingy.name = name.slice(0,domcaret.start) + charpress + name.slice(domcaret.end, name.length);
+				else if (charpress === '>') { // '>' end tag
+					if(this.focusthingy instanceof YOURX.ElementThingy){
+						if(this.focuscaret.start < 0){ // '>' next valid at end of opening tag ; move there
+							this.setFocus(this.focusthingy,0); //move domcaret to descendants
+						}
+						else { // '>' next valid at end of closing tag ; move to next available sibling or parent's sibliing
+							if(this.focuscaret.start < this.focusthingy.getChildren().length){
+								this.setFocus(this.focusthingy, this.focuscaret.start + 1);
+							}
+							else{
+								var parentthingy = this.getParent(this.focusthingy);
+								if(parentthingy){
+									var parentcaret = this.getPosition(parent, this.focusthingy) + 1;
+									this.setFocus(parentthingy,parentcaret); //move domcaret to descendants
+								}
+								else{ //reached last position in root node - can't go further
+									evt.preventDefault(); //override insert; navigating
+									throw new Error("At last node");
+								}
+							}
+						}
+					}				
+				}
+				else if (charpress.match(/[A-Za-z]/)) { //alpha
+						this.insertAtFocusCaret(charpress);
+				}
+				else if (charpress.match(/ /)) { //space bar 
+					if (this.focuscaret.start < 0) { //in name section
+						if (this.focusthingy instanceof YOURX.ElementThingy) { //space is attribute separator, create a new attribute and focus on name
+							var att = new YOURX.AttributeThingy("", "");
+							this.focusthingy.addAttribute(att);
+							this.setFocus(att, -1);
+						}
+						else if (this.focusthingy instanceof YOURX.AttributeThingy) { //space next valid in attribute value; move there
+							setFocus(this.focusthingy,0);
+							this.insertAtFocusCaret(charpress);
+						}
+						else {
+							throw new Error("Editing event routing error: Space with negative caret unhandled.");
+						}
+					}
+					else { //in value section
+						this.insertAtFocusCaret(" ");
 					}
 				}
-				else{
-					throw new Error("Character '" + evt.which + "' unhandled by any Controller case. Should have returned by now." );					
+				else if (evt.which === 16) { // shift key - do nothing
+				}
+				else {
+					throw new Error("Character '" + evt.which + "' unhandled by any Controller case. Should have returned by now.");
 				}
 			}
 			return true;
@@ -376,36 +512,12 @@ YOURX.copyProperties(
 		 * @return The thingy which should acquire focus, or null if no focus
 		 */
 		CompletionEditor.prototype.handleKeydown = function(evt){
-			//TODO : wire into operationcaret's list of available operations
-			/*
-			if(this.focusthingy){
-				switch(evt.which){
-					case 16: // shift key - do nothing
-						return;
-					break;
-					case 188: // '<' key for beginning of open tag
-						if(this.focusthingy instanceof YOURX.ContainerThingy){
-							var newthingy = new YOURX.ElementThingy("");
-							this.focusthingy.addChild(newthingy);
-							this.setFocus(newthingy, -1);
-							evt.preventDefault();
-							evt.stopPropagation();
-						}
-					break;
-					case '>': //
-					break;
-					default:
-					throw new Error("Character '" + evt.which + "' unhandled by any Controller case. Should have returned by now." );
-					break;
-				}
-			}
-			*/
 			return true;
 		}
 			
 		/*
 		function getAnnotationNames(){
-			return ['a:name','a:title','a:type'];
+			return ['a:label','a:help','a:xpathselect']; //incrementally support use name, type and ordinary facets from RelaxNG
 		}
 		*/
 		
