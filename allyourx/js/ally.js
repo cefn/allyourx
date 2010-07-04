@@ -254,7 +254,7 @@ YOURX.copyProperties(
 				focusq.attr("contenteditable", "true");
 				focusq.focus();
 				
-				//TODO: This is heavily dependent on W3C implementation - will break in IE
+				//TODO: This is dependent on W3C implementation - will break in IE
 				var range = window.getSelection().getRangeAt(0);
 				var domcaret = this.getDomCaret();
 				//use focus node or first text node as anchor
@@ -517,7 +517,7 @@ YOURX.copyProperties(
 			
 		/*
 		function getAnnotationNames(){
-			return ['a:label','a:help','a:xpathselect']; //incrementally support use name, type and ordinary facets from RelaxNG
+			return ['a:label','a:help','a:xpathselect','a:tabindex']; //incrementally support use name, type and ordinary facets from RelaxNG
 		}
 		*/
 		
