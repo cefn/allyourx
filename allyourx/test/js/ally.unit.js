@@ -3,7 +3,7 @@ $(function(){
     UNITTEST.viewportq = $("#UNITTEST"); //target this element when binding controls
     executeTests([
 		["url2yourx loads XML file without corresponding schema ", function(){
-	        UNITTEST.rootthingy = YOURX.ThingyUtil.url2thingy("../../data/data.xml");
+	        UNITTEST.rootthingy = YOURX.ThingyUtil.url2thingy("../../xq/data/data.xml");
 	        return UNITTEST.rootthingy.getChildren().length != 0;
 	    }],
 		["bindThingy adds some text nodes", function(){
