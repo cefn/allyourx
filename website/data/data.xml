@@ -5,7 +5,7 @@
             Writing applications is now within the reach of ordinary people. 
         </p>
         <p>
-            AllyourX.org defines descriptive <a href="http://en.wikipedia.org/wiki/Markup_language" target="_blank">markup</a> which can be used to 
+            AllyourX.org defines descriptive <a href="1_end_to_end.html">markup</a> which can be used to 
             <em>automatically write</em> the software for user-facing applications.
         </p>
         <h2>Simply describe your data</h2>
@@ -20,10 +20,10 @@
             </li>
         </ul>
         <p>
-            <a href="software.html">Front end generators</a> produce input forms for your preferred user interface.
+            <a href="software.html#frontend">Front end generators</a> produce input forms for your preferred user interface.
         </p>
         <p>
-            <a href="software.html">Back-end hosts</a> accept edits to your stored data sent by these input forms.
+            <a href="software.html#backend">Back-end hosts</a> accept edits to your stored data sent by these input forms.
         </p>
         <h2>Go live... Host and query your data.</h2>
         <p>
