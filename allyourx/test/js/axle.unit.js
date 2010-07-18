@@ -72,6 +72,17 @@ $(function(){
 	    */
 		["Create editor without grammar and find focus", function(){
 			UNITTEST.thingy = new YOURX.RootThingy(); //empty root element
+			UNITTEST.editor = new AXLE.AvixEditor(); //create editor
+			UNITTEST.editor.trackThingy(UNITTEST.thingy);
+			UNITTEST.boundq = UNITTEST.editor.getBoundSelection(UNITTEST.thingy); //bind the empty thingy
+			UNITTEST.viewportq.append(UNITTEST.boundq); //append to the page
+			UNITTEST.editor.setCaret(UNITTEST.thingy, 0); //move caret to empty root thingy
+			UNITTEST.editable = $("*[contenteditable=true]"); //try to identify focused element
+			return UNITTEST.editable.size() === 1;
+		}],
+		/*
+		["Create editor without grammar and find focus", function(){
+			UNITTEST.thingy = new YOURX.RootThingy(); //empty root element
 			UNITTEST.editor = new AXLE.CompletionEditor(); //create a raw editor
 			UNITTEST.editor.trackThingy(UNITTEST.thingy);
 			UNITTEST.boundq = UNITTEST.editor.getBoundSelection(UNITTEST.thingy); //bind the empty thingy
@@ -80,11 +91,13 @@ $(function(){
 			UNITTEST.editable = $("*[contenteditable=true]"); //try to identify focused element
 			return UNITTEST.editable.size() === 1;
 		}],
+		*/
 		["Keydown left angle-bracket where editable creates and focuses element", function(){
 			var evt = $.Event('keypress');
 			evt.which = '<'.charCodeAt(0); // '<' character
 			$("*[contenteditable=true]").trigger(evt);
-			return UNITTEST.thingy.getChildren().length === 1 && $(document.activeElement).hasClass("xname"); //add test for focus [document.activeElement]
+			return 	UNITTEST.thingy.getChildren().length === 1 && 
+					$(document.activeElement).hasClass("xname"); //add test for focus [document.activeElement]
 		}],		
 		["Keydown alpha modifies element name", function(){
 			var evt = $.Event('keypress');
@@ -114,9 +127,15 @@ $(function(){
 			return false;
 		}],
 		["Keydown quote returns focus to open tag", function(){
+			var evt = $.Event('keypress');
+			evt.which = '"'.charCodeAt(0);
+			$("*[contenteditable=true]").trigger(evt);
 			return false;
 		}],
 		["Keydown right angle-bracket moves focus to available descendants", function(){
+			var evt = $.Event('keypress');
+			evt.which = '>'.charCodeAt(0);
+			$("*[contenteditable=true]").trigger(evt);
 			return false;
 		}],
 		["Keydown right angle-bracket moves focus to parent when descendants exhausted", function(){
