@@ -81,10 +81,6 @@ $(function() {
 			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("schema/yourx/examples.001/team.002b.xml");
 			return UNITTEST.grammar.matchThingy(UNITTEST.thingy) === false;
 		}],
-		["examples.001/team.002c.xml rejected by validation", function(){
-			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("schema/yourx/examples.001/team.002c.xml");
-			return UNITTEST.grammar.matchThingy(UNITTEST.thingy) === false;
-		}],
 		["Document order traversal visits all items", function(){
 	        UNITTEST.rootthingy = YOURX.ThingyUtil.url2thingy("../xq/data/data.xml");
 	        UNITTEST.tracker = new YOURX.ThingyTracker();
