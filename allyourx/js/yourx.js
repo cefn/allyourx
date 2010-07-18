@@ -80,6 +80,7 @@ document.write = function(){
 }();
 
 /** Replace jquery clean function with one which respects E4X (html) as selector (expands to a string). */
+/*
 if(typeof(jQuery) != 'undefined'){
 	jQuery.clean = function(){
 		var oldfun = jQuery.clean;
@@ -104,6 +105,7 @@ if(typeof(jQuery) != 'undefined'){
 		return newfun;
 	}();
 }
+*/
 
 YOURX = function(){
 		
@@ -150,7 +152,7 @@ YOURX = function(){
 				
 	/** Utility methods in a 'static' library object */		
 	var ThingyUtil = { //TODO consider reusing single static DOMParser and XMLSerializer
-		methodHandoffFunction:function(obj,name){
+		methodHandoffFunction:function(obj,name){ //could now be superceded by JQuery proxy
 			return function(){
 				var fun = obj[name];
 				fun.apply(obj, arguments);
