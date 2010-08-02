@@ -1,0 +1,38 @@
+<!DOCTYPE html SYSTEM "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <title>Test Editor</title>
+        <link rel="stylesheet" href="css/unit.css"></link>
+        <link rel="stylesheet" href="../css/ally_editor_raw.css"></link>
+        <script type="text/javascript" src="../lib/jquery/jquery-1.4.2.js"></script>
+        <script type="text/javascript" src="../lib/livequery-1.0.3/jquery.livequery.js"></script>
+        <script type="text/javascript" src="../lib/guid0/guid0.js"></script>
+        <script type="text/javascript" src="../lib/jshashtable/jshashtable-2.1.js"></script>
+        <script type="text/javascript" src="../js/yourx.js"></script>
+        <script type="text/javascript" src="../js/ally.js"></script>
+        <script type="text/javascript" src="../js/axle.js"></script>		
+		
+		<script type="text/javascript">
+        //<![CDATA[
+			$(function(){
+				var session = {};
+				session.viewportq = $("#editor");
+				session.thingy = new YOURX.RootThingy(); //create empty root element
+				session.editor = new AXLE.AvixEditor(); //create editor
+				session.editor.trackThingy(session.thingy); //load root into editor
+				session.boundq = session.editor.getBoundSelection(session.thingy); //grab the ui binding 
+				session.viewportq.append(session.boundq); //append to the page
+				session.editor.setCaret(session.thingy, 0); //move editor focus to root
+			});
+        //]]>		
+	</script>
+    </head>
+	
+    <body>
+    	<p>
+			Visit <a href="unit.html">unit.html</a> for concrete progress on codebase and its capabilities.
+    		This editor file is used for interactive testing only occasionally and can therefore be well behind HEAD. 
+    	</p>
+    	<div id="editor"></div>
+    </body>
+</html>
