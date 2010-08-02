@@ -956,7 +956,7 @@ AXLE = function(){
 			var growth = validtext.length - fieldtext.length;
 			this.setFieldText(validtext);
 			if(this.caretInContent()){ //increment caret key for the new character
-				this.setCursor(this.cursor.thingy, this.caret.key + growth); //setField and this may trigger a double refreshCursor call
+				this.setCaret(this.caret.thingy, this.caret.key + growth); //setField and this may trigger a double refreshCursor call
 			}
 		}
 		else{ //surplus text beyond valid text
