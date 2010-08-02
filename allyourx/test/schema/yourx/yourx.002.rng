@@ -14,6 +14,9 @@
       <attribute name="datatypeLibrary">
         <value>http://www.w3.org/2001/XMLSchema-datatypes</value>
       </attribute>
+      <attribute name="ns">
+        <value>http://relaxng.org/ns/structure/1.0</value>
+      </attribute>
       <element name="start">
         <ref name="element-quantifier-choice"/>
       </element>
@@ -23,7 +26,7 @@
   <define name="attribute">
     <element name="attribute">
       <attribute name="name"/>
-      <ref name="ally-control-atts" />
+      <ref name="ally-control-atts" />  
     </element>
   </define>
   
@@ -35,7 +38,7 @@
         <ref name="attribute-quantifier-choice"/>
       </zeroOrMore>
       <zeroOrMore>
-        <ref name="element-quantifier-choice"/>
+        <ref name="child-quantifier-choice"/>
       </zeroOrMore>
     </element>    
   </define>  
@@ -62,6 +65,17 @@
         <ref name="element" />
       </element>
     </choice>
+  </define>
+  
+  <define name="child-quantifier-choice">
+    <choice>
+      <ref name="element-quantifier-choice"/>
+      <ref name="value-types"/>
+    </choice>
+  </define>
+  
+  <define name="value-types">
+    <element name="text"><empty/></element>
   </define>
             
   <define name="ally-control-atts" >

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?oxygen RNGSchema="file:/home/cefn/Documents/code/allyourx/github/allyourx_red/allyourx/test/schema/yourx/yourx.001.rng" type="xml"?>
+<grammar ns="http://relaxng.org/ns/structure/1.0" xmlns="http://relaxng.org/ns/structure/1.0" datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
+    <start>
+        <element name="p">
+            <text/>
+        </element>
+    </start>
+</grammar>

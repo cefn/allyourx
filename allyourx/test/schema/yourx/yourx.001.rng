@@ -31,25 +31,37 @@
         <attribute name="ns"/>
       </optional>
       <ref name="ally-control-atts" />
-      <oneOrMore>
+      <zeroOrMore>
         <element name="attribute">
           <attribute name="name"/>
           <optional>
             <attribute name="ns"/>
           </optional>
+          <ref name="value-types" />
           <ref name="ally-control-atts" />
         </element>
-      </oneOrMore>
+      </zeroOrMore>
       <zeroOrMore>
-        <ref name="element"/>
+        <ref name="child-types"/>
       </zeroOrMore>
     </element>    
   </define>
-                  
+                    
+  <define name="child-types">
+    <choice>
+      <ref name="element"/>
+      <ref name="value-types"/>
+    </choice>
+  </define>
+  
+  <define name="value-types">
+    <element name="text"><empty/></element>
+  </define>
+  
   <define name="ally-control-atts" >
     <optional>
       <attribute name="a:label" />
     </optional>
   </define>
-
+  
 </grammar>
