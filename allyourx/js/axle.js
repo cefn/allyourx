@@ -863,12 +863,110 @@ AXLE = function(){
 			this.editableposition = neweditableposition;
 		}
 	}
+
+	(function(){
+
+		var keeppattern = function(match){
+			var newtext = match;
+			var oldtext = this.getFieldText();
+			if(newtext != oldtext){
+				var growth = newtext.length - oldtext.length;
+				this.setFieldText(newtext);
+				if(this.caretInContent()){ // caretInName() reverse numbered so no increment
+					this.setCaret(this.caret.thingy, this.caret.key + growth); //setField and this may trigger a double refreshCursor call
+				}
+			}
+		};
+
+		//define character patterns against focus position
+		var treelogic = {};
 		
-	//TODO merge this implementation with handleFieldChange to permit non-character keycodes
-	AvixEditor.prototype.handleKeypress = function(evt){
-		//TODO refactor for efficiency by caching values and functions below
+		treelogic.container = {
+			descendants:{ //cursor is in between some descendants (key is position)
+				//no keeppattern
+				"<":function(){ //create element and focus name
+					var el = new YOURX.ElementThingy(""); //blank name to begin
+					this.caret.thingy.addThingy(el);
+					this.setCaret(el,-1);
+				}				
+			}				
+		};
+		treelogic.element = {
+			name:{ //cursor is in the name string (key is negative)
+				patterns:{
+					"^[A-Za-z]+$":keeppattern, //field matches
+					">":function(){ //focus content
+						this.setCaret(this.caret.thingy,0);
+					},
+					"\\s":function(){ //new attribute and focus name
+						var att = new YOURX.AttributeThingy("",""); //blank name and value to begin
+						this.caret.thingy.addThingy(att);
+						this.setCaret(att,-1);
+					}									
+				}
+			}, 
+			attributes:{ //cursor is in between some attributes (key names attribute preceding)
+				patterns:{
+					//no keeppattern
+					"\\s":function(){ //new attribute and focus name
+						var att = new YOURX.AttributeThingy("",""); //blank name and value to begin
+						this.caret.thingy.addThingy(att);
+						this.setCaret(att,-1);
+					},
+					">":function(){ //focus in content
+						this.setCaret(this.caret.thingy,0);
+					}								
+				}
+			},
+			descendants: {
+				patterns:YOURX.copyProperties(treelogic.container.descendants.patterns, //merge with container descendants
+				{ 
+					//no keeppattern
+					"[^<]": function(match){ //also allow text in an element tag
+						var tx = new YOURX.TextThingy(match);
+						this.caret.thingy.addThingy(tx);
+						this.setCaret(tx, 1);
+					}
+				})
+			}
+		};
 		
-		//TODO add action value into nav members, somehow switching according to focus location
+		treelogic.attribute = {
+			name:{ //cursor is in name
+				patterns:{
+					"^[A-Za-z]+$":keeppattern,
+					"=":function(){
+						this.setCaret(this.caret.thingy,0);//move to content
+					}				
+				}
+			},
+			content:{ //cursor is in value
+				patterns:{
+					'^[^"]*$':keeppattern,
+					'"':function(){ //attribute and element closed
+						var attname = this.caret.thingy.name; //current attribute's name
+						this.setCaret(this.getParent(this.caret.thingy),attname); //focus after the attribute
+					}																	
+				}
+			}
+		};
+		
+		treelogic.text = {
+			content:{ //cursor is in content
+				patterns:{
+					"^[^<]*$":keeppattern,
+					"<":function(){ //add element to parent after your position
+						var el = new YOURX.ElementThingy();
+						var txpos = this.getPosition(this.caret.thingy);
+						this.getParent(this.caret.thingy).addThingy(el, txpos + 1);
+						this.setCaret(el,-1);
+					}				
+				}
+			}
+		};
+
+		//TODO express navlogic actions for non-character keycodes
+		
 		var nav = {
 			backspace:{name:"Backspace"},del:{name:"Delete"},
 			tab:{name:"Tab"},enter:{name:"Enter"},shift:{name:"Shift"},ctrl:{name:"Control"},alt:{name:"Alt"},escape:{name:"Escape"},
@@ -886,29 +984,25 @@ AXLE = function(){
 			118:nav.f7,119:nav.f8,120:nav.f9,121:nav.f10,122:nav.f11,123:nav.f12
 		};
 		
-		var edit = {
-			startelement:{name:"Start item"},
-			endelementname:{name:"End item name"},
-			startattributename:{name:"Start property"},
-			endattributename:{name:"End property name"},
-			endattributevalue:{name:"End property value"},
-			endopentag:{name:"Descendants start"},
-			closetag:{name:"Descendants end"}
-		};
-
-		var qnamepattern = "^[A-Za-z]+";
+		AvixEditor.prototype.treelogic = treelogic;
+		AvixEditor.prototype.nav = nav;
+		AvixEditor.prototype.navkeys = navkeys;
 		
-		var editpatterns = {
-			
-		};
-
+	}());
+		
+		
+	//TODO handle non-character keycodes
+	AvixEditor.prototype.handleKeypress = function(evt){
+		//TODO refactor for efficiency by caching values and functions below
+						
 		//update the field text
-		if(! (evt.which in nav)){
+		if(! (evt.which in this.nav)){
 
-			//key event has been handled so consume
+			//event will be interpreted - suppress browser behaviour (appending characters)
 			evt.stopPropagation();
 			evt.preventDefault();
-			
+
+			//calculate field after character added
 			var charpressed = String.fromCharCode(evt.which);
 			var oldtext = this.getFieldText();
 			var newtext;
@@ -919,130 +1013,43 @@ AXLE = function(){
 				newtext = charpressed;
 			}
 			
-			var keepmatch;
-			var actions = new Hashtable();
-			//TODO replace manual checking of keys below with calls to this.caretInX() functions
-			if(this.caret.thingy instanceof YOURX.ContainerThingy){
-				if(this.caretInName()){ //cursor in element name
-						keepmatch = /^[A-Za-z]+/;
-						actions.put(">", function(){ //focus content
-							this.setCaret(this.caret.thingy,0);
-						});
-						actions.put("\\s", function(){ //new attribute and focus name
-							var att = new YOURX.AttributeThingy("",""); //blank name and value to begin
-							this.caret.thingy.addThingy(att);
-							this.setCaret(att,-1);
-						});					
-				}
-				else if(this.caretInDescendants()){ //cursor amongst direct children
-					keepmatch = /^$/;
-					actions.put("<", function(){ //create element and focus name
-						var el = new YOURX.ElementThingy(""); //blank name to begin
-						this.caret.thingy.addThingy(el);
-						this.setCaret(el,-1);
-					});
-					if(this.caret.thingy instanceof YOURX.ElementThingy){
-						actions.put("[^<]", function(surplus){ //allow text up to new element tag
-							var tx = new YOURX.TextThingy(surplus);
-							this.caret.thingy.addThingy(tx);
-							this.setCaret(tx,1);
-						});
-					}									
-				}
-				else if(this.caretInAttributes()){ //key references a property (cursor is after an attribute)
-					keepmatch = /^$/;
-					actions.put(">", function(){ //focus in content
-						this.setCaret(this.caret.thingy,0);
-					});					
-				}
-				else{
-					throw new Error("Containers can only have cursor in name, attributes or descendants");
-				}
+			var patterns = null;
+			if(this.caret.thingy instanceof YOURX.RootThingy){
+				if(this.caretInDescendants()){ patterns = this.treelogic.container.descendants.patterns;}
+				else{throw new Error("RootThingies only have descendants.");}
+			}
+			else if(this.caret.thingy instanceof YOURX.ElementThingy){
+				if(this.caretInName()){ patterns = this.treelogic.element.name.patterns;}
+				else if(this.caretInAttributes()){ patterns = this.treelogic.element.attributes.patterns;}
+				else if(this.caretInDescendants()){ patterns = this.treelogic.element.descendants.patterns;}
+				else{throw new Error("ElementThingies only have names, attributes and descendants.");}
 			}
 			else if(this.caret.thingy instanceof YOURX.AttributeThingy){
-				if(this.caretInName()){
-					keepmatch = /^[A-Za-z]+/;
-					actions.put("=", function(){
-						this.setCaret(this.caret.thingy,0);//move to content
-					});					
-				}
-				else if(this.caretInContent()){
-					keepmatch = /^[^"]*/;
-					actions.put('">', function(){ //attribute and element closed
-						this.setCaret(this.getParent(this.caret.thingy),0); //focus in element content
-					});
-					actions.put('"\s', function(){ //attribute closed and another opened
-						var att = new YOURX.AttributeThingy(""); //create new attribute
-						var el = this.getParent(caret.thingy); //introspect parent
-						el.addThingy(att); //add to parent
-						this.setCaret(att,-1); //focus on name
-					});											
-				}
-				else{
-					throw new Error("AttributeThingies only have a name and value.");
-				}
+				if(this.caretInName()){ patterns = this.treelogic.attribute.name.patterns;}
+				else if(this.caretInContent()){ patterns = this.treelogic.attribute.content.patterns;}
+				else{throw new Error("AttributeThingies only have a name and value.");}
 			}
 			else if(this.caret.thingy instanceof YOURX.TextThingy){ 
-				if(this.caretInContent()){
-					keepmatch = /^[^<]*/;
-					actions.put("<",function(){ //add element to parent after your position
-						var el = new YOURX.ElementThingy();
-						var txpos = this.getPosition(this.caret.thingy);
-						this.getParent(this.caret.thingy).addThingy(el, txpos + 1);
-						this.setCaret(el,-1);
-					});					
-				}
-				else{
-					throw new Error("TextThingies only have a value.");
-				}
+				if(this.caretInContent()){ patterns = this.treelogic.text.content.patterns; }
+				else{ throw new Error("TextThingies only have a value.");}
 			}
-	
-			//get the current content
-			var fieldtext = this.getFieldText();
 			
-			//find any characters which are content
-			var validmatches = newtext.match(keepmatch);
-			if(validmatches && validmatches.length > 0){
-				validtext = validmatches[0];
+			if(patterns != null){
+				//keys are regexp matches, values are functions 
+				for(pattern in patterns){ //trigger function against first matching pattern and return
+					var regexp = new RegExp(pattern);
+					var matches = newtext.match(regexp);
+					if(matches && matches.length > 0){
+						patterns[pattern].apply(this,[matches[0]]); //execute matching function
+						return;
+					}
+				} //fallthrough to error condition
+				throw new Error("Invalid character inserted.");			
 			}
 			else{
-				validtext = null;
-			}
-			//trigger insertion if content is new
-			if(validtext && validtext != fieldtext){ //the new character is valid content
-				var growth = validtext.length - fieldtext.length;
-				this.setFieldText(validtext);
-				if(this.caretInContent()){ //increment caret key for the new character
-					this.setCaret(this.caret.thingy, this.caret.key + growth); //setField and this may trigger a double refreshCursor call
-				}
-			}
-			else{ //surplus text beyond valid text
-				var surplustext;
-				if(validtext){
-					surplustext = newtext.substring(validtext.length);				
-				}
-				else{
-					surplustext = newtext;
-				}
-				//match surplus characters to an action and trigger it
-				if(surplustext){
-					var actionkeys = actions.keys();
-					var actionidx,actionkey,actionfun; 
-					for(actionidx = 0; actionidx < actionkeys.length; actionidx++){ //'actions' has functions stored against patterns
-						var actionkey = actionkeys[actionidx];
-						var actionpattern = new RegExp(actionkey); //load pattern and test
-						var actionmatches = surplustext.match(actionpattern);
-						if(actionmatches && actionmatches.length > 0){
-							actions.get(actionkey).apply(this,[surplustext]); //load function and execute
-							return;
-						}
-					}			
-				} //fallthrough to error condition
-				throw new Error("Invalid character inserted.");
-			}
-			
+				throw new Error("No matching patterns available");
+			}			
 		}
-		
 	};
 				
 	return eval(YOURX.writeScopeExportCode([
