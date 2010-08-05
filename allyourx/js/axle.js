@@ -756,7 +756,7 @@ AXLE = function(){
 	}
 
 	AvixEditor.prototype.caretInContent = function(){ //key numerical, positive and thingy is content
-		return 	(!isNaN(this.caret.key) ) && 
+		return 	(!isNaN(this.caret.key)) && 
 				(this.caret.key >= 0) && 
 				(this.caret.thingy instanceof YOURX.ContentThingy); 			
 	}
@@ -863,25 +863,78 @@ AXLE = function(){
 			this.editableposition = neweditableposition;
 		}
 	}
-	
-	AvixEditor.prototype.handleFieldChange = function(newtext){ //TODO refactor for efficiency by caching values and functions below
-		var keepmatch;
-		var actions = new Hashtable();
-		//TODO replace manual checking of keys below with calls to caretInX() functions
-		if(this.caret.thingy instanceof YOURX.ContainerThingy){
-			if(!isNaN(this.caret.key)){ //key references child position
-				if(this.caret.key < 0){ //cursor in element name 
-					keepmatch = /^[A-Za-z]+/;
-					actions.put(">", function(){ //focus content
-						this.setCaret(this.caret.thingy,0);
-					});
-					actions.put("\\s", function(){ //new attribute and focus name
-						var att = new YOURX.AttributeThingy("",""); //blank name and value to begin
-						this.caret.thingy.addThingy(att);
-						this.setCaret(att,-1);
-					});
+		
+	//TODO merge this implementation with handleFieldChange to permit non-character keycodes
+	AvixEditor.prototype.handleKeypress = function(evt){
+		//TODO refactor for efficiency by caching values and functions below
+		
+		//TODO add action value into nav members, somehow switching according to focus location
+		var nav = {
+			backspace:{name:"Backspace"},del:{name:"Delete"},
+			tab:{name:"Tab"},enter:{name:"Enter"},shift:{name:"Shift"},ctrl:{name:"Control"},alt:{name:"Alt"},escape:{name:"Escape"},
+			pageup:{name:"Page Up"},pagedown:{name:"Page Down"},end:{name:"End"},home:{name:"Home"},
+			left:{name:"Arrow Left"},up:{name:"Arrow Up"},right:{name:"Arrow Right"},down:{name:"Arrow Down"},
+			f1:{name:"F1"},f2:{name:"F2"},f3:{name:"F3"},f4:{name:"F4"},f5:{name:"F5"},f6:{name:"F6"},
+			f7:{name:"F7"},f8:{name:"F8"},f9:{name:"F9"},f10:{name:"F10"},f11:{name:"F11"},f12:{name:"F12"}
+		};
+		
+		//keycode to key name mapping
+		var navkeys = {
+			8:nav.backspace,9:nav.tab,13:nav.enter,16:nav.shift,17:nav.ctrl,18:nav.alt,27:nav.escape,
+			33:nav.pageup,34:nav.pagedown,35:nav.end,36:nav.home,37:nav.left,38:nav.up,39:nav.right,40:nav.down,
+			46:nav.del,112:nav.f1,113:nav.f2,114:nav.f3,115:nav.f4,116:nav.f5,117:nav.f6,
+			118:nav.f7,119:nav.f8,120:nav.f9,121:nav.f10,122:nav.f11,123:nav.f12
+		};
+		
+		var edit = {
+			startelement:{name:"Start item"},
+			endelementname:{name:"End item name"},
+			startattributename:{name:"Start property"},
+			endattributename:{name:"End property name"},
+			endattributevalue:{name:"End property value"},
+			endopentag:{name:"Descendants start"},
+			closetag:{name:"Descendants end"}
+		};
+
+		var qnamepattern = "^[A-Za-z]+";
+		
+		var editpatterns = {
+			
+		};
+
+		//update the field text
+		if(! (evt.which in nav)){
+
+			//key event has been handled so consume
+			evt.stopPropagation();
+			evt.preventDefault();
+			
+			var charpressed = String.fromCharCode(evt.which);
+			var oldtext = this.getFieldText();
+			var newtext;
+			if(oldtext && oldtext != ""){ //insert in existing text
+				newtext = oldtext.slice(0,this.editableposition) + charpressed + oldtext.slice(this.editableposition, oldtext.length);
+			}
+			else{ //no existing text
+				newtext = charpressed;
+			}
+			
+			var keepmatch;
+			var actions = new Hashtable();
+			//TODO replace manual checking of keys below with calls to this.caretInX() functions
+			if(this.caret.thingy instanceof YOURX.ContainerThingy){
+				if(this.caretInName()){ //cursor in element name
+						keepmatch = /^[A-Za-z]+/;
+						actions.put(">", function(){ //focus content
+							this.setCaret(this.caret.thingy,0);
+						});
+						actions.put("\\s", function(){ //new attribute and focus name
+							var att = new YOURX.AttributeThingy("",""); //blank name and value to begin
+							this.caret.thingy.addThingy(att);
+							this.setCaret(att,-1);
+						});					
 				}
-				else{ //cursor in container content
+				else if(this.caretInDescendants()){ //cursor amongst direct children
 					keepmatch = /^$/;
 					actions.put("<", function(){ //create element and focus name
 						var el = new YOURX.ElementThingy(""); //blank name to begin
@@ -894,25 +947,26 @@ AXLE = function(){
 							this.caret.thingy.addThingy(tx);
 							this.setCaret(tx,1);
 						});
-					}				
+					}									
+				}
+				else if(this.caretInAttributes()){ //key references a property (cursor is after an attribute)
+					keepmatch = /^$/;
+					actions.put(">", function(){ //focus in content
+						this.setCaret(this.caret.thingy,0);
+					});					
+				}
+				else{
+					throw new Error("Containers can only have cursor in name, attributes or descendants");
 				}
 			}
-			else{ //key references a property (cursor is after an attribute)
-				keepmatch = /^$/;
-				actions.put(">", function(){ //focus in content
-					this.setCaret(this.caret.thingy,0);
-				});
-			}
-		}
-		else if(this.caret.thingy instanceof YOURX.AttributeThingy){
-			if(!isNaN(this.caret.key)){ //key references position
-				if(this.caret.key < 0){ //cursor is in name
+			else if(this.caret.thingy instanceof YOURX.AttributeThingy){
+				if(this.caretInName()){
 					keepmatch = /^[A-Za-z]+/;
 					actions.put("=", function(){
 						this.setCaret(this.caret.thingy,0);//move to content
-					});
+					});					
 				}
-				else{ //cursor is in content
+				else if(this.caretInContent()){
 					keepmatch = /^[^"]*/;
 					actions.put('">', function(){ //attribute and element closed
 						this.setCaret(this.getParent(this.caret.thingy),0); //focus in element content
@@ -922,85 +976,73 @@ AXLE = function(){
 						var el = this.getParent(caret.thingy); //introspect parent
 						el.addThingy(att); //add to parent
 						this.setCaret(att,-1); //focus on name
-					});						
+					});											
+				}
+				else{
+					throw new Error("AttributeThingies only have a name and value.");
 				}
 			}
-			else{throw new Error("AttributeThingies can't have named properties.");}
-		}
-		else if(this.caret.thingy instanceof YOURX.TextThingy){ 
-			if(!isNaN(this.caret.key) && this.caret.key >=0 ){ //key references content position
-				keepmatch = /^[^<]*/;
-				actions.put("<",function(){ //add element to parent after your position
-					var el = new YOURX.ElementThingy();
-					var txpos = this.getPosition(this.caret.thingy);
-					this.getParent(this.caret.thingy).addThingy(el, txpos + 1);
-					this.setCaret(el,-1);
-				});
+			else if(this.caret.thingy instanceof YOURX.TextThingy){ 
+				if(this.caretInContent()){
+					keepmatch = /^[^<]*/;
+					actions.put("<",function(){ //add element to parent after your position
+						var el = new YOURX.ElementThingy();
+						var txpos = this.getPosition(this.caret.thingy);
+						this.getParent(this.caret.thingy).addThingy(el, txpos + 1);
+						this.setCaret(el,-1);
+					});					
+				}
+				else{
+					throw new Error("TextThingies only have a value.");
+				}
 			}
-			else{throw new Error("TextThingies can't have named properties.");}
-		}
-
-		//get the current content
-		var fieldtext = this.getFieldText();
-		
-		//find any characters which are content
-		var validmatches = newtext.match(keepmatch);
-		if(validmatches && validmatches.length > 0){
-			validtext = validmatches[0];
-		}
-		else{
-			validtext = null;
-		}
-		//trigger insertion if content is new
-		if(validtext && validtext != fieldtext){ //the new character is valid content
-			var growth = validtext.length - fieldtext.length;
-			this.setFieldText(validtext);
-			if(this.caretInContent()){ //increment caret key for the new character
-				this.setCaret(this.caret.thingy, this.caret.key + growth); //setField and this may trigger a double refreshCursor call
-			}
-		}
-		else{ //surplus text beyond valid text
-			var surplustext;
-			if(validtext){
-				surplustext = newtext.substring(validtext.length);				
+	
+			//get the current content
+			var fieldtext = this.getFieldText();
+			
+			//find any characters which are content
+			var validmatches = newtext.match(keepmatch);
+			if(validmatches && validmatches.length > 0){
+				validtext = validmatches[0];
 			}
 			else{
-				surplustext = newtext;
+				validtext = null;
 			}
-			//match surplus characters to an action and trigger it
-			if(surplustext){
-				var actionkeys = actions.keys();
-				var actionidx,actionkey,actionfun; 
-				for(actionidx = 0; actionidx < actionkeys.length; actionidx++){ //'actions' has functions stored against patterns
-					var actionkey = actionkeys[actionidx];
-					var actionpattern = new RegExp(actionkey); //load pattern and test
-					var actionmatches = surplustext.match(actionpattern);
-					if(actionmatches && actionmatches.length > 0){
-						actions.get(actionkey).apply(this,[surplustext]); //load function and execute
-						return;
-					}
-				}			
-			} //fallthrough to error condition
-			throw new Error("Invalid character inserted.");
+			//trigger insertion if content is new
+			if(validtext && validtext != fieldtext){ //the new character is valid content
+				var growth = validtext.length - fieldtext.length;
+				this.setFieldText(validtext);
+				if(this.caretInContent()){ //increment caret key for the new character
+					this.setCaret(this.caret.thingy, this.caret.key + growth); //setField and this may trigger a double refreshCursor call
+				}
+			}
+			else{ //surplus text beyond valid text
+				var surplustext;
+				if(validtext){
+					surplustext = newtext.substring(validtext.length);				
+				}
+				else{
+					surplustext = newtext;
+				}
+				//match surplus characters to an action and trigger it
+				if(surplustext){
+					var actionkeys = actions.keys();
+					var actionidx,actionkey,actionfun; 
+					for(actionidx = 0; actionidx < actionkeys.length; actionidx++){ //'actions' has functions stored against patterns
+						var actionkey = actionkeys[actionidx];
+						var actionpattern = new RegExp(actionkey); //load pattern and test
+						var actionmatches = surplustext.match(actionpattern);
+						if(actionmatches && actionmatches.length > 0){
+							actions.get(actionkey).apply(this,[surplustext]); //load function and execute
+							return;
+						}
+					}			
+				} //fallthrough to error condition
+				throw new Error("Invalid character inserted.");
+			}
+			
 		}
-	}
-	
-	AvixEditor.prototype.handleKeypress = function(evt){
-		//update the field text
-		var charpressed = String.fromCharCode(evt.which);
-		var oldtext = this.getFieldText();
-		var newtext;
-		if(oldtext && oldtext != ""){ //insert in existing text
-			newtext = oldtext.slice(0,this.editableposition) + charpressed + oldtext.slice(this.editableposition, oldtext.length);
-		}
-		else{ //no existing text
-			newtext = charpressed;
-		}
-		this.handleFieldChange(newtext);
 		
-		//key event has been handled so consume
-		evt.stopPropagation();
-		evt.preventDefault();
 	};
 				
 	return eval(YOURX.writeScopeExportCode([
