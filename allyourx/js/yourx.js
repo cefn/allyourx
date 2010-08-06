@@ -1372,13 +1372,13 @@ YOURX = function(){
 	
 	/** Accesses metadata storage for a thingy previously tracked.*/
 	ThingyTracker.prototype.getMetadata = function(thingy){
-		var data = this.metadata.get(thingy);
-		if(data !== null){
-			return data;
+		if(thingy !== null && this.metadata.containsKey(thingy)){
+			var data = this.metadata.get(thingy);
+			if(data !== null){
+				return data;
+			}
 		}
-		else{
-			throw new Error("Thingy is not yet being tracked by this tracker");
-		}
+		throw new Error("Thingy is not yet being tracked by this tracker");
 	};
 
 	ThingyTracker.prototype.isTracked = function(thingy){
