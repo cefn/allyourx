@@ -704,7 +704,7 @@ AXLE = function(){
 	 */
 	CompletionEditor.prototype.handleKeydown = function(evt){
 		return true;
-	}		
+	};		
 	
 	/** AvixEditor is wired into mouse and keyboard eventing and triggers changes to the ThingyTree
 	 * or navigation operations depending where the caret and cursor is, and which characters are hit.
@@ -742,28 +742,28 @@ AXLE = function(){
 			this.caret = {'thingy':arguments[0],'key':arguments[1]};				
 		}
 		this.refreshCursor();
-	}
+	};
 
 	AvixEditor.prototype.caretInName = function(){ //key is numerical and negative
 		return 	( !isNaN(this.caret.key) ) && 
 				(this.caret.key < 0); 
-	}
+	};
 
 	AvixEditor.prototype.caretInDescendants = function(){ //key numerical, positive and thingy is container
 		return 	(!isNaN(this.caret.key) ) && 
 				(this.caret.key >= 0) && 
 				(this.caret.thingy instanceof YOURX.ContainerThingy); 			
-	}
+	};
 
 	AvixEditor.prototype.caretInContent = function(){ //key numerical, positive and thingy is content
 		return 	(!isNaN(this.caret.key)) && 
 				(this.caret.key >= 0) && 
 				(this.caret.thingy instanceof YOURX.ContentThingy); 			
-	}
+	};
 
 	AvixEditor.prototype.caretInAttributes = function(){ //key is a string
-		isNaN(this.caret.key);
-	}
+		return isNaN(this.caret.key);
+	};
 	
 	AvixEditor.prototype.getFieldText = function(){
 		if(this.caretInName()){
@@ -776,7 +776,7 @@ AXLE = function(){
 			return ""; //only a placeholder
 		}
 		else throw new Error("Unexpected caret status");
-	}
+	};
 
 	AvixEditor.prototype.setFieldText = function(newtext){
 		if(this.caretInName()){
@@ -793,7 +793,7 @@ AXLE = function(){
 		else throw new Error("Unexpected caret status");
 		
 		this.refreshCursor();
-	}
+	};
 			
 	AvixEditor.prototype.refreshCursor = function(){
 		//calculate new selection (element which will be contenteditable) and position (location of cursor in final Range call)
@@ -815,7 +815,8 @@ AXLE = function(){
 		else if(this.caretInAttributes()){ //place cursor after attribute
 			var att = this.caret.thingy.getAttributeThingy(this.caret.key);
 			var attselection = this.getBoundSelection(att);
-			neweditableselection = this.queryDescendantWrapper(boundselection)
+			var elementselection = this.getBoundSelection(this.getParent(att));
+			neweditableselection = this.queryOpenWrapper(elementselection);
 			neweditableposition = neweditableselection.children().index(attselection) + 1;
 		}
 		
@@ -862,9 +863,14 @@ AXLE = function(){
 			this.editableselection = neweditableselection;
 			this.editableposition = neweditableposition;
 		}
-	}
+	};
 
-	(function(){
+
+	;(function(){
+		
+		//TODO Puzzle through issue with attributes dynamically changing name during edit, 
+		//whilst the key against which they are stored in the element DOES NOT change, creating an inconsistent model
+		//see Element#addAttribute(...)
 
 		var keeppattern = function(match){
 			var newtext = match;
@@ -883,12 +889,14 @@ AXLE = function(){
 		
 		treelogic.container = {
 			descendants:{ //cursor is in between some descendants (key is position)
-				//no keeppattern
-				"<":function(){ //create element and focus name
-					var el = new YOURX.ElementThingy(""); //blank name to begin
-					this.caret.thingy.addThingy(el);
-					this.setCaret(el,-1);
-				}				
+				patterns:{
+					//no keeppattern
+					"<":function(){ //create element and focus name
+						var el = new YOURX.ElementThingy(""); //blank name to begin
+						this.caret.thingy.addThingy(el);
+						this.setCaret(el,-1);
+					}					
+				}
 			}				
 		};
 		treelogic.element = {
@@ -988,9 +996,10 @@ AXLE = function(){
 		AvixEditor.prototype.nav = nav;
 		AvixEditor.prototype.navkeys = navkeys;
 		
-	}());
+	})();
+
 		
-		
+
 	//TODO handle non-character keycodes
 	AvixEditor.prototype.handleKeypress = function(evt){
 		//TODO refactor for efficiency by caching values and functions below
@@ -1036,7 +1045,7 @@ AXLE = function(){
 			
 			if(patterns != null){
 				//keys are regexp matches, values are functions 
-				for(pattern in patterns){ //trigger function against first matching pattern and return
+				for(var pattern in patterns){ //trigger function against first matching pattern and return
 					var regexp = new RegExp(pattern);
 					var matches = newtext.match(regexp);
 					if(matches && matches.length > 0){
@@ -1044,14 +1053,14 @@ AXLE = function(){
 						return;
 					}
 				} //fallthrough to error condition
-				throw new Error("Invalid character inserted.");			
+				throw new Error("Invalid character inserted, no matches available.");			
 			}
 			else{
-				throw new Error("No matching patterns available");
+				throw new Error("No patterns available");
 			}			
 		}
 	};
-				
+
 	return eval(YOURX.writeScopeExportCode([
 		'OperationCaret','ThingyOperation','ThingyAddition','ThingyDeletion','CompletionEditor', 'AvixEditor'
 	]));	
