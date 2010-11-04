@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The purchase order example schema (po.xsd in this folder) is based on the example in the w3.org XML Schema Primer 
+    at http://www.w3.org/TR/xmlschema-0/ converted by http://debeissat.nicolas.free.fr/XSDtoRNG.php. 
+    
+    After conversion, indirection  through ref:define links was removed - both spurious (refs not reused) and genuine 
+    (refs which are reused and now have duplicate subtrees). Choice elements were removed, and singleton elements
+    were changed to be attributes for normative reasons. 
+    These operations eliminated use of components which are non-standard in AllyourX v002 (later versions include these features).
+-->
+<grammar xmlns="http://relaxng.org/ns/structure/1.0"
+    xmlns:a="http://relaxng.org/ns/compatibility/annotations/1.0"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema" ns=""
+    datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
+
+    <a:documentation> Purchase order schema for Example.com. Copyright 2000 Example.com. All rights
+        reserved. </a:documentation>
+
+    <start>
+        <element name="purchaseOrder">
+            <element name="shipTo">
+                <attribute name="name">
+                    <data type="string"/>
+                </attribute>
+                <attribute name="street">
+                    <data type="string"/>
+                </attribute>
+                <attribute name="city">
+                    <data type="string"/>
+                </attribute>
+                <attribute name="state">
+                    <data type="string"/>
+                </attribute>
+                <attribute name="zip">
+                    <data type="decimal"/>
+                </attribute>
+                <optional>
+                    <attribute name="country">
+                        <data type="NMTOKEN"/>
+                    </attribute>
+                </optional>
+            </element>
+            <element name="billTo">
+                <attribute name="name">
+                    <data type="string"/>
+                </attribute>
+                <attribute name="street">
+                    <data type="string"/>
+                </attribute>
+                <attribute name="city">
+                    <data type="string"/>
+                </attribute>
+                <attribute name="state">
+                    <data type="string"/>
+                </attribute>
+                <attribute name="zip">
+                    <data type="decimal"/>
+                </attribute>
+
+                <optional>
+                    <attribute name="country">
+                        <data type="NMTOKEN"/>
+                    </attribute>
+                </optional>
+            </element>
+            <optional>
+                <attribute name="comment">
+                    <data type="string"/>
+                </attribute>
+            </optional>
+            <element name="items">
+                <zeroOrMore>
+                    <element name="item">
+                        <attribute name="productName">
+                            <data type="string"/>
+                        </attribute>
+                        <attribute name="quantity">
+                            <data type="positiveInteger">
+                                <param name="maxExclusive">100</param>
+                            </data>
+                        </attribute>
+                        <attribute name="USPrice">
+                            <data type="decimal"/>
+                        </attribute>
+                        <optional>
+                            <attribute name="comment">
+                                <data type="string"/>
+                            </attribute>
+                        </optional>
+                        <optional>
+                            <attribute name="shipDate">
+                                <data type="date"/>
+                            </attribute>
+                        </optional>
+
+                        <attribute name="partNum">
+                            <!-- Stock Keeping Unit, a code for identifying products -->
+                            <data type="string">
+                                <param name="pattern">\d{3}-[A-Z]{2}</param>
+                            </data>
+                        </attribute>
+
+                    </element>
+                </zeroOrMore>
+            </element>
+            <optional>
+                <attribute name="orderDate">
+                    <data type="date"/>
+                </attribute>
+            </optional>
+        </element>
+    </start>
+
+</grammar>
