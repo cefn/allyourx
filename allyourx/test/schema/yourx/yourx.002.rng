@@ -14,9 +14,7 @@
       <attribute name="datatypeLibrary">
         <value>http://www.w3.org/2001/XMLSchema-datatypes</value>
       </attribute>
-      <attribute name="ns">
-        <value>http://relaxng.org/ns/structure/1.0</value>
-      </attribute>
+      <ref name="ally-control-atts"/>
       <element name="start">
         <ref name="element-quantifier-choice"/>
       </element>
@@ -79,6 +77,9 @@
   </define>
             
   <define name="ally-control-atts" >
+    <optional>
+      <attribute name="ns"/>
+    </optional>
     <optional>
       <attribute name="a:label" />
     </optional>

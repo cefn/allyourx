@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?oxygen RNGSchema="file:./yourx.002.rng" type="xml"?>
+<!--
+    A grammar for grammars, valid against yourx.002.rng.
+    In other words, a v002 compliant editor should be able to load this grammar 
+    and use it to interactively author a RelaxNG grammar. Any resulting grammar 
+    should in turn be able to be loaded by the same v002 compliant editor.
+    This grammar allows exactly one named element to be specified, containing any number of 
+    named attributes and any number of named elements.
+-->
+<grammar 
+    xmlns="http://relaxng.org/ns/structure/1.0"
+    xmlns:a="http://relaxng.org/ns/compatibility/annotations/1.0"
+    datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes"
+    ns="http://relaxng.org/ns/structure/1.0">
+    <start>
+        <element name="grammar">
+            <element name="start">
+                <element name="element">
+                    <attribute name="name"/>
+                    <zeroOrMore>
+                        <element name="attribute">
+                            <attribute name="name"/>
+                        </element>
+                    </zeroOrMore>                    
+                    <zeroOrMore>
+                        <element name="element">
+                            <attribute name="name"/>
+                        </element>
+                    </zeroOrMore>                    
+                </element>
+            </element>
+        </element>
+    </start>
+</grammar>

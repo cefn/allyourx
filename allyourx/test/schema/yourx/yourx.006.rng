@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
-<!--  
-  Defines the minimal subset of RelaxNG which Allyourx can support in v003.
-  It extends v002 support with the control of content choice to include strictly typed content definitions for attributes, 
-  incorporating xml schema types like 'date', choices from a predefined set of values.
+<!-- 
+  Defines the minimal subset of RelaxNG which Allyourx can support in v005.
+  Extends support of version v004 by introducing standard representations for
+  xhtml markup and binary files to be included in XML files.
 -->
 <grammar datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes"
   ns="http://relaxng.org/ns/structure/1.0"
@@ -19,6 +19,12 @@
       <element name="start">
         <ref name="element-quantifier-choice"/>
       </element>
+      <zeroOrMore>
+        <ref name="element-define"/>
+      </zeroOrMore>
+      <zeroOrMore>
+        <ref name="attribute-define"/>
+      </zeroOrMore>
     </element>      
   </start>
     
@@ -43,12 +49,39 @@
     </element>    
   </define>  
   
+  <define name="attribute-define">
+    <element name="define">
+      <attribute name="name"/>
+      <ref name="attribute" />
+    </element>
+  </define>
+  
+  <define name="element-define">
+    <element name="define">
+      <attribute name="name"/>
+      <ref name="element" />
+    </element>
+  </define>
+  
+  <define name="attribute-ref">
+    <element name="ref">
+      <attribute name="name"/>
+    </element>
+  </define>  
+  
+  <define name="element-ref">
+    <element name="ref">
+      <attribute name="name"/>
+    </element>
+  </define>  
+  
   <define name="attribute-quantifier-choice">
     <choice>
       <ref name="attribute"/>
       <element name="optional">
         <ref name="attribute" />
       </element>
+      <ref name="attribute-ref" /><!-- Note, this must refer to an attribute define -->
     </choice>
   </define>
   
@@ -64,21 +97,33 @@
       <element name="oneOrMore">
         <ref name="element" />
       </element>
-    </choice>
-  </define>
-  
-  <define name="attribute-content-choice">
-    <choice>
-      <empty/>
-      <ref name="data"/>
-      <element name="choice">
-        <oneOrMore>
-          <element name="value">
-            <text/>
-          </element>
-        </oneOrMore>        
+      <ref name="element-ref" /><!-- Note, this must refer to an element define -->
+      <element name="externalRef">
+        <attribute name="href">
+          <value>http://allyourx.org/v005/schema/xhtml/block.rng</value>
+        </attribute>
+      </element>
+      <element name="externalRef">
+        <attribute name="href">
+          <value>http://allyourx.org/v005/schema/binary/file.rng</value>
+        </attribute>
       </element>
     </choice>
+  </define>
+
+  <define name="attribute-content-choice">
+    <optional>
+      <choice>
+        <ref name="data"/> 
+        <element name="choice">
+          <oneOrMore>
+            <element name="value">
+              <text/>
+            </element>
+          </oneOrMore>          
+        </element>
+      </choice>
+    </optional>
   </define>
     
   <define name="data">
@@ -95,9 +140,6 @@
   </define>
             
   <define name="ally-control-atts" >
-    <optional>
-      <attribute name="ns"/>
-    </optional>
     <optional>
       <attribute name="a:label" />
     </optional>

@@ -1,8 +1,7 @@
 <?xml version="1.0"?>
-<!--  
+<!-- 
   Defines the minimal subset of RelaxNG which Allyourx can support in v003.
-  It extends v002 support with the control of content choice to include strictly typed content definitions for attributes, 
-  incorporating xml schema types like 'date', choices from a predefined set of values.
+  Extends support of version v002 with choice and group representing disjunction and composition
 -->
 <grammar datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes"
   ns="http://relaxng.org/ns/structure/1.0"
@@ -13,9 +12,7 @@
       <attribute name="datatypeLibrary">
         <value>http://www.w3.org/2001/XMLSchema-datatypes</value>
       </attribute>
-      <attribute name="ns">
-        <value>http://relaxng.org/ns/structure/1.0</value>
-      </attribute>
+      <ref name="ally-control-atts"/>
       <element name="start">
         <ref name="element-quantifier-choice"/>
       </element>
@@ -25,8 +22,7 @@
   <define name="attribute">
     <element name="attribute">
       <attribute name="name"/>
-      <ref name="ally-control-atts" />
-      <ref name="attribute-content-choice" />
+      <ref name="ally-control-atts" />  
     </element>
   </define>
   
@@ -34,14 +30,32 @@
     <element name="element">
       <attribute name="name"/>
       <ref name="ally-control-atts" />
-      <zeroOrMore>
-        <ref name="attribute-quantifier-choice"/>
-      </zeroOrMore>
-      <zeroOrMore>
-        <ref name="element-quantifier-choice"/>
-      </zeroOrMore>
-    </element>    
-  </define>  
+      <ref name="descendant"/>
+    </element>
+  </define>
+  
+  <define name="descendant">
+    <interleave>
+      <oneOrMore>
+        <choice>
+          <ref name="attribute-quantifier-choice"/>
+          <ref name="child-quantifier-choice"/>              
+        </choice>
+      </oneOrMore>          
+    </interleave>    
+  </define>
+  
+  <define name="descendant-quantifier-choice">
+    <choice>
+      <ref name="descendant"/>
+      <element name="choice">
+        <ref name="descendant"/>
+      </element>
+      <element name="group">
+        <ref name="descendant"/>
+      </element>
+    </choice>
+  </define>
   
   <define name="attribute-quantifier-choice">
     <choice>
@@ -67,31 +81,24 @@
     </choice>
   </define>
   
-  <define name="attribute-content-choice">
+  <define name="child-quantifier-choice">
     <choice>
-      <ref name="data"/>
-      <oneOrMore>
-        <element name="value">
-          <text/>
-        </element>
-      </oneOrMore>
+      <ref name="element-quantifier-choice"/>
+      <ref name="value-types"/>
     </choice>
   </define>
-    
-  <define name="data">
-    <element name="data">
-      <attribute name="type">
-        <choice>
-          <!-- Primitive datatypes from http://www.w3.org/TR/xmlschema-2/ -->
-          <value>date</value>
-          <value>decimal</value>
-          <value>integer</value>
-        </choice>
-      </attribute>
-    </element>
+  
+  <define name="value-types">
+    <choice>
+      <element name="text"><empty/></element>
+      <element name="empty"><empty/></element>      
+    </choice>
   </define>
             
   <define name="ally-control-atts" >
+    <optional>
+      <attribute name="ns"/>
+    </optional>
     <optional>
       <attribute name="a:label" />
     </optional>

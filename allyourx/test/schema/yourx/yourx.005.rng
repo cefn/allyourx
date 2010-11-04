@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <!-- 
-  Defines the minimal subset of RelaxNG which Allyourx can support in v005.
-  Extends support of version v004 by introducing standard representations for
-  xhtml markup and binary files to be included in XML files.
+  Defines the minimal subset of RelaxNG which Allyourx can support in v004.
+  Extends support of version v003 to escape the russian doll-only representation
+  and permit infinite recursion through production rules in ref/define relationships.
 -->
 <grammar datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes"
   ns="http://relaxng.org/ns/structure/1.0"
@@ -98,16 +98,6 @@
         <ref name="element" />
       </element>
       <ref name="element-ref" /><!-- Note, this must refer to an element define -->
-      <element name="externalRef">
-        <attribute name="href">
-          <value>http://allyourx.org/v005/schema/xhtml/block.rng</value>
-        </attribute>
-      </element>
-      <element name="externalRef">
-        <attribute name="href">
-          <value>http://allyourx.org/v005/schema/binary/file.rng</value>
-        </attribute>
-      </element>
     </choice>
   </define>
 
@@ -115,11 +105,13 @@
     <optional>
       <choice>
         <ref name="data"/>
-        <oneOrMore>
-          <element name="value">
-            <text/>
-          </element>
-        </oneOrMore>
+        <element name="choice">
+          <oneOrMore>
+            <element name="value">
+              <text/>
+            </element>
+          </oneOrMore>          
+        </element>
       </choice>
     </optional>
   </define>
