@@ -195,7 +195,7 @@ AXLE = function(){
 	/** Refreshes the set of possible valid operations on the current parentthingy given
 	 * the current parentrule. Typically this is re-executed after every change in 
 	 * the tree. It will either create a set of involuntary operations if the tree is not 
-	 * yet valid, or voluntary ones, if the tree is valid, but optional operations are 
+	 * yet valid, or voluntary ones, if the tree is valid but optional operations are 
 	 * available. Currently, it terminates after it has found the next involuntary operation,
 	 * and does not search for voluntary operations.
 	 */ 
@@ -397,314 +397,7 @@ AXLE = function(){
 			throw new YOURX.UnsupportedOperationError('ThingyAddition cannot (yet) handle this ThingyRule type');
 		}
 	}
-	
-	
-	function CompletionEditor(){
-		ALLY.RawEditor.apply(this,arguments);
-	}
-	CompletionEditor.prototype = new ALLY.RawEditor();
-	
-	CompletionEditor.prototype.setFocus = function(focusthingy, focuscaret){
-		/** Note this from http://www.w3.org/TR/2000/REC-DOM-Level-2-Traversal-Range-20001113/ranges.html
-		 * It is also possible to set a Range's position relative to nodes in the tree:
-		 *   void setStartBefore(in Node node); raises(RangeException);
-		 *   void setStartAfter(in Node node); raises(RangeException);
-		 *   void setEndBefore(in Node node); raises(RangeException);
-		 *   void setEndAfter(in Node node); raises(RangeException);
-		 */
 		
-		//remove previous focus
-		var focusq = this.getFocusedSelection();
-		if(focusq && focusq.size()){
-			focusq.blur();
-			focusq.removeAttr("contenteditable");
-		}
-		//sanitise submitted focuscaret value
-		if(focuscaret){
-			if(!isNaN(focuscaret)){ //turn integer into proper focuscaret structure
-				focuscaret = {start:focuscaret,end:focuscaret};
-			}
-			else if("start" in focuscaret && !isNaN(focuscaret.start)){ //duplicate end value for zero length selection
-				if(!("end" in focuscaret)){
-					focuscaret.end = focuscaret.start;
-				}
-			}
-			else{
-				throw new Error("Malformed invocation of setFocus(). Improper focuscaret.");
-			}
-		}
-		else{
-			focuscaret = {start:0,end:0};
-		}
-		//set new values
-		this.focusthingy = focusthingy;
-		this.focuscaret = focuscaret;
-		//add focus again
-		var focusq = this.getFocusedSelection();
-		if(focusq && focusq.size()){
-			focusq.attr("contenteditable", "true");
-			focusq.focus();
-			
-			//TODO: This is dependent on W3C implementation - will break in IE
-			var range = window.getSelection().getRangeAt(0);
-			var domcaret = this.getDomCaret();
-			//use focus node or first text node as anchor
-			var anchornode = focusq[0];
-			focusq.contents().each(function(){
-				if(this.nodeType === Node.TEXT_NODE){
-					anchornode = this;
-					return false;
-				}
-				return true;
-			});
-			//position cursor
-			range.setStart(anchornode, domcaret.start);
-			range.setEnd(anchornode, domcaret.start);
-		}
-	}
-
-	/** Calculates the start and end of the selection in the actual DOM element, since focuscaret values use negative values symbolically. */
-	CompletionEditor.prototype.getDomCaret = function(){
-		if (this.focuscaret) {
-			if (this.focuscaret.start === this.focuscaret.end) {
-				if (this.focuscaret.start >= 0) { //cursor position is focused in content
-					if (this.focusthingy instanceof YOURX.ContainerThingy) {
-						if (this.focuscaret.start === 0) {
-							return this.focuscaret;
-						}
-						else {
-							//containers' positive cursor positions correspond with child positions
-							//cursors between children should be before the child's open tag
-							return {start:0,end:0};
-						}
-					}
-					else 
-						if (this.focusthingy instanceof YOURX.ContentThingy) {
-							return this.focuscaret; // content can have a positive 
-						}
-						else {
-							throw Error("Focus requested from unexpected element");
-						}
-				}
-				else { //cursor position is focused in name
-					//negative offset according to the length of the name
-					var name = this.focusthingy.getName();
-					return {
-						start: (this.focuscaret.start + name.length + 1),
-						end: (this.focuscaret.end + name.length + 1)
-					};
-				}
-			}
-			else {
-				throw Error("Multiple selection currently not implemented");
-			}
-		}
-		else {
-			throw Error("No focus caret is set.");
-		}
-	}
-
-	CompletionEditor.prototype.getFocusedSelection = function(){
-		if (this.focusthingy) { 
-			var boundq = this.getBoundSelection(this.focusthingy);
-			if(this.focuscaret) {
-				if (this.focuscaret.start === this.focuscaret.end) {
-					var cursorpos = this.focuscaret.start;
-					if (cursorpos >= 0) {
-						if(this.focusthingy instanceof YOURX.ContainerThingy){
-							//cursor is in descendant wrapper
-							return this.queryDescendantWrapper(boundq);								
-						}
-						else if (this.focusthingy instanceof YOURX.ContentThingy){
-							//cursor is just in the content
-							return this.queryContentWrapper(boundq);								
-						}
-					}
-					else { 
-						//field cursor is in name - place cursor in name part of open tag 
-						var namewrapper = this.queryNameWrapper(boundq); 
-						return namewrapper.eq(0);								
-					}
-				}
-				else {
-					throw new Error("Multiple character selection currently not implemented");
-				}
-			}
-		}
-		return null;
-	}
-
-	
-	CompletionEditor.prototype.trackThingy = function(thingy){
-		//superclass tracking
-		ALLY.RawEditor.prototype.trackThingy.apply(this,arguments);
-		//create listeners for key events
-		var editorthis = this;
-		var keydownListener = function(evt){
-			return editorthis.handleKeydown(evt);
-		};
-		var keypressListener = function(evt){
-			return editorthis.handleKeypress(evt);
-		};
-		//wire into bound selection
-		var boundq = this.getBoundSelection(thingy);
-		boundq.focus(function(evt){
-			boundq.bind('keydown', keydownListener);
-			boundq.bind('keypress', keypressListener);
-			evt.stopPropagation();//consider more elegant way of differentiating if evt is for this level																	
-		});
-		boundq.blur(function(evt){
-			boundq.unbind('keydown', keydownListener);
-			boundq.unbind('keypress', keypressListener);
-			evt.stopPropagation(); //consider more elegant way of differentiating if evt is for this level																
-		});
-	}
-
-	CompletionEditor.prototype.untrackThingy = function(){ //TODO, consider unbinding focus and key listeners
-		ALLY.RawEditor.prototype.untrackThingy.apply(this,arguments);			
-	}
-
-	CompletionEditor.prototype.insertAtFocusCaret = function(toinsert){
-		if (this.focusthingy instanceof YOURX.ContentThingy && 
-			this.focuscaret.start >= 0){ //in value section of object with setValue() method
-			var value = this.focusthingy.value;
-			//make change
-			this.focusthingy.setValue(value.slice(0,domcaret.start) + toinsert + value.slice(domcaret.end, value.length));
-			//move cursor forward
-			this.setFocus(this.focusthingy,domcaret.start + toinsert.length);				
-		}
-		else if(this.focuscaret.start < 0 && 
-				(this.focusthingy instanceof YOURX.ElementThingy || 
-				this.focusthingy instanceof YOURX.AttributeThingy)){ //in name section of an object with setName() method
-			var domcaret = this.getDomCaret();
-			var name = this.focusthingy.getName();
-			name = name.slice(0,domcaret.start) + toinsert + name.slice(domcaret.end, name.length);
-			this.focusthingy.setName(name);
-			this.setFocus(this.focusthingy, (domcaret.start + toinsert.length) - (name.length + 1));
-		}
-		else{
-			throw new Error("Editing event routing error: Illegal to insert at the current DOM position.");
-		}
-	}
-
-	/** Handles a new key pressed in the context of a given...
-	 * @param {Object} whichkey the key to handle
-	 * @return The thingy which should acquire focus, or null if no focus
-	 */
-	CompletionEditor.prototype.handleKeypress = function(evt){
-		//TODO: Replicate this functionality using character and keycode sets or regular expressions, ThingyOperation and focus values.
-		//this will expose the logic more straighforwardly
-		
-		/** PSEUDOCODE 
-		 * if(caret is in name area){
-		 * 		var qnameregexp = /[A-Za-z_]/
-		 * 		if(focus is an element or an attribute){
-		 * 			get name, and edit according to focus and key hit
-		 * 			check it conforms to regexp
-		 * 			if it conforms then create a NameChangeThingyOperation
-		 * 			else it must be a keypress intended for another later part of the logic
-		 * 		}
-		 * }
-		 * ...
-		 * //not an edit, must be a navigation
-		 * map keypresses to moves in the document, including arrow keys stepping between editable parts
-		 * may need a programmatic representation of the sequence of editable parts
-		 */
-		
-		/** Here's a NCName definition (element and attribute names) from http://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCNameChar
-		 *  An XML Name, minus the ":"
-		 * NCName 	 ::= 	(Letter | '_') (NCNameChar)*	 
-		 * NCNameChar 	::= 	Letter | Digit | '.' | '-' | '_' | CombiningChar | Extender
-		 */
-		
-		//TODO: Work out how to represent focus after different attributes in element to permit cursor-driven keyboard navigation
-		//possibly requires rethink of focus representation to allow keys as per operationcaret, could allow separation of 
-		//focuscaret representation from domcaret (e.g. drop start+end conceit since this doesn't currently work). 
-		
-		//TODO: consider possibility of using a ThingyTracker to keep an XML DOM in synchrony, permitting XPath to be used?
-		
-		//TODO : wire into operationcaret's list of available operations
-		
-		//TODO: make sure that focus cursor shows where characters are about to be inserted
-
-		//override default
-		//any edits will be triggered by model change and focus change
-		//any navigation will be explicitly triggered below
-		evt.preventDefault(); 
-
-		//future implementation can explicitly determine
-		// a ThingyOperation
-		// a focusthingy and focuscaret (new items created gain focus by default)
-		var charpress = String.fromCharCode(evt.which);
-		if(this.focusthingy){
-			if(charpress === '<'){ // '<' begin tag
-				if(this.focusthingy instanceof YOURX.ContainerThingy){ // '<' is tag insertion character
-					var newthingy = new YOURX.ElementThingy("");
-					this.focusthingy.addChild(newthingy);
-					this.setFocus(newthingy, -1); //move domcaret to name
-				}
-			}
-			else if (charpress === '>') { // '>' end tag
-				if(this.focusthingy instanceof YOURX.ElementThingy){
-					if(this.focuscaret.start < 0){ // '>' next valid at end of opening tag ; move there
-						this.setFocus(this.focusthingy,0); //move domcaret to descendants
-					}
-					else { // '>' next valid at end of closing tag ; move to next available sibling or parent's sibliing
-						if(this.focuscaret.start < this.focusthingy.getChildren().length){
-							this.setFocus(this.focusthingy, this.focuscaret.start + 1);
-						}
-						else{
-							var parentthingy = this.getParent(this.focusthingy);
-							if(parentthingy){
-								var parentcaret = this.getPosition(parent, this.focusthingy) + 1;
-								this.setFocus(parentthingy,parentcaret); //move domcaret to descendants
-							}
-							else{ //reached last position in root node - can't go further
-								evt.preventDefault(); //override insert; navigating
-								throw new Error("At last node");
-							}
-						}
-					}
-				}				
-			}
-			else if (charpress.match(/[A-Za-z]/)) { //alpha
-					this.insertAtFocusCaret(charpress);
-			}
-			else if (charpress.match(/ /)) { //space bar 
-				if (this.focuscaret.start < 0) { //in name section
-					if (this.focusthingy instanceof YOURX.ElementThingy) { //space is attribute separator, create a new attribute and focus on name
-						var att = new YOURX.AttributeThingy("", "");
-						this.focusthingy.addAttribute(att);
-						this.setFocus(att, -1);
-					}
-					else if (this.focusthingy instanceof YOURX.AttributeThingy) { //space next valid in attribute value; move there
-						setFocus(this.focusthingy,0);
-						this.insertAtFocusCaret(charpress);
-					}
-					else {
-						throw new Error("Editing event routing error: Space with negative caret unhandled.");
-					}
-				}
-				else { //in value section
-					this.insertAtFocusCaret(" ");
-				}
-			}
-			else if (evt.which === 16) { // shift key - do nothing
-			}
-			else {
-				throw new Error("Character '" + evt.which + "' unhandled by any Controller case. Should have returned by now.");
-			}
-		}
-		return true;
-	}
-	
-	/** Handles a new key pressed in the context of a given...
-	 * @param {Object} whichkey the key to handle
-	 * @return The thingy which should acquire focus, or null if no focus
-	 */
-	CompletionEditor.prototype.handleKeydown = function(evt){
-		return true;
-	};		
 	
 	/** AvixEditor is wired into mouse and keyboard eventing and triggers changes to the ThingyTree
 	 * or navigation operations depending where the caret and cursor is, and which characters are hit.
@@ -780,7 +473,13 @@ AXLE = function(){
 
 	AvixEditor.prototype.setFieldText = function(newtext){
 		if(this.caretInName()){
-			this.caret.thingy.setName(newtext);
+			var parentelement = (this.caret.thingy instanceof YOURX.AttributeThingy ? this.getParent(this.caret.thingy) : null);
+			if(parentelement){ //handle case that attribute is parented and name table needs updating
+				parentelement.renameAttribute(this.caret.thingy.getName(),newtext);
+			}
+			else{ //just rename directly
+				this.caret.thingy.setName(newtext);				
+			}
 		}
 		else if(this.caretInContent()){
 			this.caret.thingy.setValue(newtext);
@@ -802,11 +501,11 @@ AXLE = function(){
 		var neweditableposition = null;
 		if(this.caretInName()){ //position cursor in text node of the name   
 			neweditableselection = this.queryNameWrapper(boundselection);
-			neweditableposition = this.caret.thingy.name.length + this.caret.key + 1;
+			neweditableposition = this.caret.thingy.name.length + this.caret.key + 1; //expecting negative value of key
 		}	
 		else if(this.caretInContent()){ //position cursor in text node of the content  
 			neweditableselection = this.queryContentWrapper(boundselection);
-			neweditableposition = this.caret.key;
+			neweditableposition = this.caret.key; //expecting positive value of key
 		}
 		else if(this.caretInDescendants()){ //place cursor among descendant characters or child elements
 			neweditableselection = this.queryDescendantWrapper(boundselection);
@@ -828,7 +527,7 @@ AXLE = function(){
 
 			//TODO can avoid this if selections are equal
 			if(this.editableselection){
-				this.editableselection.children().andSelf().removeAttr(EDITABLEATTR); //strip old assignments from self and children				
+				this.editableselection.children().andSelf().removeAttr(EDITABLEATTR); //strip old assignments from self and children
 				this.editableselection.blur();
 			}
 			neweditableselection.attr(EDITABLEATTR,"true"); //ensure element editable
@@ -843,6 +542,14 @@ AXLE = function(){
 			if(this.caretInDescendants() || this.caretInAttributes()){ //child position in parent DOM element 
 				anchornode = neweditableselection[0];
 			}
+			
+		/** Note this from http://www.w3.org/TR/2000/REC-DOM-Level-2-Traversal-Range-20001113/ranges.html
+		 * It is also possible to set a Range's position relative to nodes in the tree:
+		 *   void setStartBefore(in Node node); raises(RangeException);
+		 *   void setStartAfter(in Node node); raises(RangeException);
+		 *   void setEndBefore(in Node node); raises(RangeException);
+		 *   void setEndAfter(in Node node); raises(RangeException);
+		 */
 			
 			//TODO: Below implementation dependent on W3C - will break in IE
 			
@@ -962,21 +669,76 @@ AXLE = function(){
 		treelogic.text = {
 			content:{ //cursor is in content
 				patterns:{
-					"^[^<]*$":keeppattern,
+					"^[^<>]*$":keeppattern,
 					"<":function(){ //add element to parent after your position
 						var el = new YOURX.ElementThingy();
 						var txpos = this.getPosition(this.caret.thingy);
 						this.getParent(this.caret.thingy).addThingy(el, txpos + 1);
 						this.setCaret(el,-1);
+					}	,			
+					">":function(){ //move focus beyond current text into grandparent 
+						//TODO CH establish editor functions focusBefore() focusAfter()   
+						var text = this.caret.thingy;
+						var parent = this.getParent(text);
+						if(parent){
+							var grandparent = this.getParent(parent);
+							if (grandparent) {
+								var pos = this.getPosition(parent);
+								this.setCaret(grandparent, pos + 1);															
+							}
+						}
 					}				
 				}
 			}
 		};
 
 		//TODO express navlogic actions for non-character keycodes
-		
+
 		var nav = {
-			backspace:{name:"Backspace"},del:{name:"Delete"},
+			backspace:{
+				name:"Backspace",
+				action:function(){
+					//TODO consider use of CTRL to override non-empty protection
+					if(this.caretInName() || this.caretInContent()){ //in some kind of field
+						if(this.editableposition > 0){ //in middle of field
+							//remove a character from the text
+							var oldtext = this.getFieldText();
+							var newtext = oldtext.slice(0,this.editableposition -1) + oldtext.slice(this.editableposition, oldtext.length);
+							this.setFieldText(newtext);
+							//move the cursor back one position
+							this.setCaret(this.caret.thingy, this.caret.key - 1);
+						}
+						else if(this.editableposition == 0){ //at beginning of field
+							if(this.getFieldText().length == 0){ //at start of empty field
+								if(this.caretInContent()){ //it's a content field
+									if(this.caret.thingy instanceof YOURX.ElementThingy || this.caret.thingy instanceof YOURX.AttributeThingy){
+										//move the cursor into the name
+										this.setCaret(this.caret.thingy, -1);
+									}
+									else if(this.caret.thingy instanceof YOURX.Text){
+										//delete the thingy
+										var parent = this.getParent(this.caret.thingy);
+										var pos = this.getPosition(this.caret.thingy);
+										parent.removeThingy(this.caret.thingy);
+										//caret where text thingy was
+										this.setCaret(parent,pos);
+									}									
+								}
+								else if(this.caretInName()){ //it's a name field
+									//CH TODO normalise Thingy deletion into a single function
+									//delete the thingy
+									var parent = this.getParent(this.caret.thingy);
+									var pos = this.getPosition(this.caret.thingy);
+									parent.removeThingy(this.caret.thingy);
+									//caret where text thingy was
+									this.setCaret(parent,pos);									
+								}
+							}
+						}
+					}
+				}
+			},
+			del:{name:"Delete"},
 			tab:{name:"Tab"},enter:{name:"Enter"},shift:{name:"Shift"},ctrl:{name:"Control"},alt:{name:"Alt"},escape:{name:"Escape"},
 			pageup:{name:"Page Up"},pagedown:{name:"Page Down"},end:{name:"End"},home:{name:"Home"},
 			left:{name:"Arrow Left"},up:{name:"Arrow Up"},right:{name:"Arrow Right"},down:{name:"Arrow Down"},
@@ -999,7 +761,6 @@ AXLE = function(){
 	})();
 
 		
-
 	//TODO handle non-character keycodes
 	AvixEditor.prototype.handleKeypress = function(evt){
 		//TODO refactor for efficiency by caching values and functions below
@@ -1022,6 +783,8 @@ AXLE = function(){
 				newtext = charpressed;
 			}
 			
+			//TODO split into type logic and caret logic for different levels
+			//of route to pattern map
 			var patterns = null;
 			if(this.caret.thingy instanceof YOURX.RootThingy){
 				if(this.caretInDescendants()){ patterns = this.treelogic.container.descendants.patterns;}
@@ -1062,7 +825,7 @@ AXLE = function(){
 	};
 
 	return eval(YOURX.writeScopeExportCode([
-		'OperationCaret','ThingyOperation','ThingyAddition','ThingyDeletion','CompletionEditor', 'AvixEditor'
+		'OperationCaret','ThingyOperation','ThingyAddition','ThingyDeletion','AvixEditor'
 	]));	
 	
 }();
