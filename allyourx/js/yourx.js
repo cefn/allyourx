@@ -775,6 +775,24 @@ YOURX = function(){
 			listener(source,name);
 		});			
 	}
+
+	/** Renames an attribute in place, ensuring that the Element name map is kept up to date. 
+	 * Attributes shouldn't be renamed directly, unless they are unparented.
+	 * @param {String} fromname
+	 * @param {String} toname
+	 */
+	ElementThingy.prototype.renameAttribute = function(fromname, toname){
+		if(fromname in this.attributes){
+			this.attributes[toname] = this.attributes[fromname];
+			delete this.attributes[fromname];
+			this.attributes[toname].setName(toname);
+			return true;
+		}
+		else{
+			return false;
+		}
+	};
+
 	
 	/** Adds an attribute and notifies listeners. Can accept an AttributeThingy or a String name and Object value*/
 	ElementThingy.prototype.addAttribute = function(){ //adds attributethingy child
@@ -1465,7 +1483,11 @@ YOURX = function(){
 		return this.getMetadata(thingy)['parent'];
 	}
 
-	/** Todo consider efficiency of caching by monitoring child insertion/removal. */
+
+	/** Todo consider efficiency of caching by monitoring child insertion/removal. 
+	 * Todo consider possibility of normalising position and 'key' into YOURX ThingyTracker conventions
+	 * @param {Object} thingy
+	 */
 	ThingyTracker.prototype.getPosition = function(thingy){
 		if(!(thingy instanceof AttributeThingy)){ //Attribute thingies don't have a position
 			var parent = this.getParent(thingy);
