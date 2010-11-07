@@ -4,8 +4,28 @@
  * OperationCaret provides a logic 'model' for schema driven editing, indicating what operations are available. 
  * It incorporates conventions for representing _focus_ and _change operations_ in trees of Thingies.
  * 
- * CompletionEditor is an example 'view' extending ALLY.RawEditor with smart autocompletion behaviours driven by keyboard text entry. 
+ * AvixEditor is an example 'view' extending ALLY.RawEditor with smart autocompletion behaviours driven by keyboard text entry. 
  * It draws heavily on the YOURX.ThingyTracker tree-monitoring, querying and metadata storage structure.
+ * 
+ * Focus within a tree is represented by a caret pair, combining a thingy, and a key. 
+ * The Thingy is the item in focus and the key represents the relative position of the cursor within the thingy.
+ * Keys are drawn from a set combining the integer number line and the space of all possible text strings, which map as follows.
+ * 
+ * Elements :
+ * 	Integers	[ Zero or positive => child position in descendants] [ Negative => name]
+ * 	Strings		[QName => Named attribute in open tag] [special value '>' => end of open tag]
+ * 
+ * Attribute :   
+ * 	Integers	[ Zero or positive => character position in value] [ Negative => name] 
+ *	Strings		[ N/A ]
+ * 
+ * Text :
+ * 	Integers	[ Zero or positive => character position in value] [ Less than zero => N/A ]
+ * 	Strings		[ N/A ] 
+ * 
+ * Operations are provided to define relations between caret positions, such as preceding and following.
+ * Further operations allow the deletion of items at a caret position. In the long run, selections
+ * and ThingyOperations will all rely on the definition of caret position.
  * 
  */
 AXLE = function(){	
@@ -437,54 +457,218 @@ AXLE = function(){
 		this.refreshCursor();
 	};
 
-	AvixEditor.prototype.caretInName = function(){ //key is numerical and negative
-		return 	( !isNaN(this.caret.key) ) && 
-				(this.caret.key < 0); 
+	AvixEditor.prototype.caretInName = function(targetcaret){ //key is numerical and negative
+		if(arguments.length === 0) targetcaret = this.caret;
+		return 	( !isNaN(targetcaret.key) ) && 
+				(targetcaret.key < 0); 
 	};
 
-	AvixEditor.prototype.caretInDescendants = function(){ //key numerical, positive and thingy is container
-		return 	(!isNaN(this.caret.key) ) && 
-				(this.caret.key >= 0) && 
-				(this.caret.thingy instanceof YOURX.ContainerThingy); 			
+	AvixEditor.prototype.caretInDescendants = function(targetcaret){ //key numerical, positive and thingy is container
+		if(arguments.length === 0) targetcaret = this.caret;
+		return 	(!isNaN(targetcaret.key) ) && 
+				(targetcaret.key >= 0) && 
+				(targetcaret.thingy instanceof YOURX.ContainerThingy); 			
 	};
 
-	AvixEditor.prototype.caretInContent = function(){ //key numerical, positive and thingy is content
-		return 	(!isNaN(this.caret.key)) && 
-				(this.caret.key >= 0) && 
-				(this.caret.thingy instanceof YOURX.ContentThingy); 			
+	AvixEditor.prototype.caretInContent = function(targetcaret){ //key numerical, positive and thingy is content
+		if(arguments.length === 0) targetcaret = this.caret;
+		return 	(!isNaN(targetcaret.key)) && 
+				(targetcaret.key >= 0) && 
+				(targetcaret.thingy instanceof YOURX.ContentThingy); 			
 	};
 
-	AvixEditor.prototype.caretInAttributes = function(){ //key is a string
-		return isNaN(this.caret.key);
+	AvixEditor.prototype.caretInAttributes = function(targetcaret){ //key is a string
+		if(arguments.length === 0) targetcaret = this.caret;
+		return isNaN(targetcaret.key);
+	};
+
+	AvixEditor.prototype.precedingDescendantKey = function(thingy,key){
+		if(key > 0){
+			return key - 1;
+		}
+		return null;
 	};
 	
-	AvixEditor.prototype.getFieldText = function(){
-		if(this.caretInName()){
-			return this.caret.thingy.getName();
+	AvixEditor.prototype.followingDescendantKey = function(thingy,key){
+		if(thingy.getChildren().length > key){
+			return key + 1;
 		}
-		else if(this.caretInContent()){
-			return this.caret.thingy.getValue()
+		return null;
+	};
+	
+	AvixEditor.prototype.precedingNameKey = function(thingy,key){
+		if(key > - thingy.getName().length){
+			return key -1;
 		}
-		else if(this.caretInDescendants() || this.caretInAttributes()){
+		return null;
+	};
+
+	AvixEditor.prototype.followingNameKey = function(thingy,key){
+		if(key < -1){
+			return key + 1;
+		}
+		return null;
+	};
+
+	AvixEditor.prototype.precedingContentKey = function(thingy,key){
+		if(key > 1){
+			return key -1;
+		}
+		return null;
+	};
+
+	AvixEditor.prototype.followingContentKey = function(thingy,key){
+		if(key < thingy.getContent().length){
+			return key + 1;
+		}
+		return null;
+	};
+
+	AvixEditor.prototype.precedingAttributeKey = function(thingy,key){
+		var attnames = this.orderedAttributeNames();
+		var attpos = attnames.indexOf(key) - 1;
+		if(attpos > 0){
+			return attnames[attpos];
+		}
+		return null;
+	};
+
+	AvixEditor.prototype.followingAttributeKey = function(thingy,key){
+		var attnames = this.orderedAttributeNames();
+		var attpos = attnames.indexOf(key) + 1;
+		if(attpos < attnames.length){
+			return attnames[attpos];
+		}
+		return null;
+	};
+	
+	AvixEditor.prototype.leftmostKey = function(thingy){
+		
+	}
+
+	AvixEditor.prototype.rightmostKey = function(thingy){
+		
+	}
+	
+	AvixEditor.prototype.getPrecedingCaret = function(targetcaret){ //TODO combine implementation with followingXKey functions
+		var cursor = this.calculateCursor(targetcaret);
+		if ( 	(	(targetcaret.thingy instanceof ElementThingy) || 
+					(targetcaret.thingy instanceof AttributeThingy)	) &&
+				(	(this.caretInName(targetcaret) && cursor.position > 0) || 
+					(this.caretInContent(targetcaret) && cursor.position >= 0))		){ 
+			return { thingy:targetcaret.thingy, key:targetcaret.key - 1 }; //move to an earlier character position (-1 steps back to name)
+		}
+		else if(this.caretInDescendants(targetcaret) && cursor.position > 0){  
+			return { thingy:targetcaret.thingy.getChild(cursor.position - 1), key:'>'}; //ascend to tail end of attributes 
+		}
+		else if(this.caretInAttributes(targetcaret)){
+			var attnames = this.getOrderedAttnames(targetcaret.thingy);
+			var prevname = null;
+			if(name=='>'){
+				prevname = attnames[attnames.length - 1]; //last attribute
+			}
+			else{
+				for(var idx = 0; idx<attnames.length;idx++){
+					if(attnames[idx] == targetcaret.key){
+						break;
+					}
+					else{
+						prevname = attnames[idx];
+					}
+				}
+			}
+			if(prevname != null){
+				var prevatt = targetcaret.thingy.getAttribute(prevname);
+				return { thingy:prevatt, key:prevatt.getValue().length }; //go to tail of previous attribute
+			}
+			else{
+				return { thingy:targetthingy, key:-1 }; //go to tail of element name 				
+			}
+		}
+		else throw new Error("Unexpected caret status");
+		
+		//fallback to ascending to parent at position of current thingy
+		return {
+			thingy:this.getParent(targetcaret.thingy),
+			key:this.getKey(targetcaret.thingy)
+		}
+
+	};
+	
+	AvixEditor.prototype.getFollowingCaret = function(targetcaret){
+		
+		if(this.caretInDescendants(targetcaret)){ //amongst children of root or element 
+			if(targetcaret.key < targetcaret.thingy.getChildren().length){
+				var child = targetcaret.thingy.getChildren(targetcaret.key);
+				return this.leftmostCaret(child); //enter the leftmost character of the child
+			}
+		}
+		else if(this.caretInName()){
+			if(targetcaret.key < targetcaret.thingy.getName().length){
+				return { thingy: targetcaret.thingy,key: targetcaret.key + 1 }; //next character in name
+			}
+			else{
+				if(targetcaret.thingy instanceof ElementThingy && targetcaret.thingy.getAttributes().length > 0){ //go into attributes
+					return this.leftmostCaret(targetcaret.thingy.getAttribute(this.getOrderedAttnames(targetcaret.thingy)[0])); //move to first attribute
+				}
+				return {thingy:targetcaret.thingy,key:0}; //first child position (element) or first value character (attribute)
+			}
+		}
+		else if(this.caretInAttributes(targetcaret)){
+			var attnames = this.getOrderedAttnames(targetcaret.thingy);
+			var attpos = attnames.indexOf(targetcaret.key) + 1;
+			if(attpos < attnames.length){
+				return this.leftmostCaret(targetcaret.thingy.getAttribute(attnames[attpos])); //next attribute in list
+			}											
+			else{
+				return {thingy:targetcaret.thingy,key:0}; //first child position
+			}
+		}
+		else if(this.caretInContent(targetcaret)){ //in value of text or attribute
+			if(targetcaret.key < targetcaret.thingy.getContent().length){
+				return {thingy:targetcaret.thingy,key:targetcaret.key + 1};
+			}
+		}
+		
+		//fallback : ascend to position in parent after this thingy
+		var parent = this.getParent(targetcaret.thingy);
+		var key = this.getKey(targetcaret.thingy);
+		return {
+			thingy: parent,
+			key:this.followingDescendantKey(key)
+		}; 
+
+	};	
+	
+	AvixEditor.prototype.getFieldText = function(targetcaret){
+		if(arguments.length == 0) targetcaret = this.caret;		
+		if(this.caretInName(targetcaret)){
+			return targetcaret.thingy.getName();
+		}
+		else if(this.caretInContent(targetcaret)){
+			return targetcaret.thingy.getValue()
+		}
+		else if(this.caretInDescendants(targetcaret) || this.caretInAttributes(targetcaret)){
 			return ""; //only a placeholder
 		}
 		else throw new Error("Unexpected caret status");
 	};
 
-	AvixEditor.prototype.setFieldText = function(newtext){
-		if(this.caretInName()){
-			var parentelement = (this.caret.thingy instanceof YOURX.AttributeThingy ? this.getParent(this.caret.thingy) : null);
+	AvixEditor.prototype.setFieldText = function(newtext, targetcaret){
+		if(arguments.length === 1) targetcaret = this.caret;
+		if(this.caretInName(targetcaret)){
+			var parentelement = (targetcaret.thingy instanceof YOURX.AttributeThingy ? this.getParent(targetcaret.thingy) : null);
 			if(parentelement){ //handle case that attribute is parented and name table needs updating
-				parentelement.renameAttribute(this.caret.thingy.getName(),newtext);
+				parentelement.renameAttribute(targetcaret.thingy.getName(),newtext);
 			}
 			else{ //just rename directly
-				this.caret.thingy.setName(newtext);				
+				targetcaret.thingy.setName(newtext);		
 			}
 		}
-		else if(this.caretInContent()){
-			this.caret.thingy.setValue(newtext);
+		else if(this.caretInContent(targetcaret)){
+			targetcaret.thingy.setValue(newtext);
 		}
-		else if(this.caretInDescendants() || this.caretInAttributes()){
+		else if(this.caretInDescendants(targetcaret) || this.caretInAttributes(targetcaret)){
 			if(newtext != ""){
 				throw new Error("Cannot assign text directly to a container");
 			}
@@ -493,54 +677,63 @@ AXLE = function(){
 		
 		this.refreshCursor();
 	};
-			
-	AvixEditor.prototype.refreshCursor = function(){
-		//calculate new selection (element which will be contenteditable) and position (location of cursor in final Range call)
-		var boundselection = this.getBoundSelection(this.caret.thingy);
-		var neweditableselection = null;
-		var neweditableposition = null;
-		if(this.caretInName()){ //position cursor in text node of the name   
-			neweditableselection = this.queryNameWrapper(boundselection);
-			neweditableposition = this.caret.thingy.name.length + this.caret.key + 1; //expecting negative value of key
+				
+	AvixEditor.prototype.calculateCursor = function(targetcaret){
+		
+		//calculate new selection (element which will be contenteditable) and position (location of cursor in Range call)
+		var cursor = {
+			selection:null,position:null
+		};
+		var boundselection = this.getBoundSelection(targetcaret.thingy);
+		if(this.caretInName(targetcaret)){ //position cursor in text node of the name
+			cursor.selection = this.queryNameWrapper(boundselection);
+			cursor.position = targetcaret.thingy.name.length + targetcaret.key + 1; //expecting negative value of key
 		}	
-		else if(this.caretInContent()){ //position cursor in text node of the content  
-			neweditableselection = this.queryContentWrapper(boundselection);
-			neweditableposition = this.caret.key; //expecting positive value of key
+		else if(this.caretInContent(targetcaret)){ //position cursor in text node of the content  
+			cursor.selection = this.queryContentWrapper(boundselection);
+			cursor.position = targetcaret.key; //expecting positive value of key
 		}
-		else if(this.caretInDescendants()){ //place cursor among descendant characters or child elements
-			neweditableselection = this.queryDescendantWrapper(boundselection);
-			neweditableposition = this.caret.key;				
+		else if(this.caretInDescendants(targetcaret)){ //place cursor among descendant characters or child elements
+			cursor.selection = this.queryDescendantWrapper(boundselection);
+			cursor.position = targetcaret.key;				
 		}
-		else if(this.caretInAttributes()){ //place cursor after attribute
-			var att = this.caret.thingy.getAttributeThingy(this.caret.key);
+		else if(this.caretInAttributes(targetcaret)){ //place cursor after attribute
+			var att = targetcaret.thingy.getAttributeThingy(targetcaret.key);
 			var attselection = this.getBoundSelection(att);
 			var elementselection = this.getBoundSelection(this.getParent(att));
-			neweditableselection = this.queryOpenWrapper(elementselection);
-			neweditableposition = neweditableselection.children().index(attselection) + 1;
+			cursor.selection = this.queryOpenWrapper(elementselection);
+			cursor.position = cursor.selection.children().index(attselection) + 1;
 		}
 		
+		return cursor;
+		
+	};
+			
+	AvixEditor.prototype.refreshCursor = function(){
+		var neweditable = this.calculateCursor(this.caret);
+		
 		//update to the new new selection and position
-		if((neweditableselection !== null) && (neweditableposition !== null)){
+		if((neweditable.selection !== null) && (neweditable.position !== null)){
 
 			//control which elements are editable
 			var EDITABLEATTR = "contenteditable";
 
 			//TODO can avoid this if selections are equal
-			if(this.editableselection){
-				this.editableselection.children().andSelf().removeAttr(EDITABLEATTR); //strip old assignments from self and children
-				this.editableselection.blur();
+			if(this.editable && this.editable.selection){
+				this.editable.selection.children().andSelf().removeAttr(EDITABLEATTR); //strip old assignments from self and children
+				this.editable.selection.blur();
 			}
-			neweditableselection.attr(EDITABLEATTR,"true"); //ensure element editable
-			neweditableselection.children().attr(EDITABLEATTR,"false"); //ensure children not editable
-			neweditableselection.focus();
+			neweditable.selection.attr(EDITABLEATTR,"true"); //ensure element editable
+			neweditable.selection.children().attr(EDITABLEATTR,"false"); //ensure children not editable
+			neweditable.selection.focus();
 			
 			//choose anchor node
 			var anchornode = null; 
 			if(this.caretInName() || this.caretInContent()){ //character position in first DOM child (text node)
-				anchornode = neweditableselection.contents()[0];
+				anchornode = neweditable.selection.contents()[0];
 			}
 			if(this.caretInDescendants() || this.caretInAttributes()){ //child position in parent DOM element 
-				anchornode = neweditableselection[0];
+				anchornode = neweditable.selection[0];
 			}
 			
 		/** Note this from http://www.w3.org/TR/2000/REC-DOM-Level-2-Traversal-Range-20001113/ranges.html
@@ -563,15 +756,69 @@ AXLE = function(){
 			else{
 				range = winselection.getRangeAt(0); 
 			}
-			range.setStart(anchornode, neweditableposition);
-			range.setEnd(anchornode, neweditableposition);
+			range.setStart(anchornode, neweditable.position);
+			range.setEnd(anchornode, neweditable.position);
 			
 			//store new values
-			this.editableselection = neweditableselection;
-			this.editableposition = neweditableposition;
+			this.editable = neweditable;
 		}
 	};
+	
+	/*
+	AvixEditor.prototype.deleteCaret = function(targetcaret){
+		if(arguments.length == 0){
+			targetcaret = this.caret;
+		}
+		
+		if(targetcaret){
+			
+		}
+					//TODO consider use of CTRL to override non-empty protection
+					//TODO simplify using preceding/following/sibling caret logic
+					//supports use of 'forward delete' too
+					if(this.caretInName() || this.caretInContent()){ //in some kind of field
+						if(this.editable.position > 0){ //in middle of field
+							//remove a character from the text
+							var oldtext = this.getFieldText();
+							var newtext = oldtext.slice(0,this.editable.position -1) + oldtext.slice(this.editable.position, oldtext.length);
+							this.setFieldText(newtext);
+							//move the cursor back one position
+							this.setCaret(this.caret.thingy, this.caret.key - 1);
+						}
+						else if(this.editable.position == 0){ //at beginning of field
+							if(this.getFieldText().length == 0){ //at start of empty field
+								if(this.caretInContent()){ //it's a content field
+									var newcaret = this.getPrecedingCaret();
+									if(this.caret.thingy instanceof YOURX.ElementThingy || this.caret.thingy instanceof YOURX.AttributeThingy){
+										//just move the cursor into the name
+										this.setCaret(newcaret);
+									}
+									else if(this.caret.thingy instanceof YOURX.Text){
+										//delete the thingy
+										var parent = this.getParent(this.caret.thingy);
+										var pos = this.getPosition(this.caret.thingy);
+										parent.removeThingy(this.caret.thingy);
+										//caret where text thingy was
+										this.setCaret(newcaret);
+									}									
+								}
+								else if(this.caretInName()){ //it's a name field
+									//place the cursor before the item, then delete it
+									var newcaret = this.getPrecedingCaret();
+									var parent = this.getParent(this.caret.thingy);
+									if(parent){
+										parent.removeThingy(this.caret.thingy);										
+										if(newcaret){
+											this.setCaret(newcaret);
+										}
+									}
+								}
+							}
+						}
+					}
 
+	};
+	*/
 
 	;(function(){
 		
@@ -694,59 +941,42 @@ AXLE = function(){
 
 		//TODO express navlogic actions for non-character keycodes
 
-		var nav = {
+		var nav = { //handlers for symbolically named operations on the document
+			left:{
+				name:"Arrow Left",
+				action:function(){ var newcaret; return (newcaret = this.getPrecedingCaret()) != null ? setCaret(newcaret) : null; }
+			},
+			right:{
+				name:"Arrow Right",
+				action:function(){ var newcaret; return (newcaret = this.getFollowingCaret()) != null ? setCaret(newcaret) : null; }
+			},
+			up:{
+				name:"Arrow Up",
+				action:function(){ var newcaret; return (newcaret = this.getPrecedingSiblingCaret()) != null ? setCaret(newcaret) : null; }
+			},
+			down:{
+				name:"Arrow Down",
+				action:function(){ var newcaret; return (newcaret = this.getFollowingSiblingCaret()) != null ? setCaret(newcaret) : null; }
+			},
 			backspace:{
 				name:"Backspace",
 				action:function(){
-					//TODO consider use of CTRL to override non-empty protection
-					if(this.caretInName() || this.caretInContent()){ //in some kind of field
-						if(this.editableposition > 0){ //in middle of field
-							//remove a character from the text
-							var oldtext = this.getFieldText();
-							var newtext = oldtext.slice(0,this.editableposition -1) + oldtext.slice(this.editableposition, oldtext.length);
-							this.setFieldText(newtext);
-							//move the cursor back one position
-							this.setCaret(this.caret.thingy, this.caret.key - 1);
-						}
-						else if(this.editableposition == 0){ //at beginning of field
-							if(this.getFieldText().length == 0){ //at start of empty field
-								if(this.caretInContent()){ //it's a content field
-									if(this.caret.thingy instanceof YOURX.ElementThingy || this.caret.thingy instanceof YOURX.AttributeThingy){
-										//move the cursor into the name
-										this.setCaret(this.caret.thingy, -1);
-									}
-									else if(this.caret.thingy instanceof YOURX.Text){
-										//delete the thingy
-										var parent = this.getParent(this.caret.thingy);
-										var pos = this.getPosition(this.caret.thingy);
-										parent.removeThingy(this.caret.thingy);
-										//caret where text thingy was
-										this.setCaret(parent,pos);
-									}									
-								}
-								else if(this.caretInName()){ //it's a name field
-									//CH TODO normalise Thingy deletion into a single function
-									//delete the thingy
-									var parent = this.getParent(this.caret.thingy);
-									var pos = this.getPosition(this.caret.thingy);
-									parent.removeThingy(this.caret.thingy);
-									//caret where text thingy was
-									this.setCaret(parent,pos);									
-								}
-							}
-						}
-					}
+					this.deleteCaret(this.getPrecedingCaret(this.caret));
 				}
 			},
-			del:{name:"Delete"},
+			del:{
+				name:"Delete",
+				action:function(){ //forward delete not yet implemented
+					this.deleteCaret(this.caret);
+				}
+			},
 			tab:{name:"Tab"},enter:{name:"Enter"},shift:{name:"Shift"},ctrl:{name:"Control"},alt:{name:"Alt"},escape:{name:"Escape"},
 			pageup:{name:"Page Up"},pagedown:{name:"Page Down"},end:{name:"End"},home:{name:"Home"},
-			left:{name:"Arrow Left"},up:{name:"Arrow Up"},right:{name:"Arrow Right"},down:{name:"Arrow Down"},
 			f1:{name:"F1"},f2:{name:"F2"},f3:{name:"F3"},f4:{name:"F4"},f5:{name:"F5"},f6:{name:"F6"},
 			f7:{name:"F7"},f8:{name:"F8"},f9:{name:"F9"},f10:{name:"F10"},f11:{name:"F11"},f12:{name:"F12"}
 		};
 		
-		//keycode to key name mapping
+		//mapping from keycodes to symbolic editing operations
 		var navkeys = {
 			8:nav.backspace,9:nav.tab,13:nav.enter,16:nav.shift,17:nav.ctrl,18:nav.alt,27:nav.escape,
 			33:nav.pageup,34:nav.pagedown,35:nav.end,36:nav.home,37:nav.left,38:nav.up,39:nav.right,40:nav.down,
@@ -764,11 +994,20 @@ AXLE = function(){
 	//TODO handle non-character keycodes
 	AvixEditor.prototype.handleKeypress = function(evt){
 		//TODO refactor for efficiency by caching values and functions below
-						
-		//update the field text
-		if(! (evt.which in this.nav)){
 
-			//event will be interpreted - suppress browser behaviour (appending characters)
+		if (evt.keyCode in this.navkeys) { //found handler for special key
+			var handler = this.navkeys[evt.keyCode]; 
+			if("action" in handler){
+				//trigger handling behaviour
+				handler["action"]();
+				//key has been handled - suppress browser behaviour (appending characters)
+				evt.stopPropagation();
+				evt.preventDefault();
+			}
+		}
+		else{ //update the field text
+
+			//key has been handled - suppress browser behaviour (appending characters)
 			evt.stopPropagation();
 			evt.preventDefault();
 
@@ -777,14 +1016,13 @@ AXLE = function(){
 			var oldtext = this.getFieldText();
 			var newtext;
 			if(oldtext && oldtext != ""){ //insert in existing text
-				newtext = oldtext.slice(0,this.editableposition) + charpressed + oldtext.slice(this.editableposition, oldtext.length);
+				newtext = oldtext.slice(0,this.editable.position) + charpressed + oldtext.slice(this.editable.position, oldtext.length);
 			}
 			else{ //no existing text
 				newtext = charpressed;
 			}
-			
-			//TODO split into type logic and caret logic for different levels
-			//of route to pattern map
+
+			//get the patterns which can handle keys on these types of element
 			var patterns = null;
 			if(this.caret.thingy instanceof YOURX.RootThingy){
 				if(this.caretInDescendants()){ patterns = this.treelogic.container.descendants.patterns;}
@@ -812,7 +1050,10 @@ AXLE = function(){
 					var regexp = new RegExp(pattern);
 					var matches = newtext.match(regexp);
 					if(matches && matches.length > 0){
-						patterns[pattern].apply(this,[matches[0]]); //execute matching function
+						
+						//execute matching function
+						patterns[pattern].apply(this,[matches[0]]); 
+
 						return;
 					}
 				} //fallthrough to error condition
@@ -820,7 +1061,7 @@ AXLE = function(){
 			}
 			else{
 				throw new Error("No patterns available");
-			}			
+			}
 		}
 	};
 
