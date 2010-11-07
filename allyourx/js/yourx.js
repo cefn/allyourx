@@ -1,5 +1,6 @@
-/** This file modifies the environment to improve support for functions often used in 
- * the YOURX library. If these exist in your environment already, you don't need this bootstrap file.
+/** These declarations modify the environment to improve support for functions often used in 
+ * the YOURX library. If these exist in your environment already, you don't need them, but 
+ * they won't hurt either.
  */
 
 /** Provide array functions where not available, from MDC */
