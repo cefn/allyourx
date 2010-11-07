@@ -65,6 +65,30 @@ if (!Array.prototype.map)
   };
 }
 
+//from http://www.tutorialspoint.com/javascript/array_indexof.htm
+if (!Array.prototype.indexOf)
+{
+  Array.prototype.indexOf = function(elt /*, from*/)
+  {
+    var len = this.length;
+
+    var from = Number(arguments[1]) || 0;
+    from = (from < 0)
+         ? Math.ceil(from)
+         : Math.floor(from);
+    if (from < 0)
+      from += len;
+
+    for (; from < len; from++)
+    {
+      if (from in this &&
+          this[from] === elt)
+        return from;
+    }
+    return -1;
+  };
+}
+
 /** Replace document write function with one which respects E4X as source. */
 document.write = function(){
 	var oldfun = document.write; //avoids corrupting top level namespace
@@ -586,6 +610,10 @@ YOURX = function(){
 	ContainerThingy.prototype.removeThingy = function(thingy){
 		return this.removeChild(thingy);
 	}
+	/** Alias for getChild, given all descendants of a generic ContainerThingy are its children. */
+	ContainerThingy.prototype.getThingy = function(key){
+		return this.getChildThingy(key);
+	}
 	/** Adds a child and notifies listeners. */
 	ContainerThingy.prototype.addChild = function(){
 		var child = null;
@@ -645,11 +673,20 @@ YOURX = function(){
 			});		
 			return child;				
 		}
-		else{
+		else{ //TODO CH improve error handling - fallthrough? 
 			throw new Error("Malformed invocation of ContainerThingy#addChild()");				
 		}
 		
 	};
+	ContainerThingy.prototype.getChildThingy = function(key){
+		if(arguments.length === 1){
+			if(typeof(arguments[0]) === "number"){
+				return children[key];
+			}
+		}
+		throw new Error("Malformed invocation of ContainerThingy#getChildThingy()");						
+	}
+	
 	/** Adds a thingy constructed dynamically to mirror a given DOM node. */
 	ContainerThingy.prototype.addNode=function(node){
 		this.addThingy(ThingyUtil.dom2thingy(node));
@@ -748,7 +785,7 @@ YOURX = function(){
 			}
 		}
 		throw new Error("Malformed invocation of ElementThingy constructor");
-	}
+	};
 	ElementThingy.prototype = new ContainerThingy();
 	ElementThingy.prototype.toString = function(){ 
 		var formatted = "<" + this.name ;
@@ -775,7 +812,7 @@ YOURX = function(){
 		this.traverseListeners('namechanged',function(listener){
 			listener(source,name);
 		});			
-	}
+	};
 
 	/** Renames an attribute in place, ensuring that the Element name map is kept up to date. 
 	 * Attributes shouldn't be renamed directly, unless they are unparented.
@@ -820,7 +857,8 @@ YOURX = function(){
 		this.traverseListeners('attributeadded',function(listener){
 			listener(source,thingy);
 		});
-	}
+	};
+	
 	/** Removes an attribute and notifies listeners. Can accept an AttributeThingy or a String name. */
 	ElementThingy.prototype.removeAttribute = function(){ //removes attributethingy child
 		if(arguments.length == 1){
@@ -860,7 +898,18 @@ YOURX = function(){
 		else{
 			throw new Error("Malformed invocation of ElementThingy#removeAttribute()");				
 		}
-	}
+	};
+	
+	/** Accesses either children or attributes depending on the key. */
+	ElementThingy.prototype.getThingy = function(key){
+		if(isNaN(key)){ //key is a string
+			return this.getAttributeThingy(key);
+		}
+		else{ //fall through to container (use key as child index)
+			return ContainerThingy.prototype.getThingy.apply(this,arguments);
+		}
+	};
+
 	/** Returns the AttributeThingy stored against the given name. */
 	ElementThingy.prototype.getAttributeThingy = function(name){
 		if(name in this.attributes){

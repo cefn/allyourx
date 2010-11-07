@@ -482,60 +482,60 @@ AXLE = function(){
 		return isNaN(targetcaret.key);
 	};
 
-	AvixEditor.prototype.precedingDescendantKey = function(thingy,key){
-		if(key > 0){
-			return key - 1;
+	AvixEditor.prototype.precedingDescendantKey = function(targetcaret){
+		if(targetcaret.key > 0){
+			return targetcaret.key - 1;
 		}
 		return null;
 	};
 	
-	AvixEditor.prototype.followingDescendantKey = function(thingy,key){
-		if(thingy.getChildren().length > key){
-			return key + 1;
+	AvixEditor.prototype.followingDescendantKey = function(targetcaret){
+		if(targetcaret.thingy.getChildren().length > targetcaret.key){
+			return targetcaret.key + 1;
 		}
 		return null;
 	};
 	
-	AvixEditor.prototype.precedingNameKey = function(thingy,key){
-		if(key > - thingy.getName().length){
-			return key -1;
+	AvixEditor.prototype.precedingNameKey = function(targetcaret){
+		if(targetcaret.key > - targetcaret.thingy.getName().length){
+			return targetcaret.key -1;
 		}
 		return null;
 	};
 
-	AvixEditor.prototype.followingNameKey = function(thingy,key){
-		if(key < -1){
-			return key + 1;
+	AvixEditor.prototype.followingNameKey = function(targetcaret){
+		if(targetcaret.key < -1){
+			return targetcaret.key + 1;
 		}
 		return null;
 	};
 
-	AvixEditor.prototype.precedingContentKey = function(thingy,key){
-		if(key > 1){
-			return key -1;
+	AvixEditor.prototype.precedingContentKey = function(targetcaret){
+		if(targetcaret.key > 1){
+			return targetcaret.key -1;
 		}
 		return null;
 	};
 
-	AvixEditor.prototype.followingContentKey = function(thingy,key){
-		if(key < thingy.getContent().length){
-			return key + 1;
+	AvixEditor.prototype.followingContentKey = function(targetcaret){
+		if(targetcaret.key < targetcaret.thingy.getContent().length){
+			return targetcaret.key + 1;
 		}
 		return null;
 	};
 
-	AvixEditor.prototype.precedingAttributeKey = function(thingy,key){
+	AvixEditor.prototype.precedingAttributeKey = function(targetcaret){
 		var attnames = this.orderedAttributeNames();
-		var attpos = attnames.indexOf(key) - 1;
+		var attpos = attnames.indexOf(targetcaret.key) - 1;
 		if(attpos > 0){
 			return attnames[attpos];
 		}
 		return null;
 	};
 
-	AvixEditor.prototype.followingAttributeKey = function(thingy,key){
-		var attnames = this.orderedAttributeNames();
-		var attpos = attnames.indexOf(key) + 1;
+	AvixEditor.prototype.followingAttributeKey = function(targetcaret){
+		var attnames = this.orderedAttributeNames(targetcaret.thingy);
+		var attpos = attnames.indexOf(targetcaret.key) + 1;
 		if(attpos < attnames.length){
 			return attnames[attpos];
 		}
@@ -543,101 +543,118 @@ AXLE = function(){
 	};
 	
 	AvixEditor.prototype.leftmostKey = function(thingy){
-		
+		if(thingy instanceof YOURX.ElementThingy || thingy instanceof YOURX.AttributeThingy){ //start of name
+			return -1 - thingy.getName().length; 
+		}
+		else if(thingy instanceof YOURX.RootThingy || thingy instanceof YOURX.TextThingy){ //start of content/children
+			return 0;
+		}
+		else{
+			throw new Error("Unexpected thingy type");
+		}
 	}
 
 	AvixEditor.prototype.rightmostKey = function(thingy){
-		
+		if(thingy instanceof YOURX.ElementThingy || thingy instanceof YOURX.RootThingy){ //end of children
+			return thingy.getChildren().length;
+		}
+		else if(thingy instanceof YOURX.TextThingy || thingy instanceof YOURX.AttributeThingy){ //end of content 
+			return thingy.getValue().length;
+		}
+		else{
+			throw new Error("Unexpected thingy type");
+		}
 	}
 	
-	AvixEditor.prototype.getPrecedingCaret = function(targetcaret){ //TODO combine implementation with followingXKey functions
-		var cursor = this.calculateCursor(targetcaret);
-		if ( 	(	(targetcaret.thingy instanceof ElementThingy) || 
-					(targetcaret.thingy instanceof AttributeThingy)	) &&
-				(	(this.caretInName(targetcaret) && cursor.position > 0) || 
-					(this.caretInContent(targetcaret) && cursor.position >= 0))		){ 
-			return { thingy:targetcaret.thingy, key:targetcaret.key - 1 }; //move to an earlier character position (-1 steps back to name)
-		}
-		else if(this.caretInDescendants(targetcaret) && cursor.position > 0){  
-			return { thingy:targetcaret.thingy.getChild(cursor.position - 1), key:'>'}; //ascend to tail end of attributes 
-		}
-		else if(this.caretInAttributes(targetcaret)){
-			var attnames = this.getOrderedAttnames(targetcaret.thingy);
-			var prevname = null;
-			if(name=='>'){
-				prevname = attnames[attnames.length - 1]; //last attribute
-			}
-			else{
-				for(var idx = 0; idx<attnames.length;idx++){
-					if(attnames[idx] == targetcaret.key){
-						break;
-					}
-					else{
-						prevname = attnames[idx];
-					}
-				}
-			}
-			if(prevname != null){
-				var prevatt = targetcaret.thingy.getAttribute(prevname);
-				return { thingy:prevatt, key:prevatt.getValue().length }; //go to tail of previous attribute
-			}
-			else{
-				return { thingy:targetthingy, key:-1 }; //go to tail of element name 				
-			}
-		}
-		else throw new Error("Unexpected caret status");
+	AvixEditor.prototype.getPrecedingCaret = function(targetcaret){
+		/*identify which type caret has*/
+		var inname = this.caretInName(targetcaret);
+		var incontent = (inname) ? false : this.caretInContent(targetcaret);
+		var indescendants = (inname || incontent) ? false : this.caretInAttributes(targetcaret);
+		var inattributes = (inname || incontent || indescendants) ? false : this.caretInAttributes(targetcaret);
 		
-		//fallback to ascending to parent at position of current thingy
-		return {
-			thingy:this.getParent(targetcaret.thingy),
-			key:this.getKey(targetcaret.thingy)
-		}
+		/*try to get preceding key of current caret type where applicable */
+		var newkey; 
+		if (inname) { newkey = this.precedingNameKey(targetcaret); }
+		else if (incontent) { newkey = this.precedingContentKey(targetcaret); }
+		else if (indescendants) { newkey = this.precedingDescendantKey(targetcaret); }		
+		else if (inattributes) { newkey = this.precedingAttributeKey(targetcaret); }
 
+		/* if corresponding key available, caret can be returned */
+		if(newkey != null){
+			if(inname || incontent){ //simply step back in same field
+				return {thingy:targetcaret.thingy,key:newkey};
+			}
+			else if(inattributes || indescendants){ //step back into preceding attribute or descendant
+				return rightmostCaret(targetcaret.thingy.getThingy(newkey));
+			}
+		}
+		/* handle cases where current caret type is exhausted */
+		else if( inname || //at start of attribute or element
+				(incontent && targetcaret.thingy instanceof TextThingy)){ //at start of text
+			return {thingy:this.getParent(targetcaret.thingy),key:this.getKey(targetcaret.thingy)}; //ascend to parent
+		}
+		else if( incontent && targetcaret.thingy instanceof AttributeThingy){ //at start of content
+			return {thingy:targetcaret.thingy, key:-1}; //go to end of name
+		}
+		else if( indescendants ){ //at start of children
+			var numatts = targetcaret.thingy.getAttributes().length;
+			if(numatts > 0){ //get last attribute
+				var attname = this.orderedAttributeNames(targetcaret.thingy)[numatts-1];
+				return rightmostCaret(targetcaret.thingy.getAttribute(attname)); //go to end of attribute content
+			}
+			else{//no attributes, go to end of name
+				return {thingy:targetcaret.thingy,key:-1}; 
+			}
+		}
+		
+		return null; //if none of the above can find a preceding caret, then give up
 	};
 	
 	AvixEditor.prototype.getFollowingCaret = function(targetcaret){
+		/*identify which type caret has*/
+		var inname = this.caretInName(targetcaret);
+		var incontent = (inname) ? false : this.caretInContent(targetcaret);
+		var indescendants = (inname || incontent) ? false : this.caretInAttributes(targetcaret);
+		var inattributes = (inname || incontent || indescendants) ? false : this.caretInAttributes(targetcaret);
 		
-		if(this.caretInDescendants(targetcaret)){ //amongst children of root or element 
-			if(targetcaret.key < targetcaret.thingy.getChildren().length){
-				var child = targetcaret.thingy.getChildren(targetcaret.key);
-				return this.leftmostCaret(child); //enter the leftmost character of the child
-			}
-		}
-		else if(this.caretInName()){
-			if(targetcaret.key < targetcaret.thingy.getName().length){
-				return { thingy: targetcaret.thingy,key: targetcaret.key + 1 }; //next character in name
-			}
-			else{
-				if(targetcaret.thingy instanceof ElementThingy && targetcaret.thingy.getAttributes().length > 0){ //go into attributes
-					return this.leftmostCaret(targetcaret.thingy.getAttribute(this.getOrderedAttnames(targetcaret.thingy)[0])); //move to first attribute
-				}
-				return {thingy:targetcaret.thingy,key:0}; //first child position (element) or first value character (attribute)
-			}
-		}
-		else if(this.caretInAttributes(targetcaret)){
-			var attnames = this.getOrderedAttnames(targetcaret.thingy);
-			var attpos = attnames.indexOf(targetcaret.key) + 1;
-			if(attpos < attnames.length){
-				return this.leftmostCaret(targetcaret.thingy.getAttribute(attnames[attpos])); //next attribute in list
-			}											
-			else{
-				return {thingy:targetcaret.thingy,key:0}; //first child position
-			}
-		}
-		else if(this.caretInContent(targetcaret)){ //in value of text or attribute
-			if(targetcaret.key < targetcaret.thingy.getContent().length){
-				return {thingy:targetcaret.thingy,key:targetcaret.key + 1};
-			}
-		}
-		
-		//fallback : ascend to position in parent after this thingy
-		var parent = this.getParent(targetcaret.thingy);
-		var key = this.getKey(targetcaret.thingy);
-		return {
-			thingy: parent,
-			key:this.followingDescendantKey(key)
-		}; 
+		/*try to get preceding key of current caret type where applicable */
+		var newkey; 
+		if (inname) { newkey = this.followingNameKey(targetcaret); }
+		else if (incontent) { newkey = this.followingContentKey(targetcaret); }
+		else if (indescendants) { newkey = this.followingDescendantKey(targetcaret); }		
+		else if (inattributes) { newkey = this.followingAttributeKey(targetcaret); }
 
+		/* if corresponding key available, caret can be returned */
+		if(newkey != null){
+			if(inname || incontent){ //simply step forward in same field
+				return {thingy:targetcaret.thingy,key:newkey};
+			}
+			else if(inattributes || indescendants){ //step forward into preceding attribute or descendant
+				return leftmostCaret(targetcaret.thingy.getThingy(newkey));
+			}
+		}
+		/* handle cases where current caret type is exhausted */
+		else{
+			if(inname){
+				if(targetcaret.thingy instanceof YOURX.ElementThingy){ 
+					var numatts = targetcaret.thingy.getAttributes().length;
+					if(numatts > 0){
+						var attname = this.orderedAttributeNames(targetcaret.thingy)[0];
+						return this.leftmostCaret(targetcaret.thingy.getAttribute(attname)); //step into first attribute
+					}
+					else{
+						return {thingy:targetcaret.thingy, key:0}; //descend to first child 
+					}
+				}
+				else if (targetcaret.thingy instanceof YOURX.AttributeThingy) {
+					return {thingy:targetcaret.thingy, key:0}; //step over to start of content
+				} 
+			}
+			//TODO CH work out conditions for descending
+		}
+		
+		return null; //if none of the above can find a preceding caret, then give up
 	};	
 	
 	AvixEditor.prototype.getFieldText = function(targetcaret){
