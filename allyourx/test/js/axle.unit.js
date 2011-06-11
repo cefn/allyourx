@@ -10,7 +10,7 @@ $(function(){
 			var op=UNITTEST.caret.nextInvoluntaryOperation();
 			return 	op instanceof AXLE.ThingyAddition &&
 					op.rule instanceof YOURX.ElementThingyRule &&
-					op.rule.name === "player"
+					op.rule.name === "player";
 	    }],
 		["Correct assignment of operations to attributes and children", function(){
 			return 	UNITTEST.caret.involuntaryAttributeKeys().length === 0 &&
@@ -35,7 +35,7 @@ $(function(){
 			var op=UNITTEST.caret.nextInvoluntaryOperation();
 			return 	op instanceof AXLE.ThingyAddition &&
 					op.rule instanceof YOURX.AttributeThingyRule &&
-					op.rule.name === "name"
+					op.rule.name === "name";
 	    }],
 		["Shallow Fix (AttributeThingy additions) reports success", function(){
 			return UNITTEST.caret.shallowFix(); //future attribute rules may require input (to satisfy non-empty validation)
