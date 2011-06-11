@@ -185,7 +185,7 @@ AXLE = function(){
 		else{
 			throw new Error("null parentthingy set in OperationCaret");
 		}
-	}
+	};
 	
 	/** Used to configure the parentrule of the OperationCaret. In principle this means
 	 * that an OperationCaret can be reused through different validation scenarios for the 
@@ -200,17 +200,17 @@ AXLE = function(){
 		else{
 			throw new Error("null parentrule set in OperationCaret");
 		}
-	}
+	};
 	
 	/** Returns the parentthingy which this OperationCaret is testing validity for.*/
 	OperationCaret.prototype.getParentThingy = function(){
 		return this.parentthingy;
-	}
+	};
 
 	/** Returns the parentrule which this OperationCaret is validating against.*/
 	OperationCaret.prototype.getParentRule = function(){
 		return this.parentrule;
-	}
+	};
 	
 	/** Refreshes the set of possible valid operations on the current parentthingy given
 	 * the current parentrule. Typically this is re-executed after every change in 
@@ -234,24 +234,24 @@ AXLE = function(){
 			//create ElementWalker which caches operations required at this level
 			var caretwalker = new YOURX.ElementWalker();
 			var opfound = {};
-			caretwalker.nameAccepted=function(name,rule){ /* do nothing */}
+			caretwalker.nameAccepted=function(name,rule){ /* do nothing */};
 			caretwalker.nameRejected=function(name,rule){ 
 				caretthis.involuntaryoperations[name] = new ThingyDeletion(rule); 
 				throw opfound;
-			}
+			};
 			caretwalker.nameRequired=function(name,rule){ 
 				caretthis.involuntaryoperations[name] = new ThingyAddition(rule); 
 				throw opfound;
-			}
-			caretwalker.posAccepted=function(pos,rule){ /* do nothing */}
+			};
+			caretwalker.posAccepted=function(pos,rule){ /* do nothing */};
 			caretwalker.posRejected=function(pos,rule){ 
 				caretthis.involuntaryoperations[pos] = new ThingyDeletion(rule); 
 				throw opfound;
-			}
+			};
 			caretwalker.posRequired=function(pos,rule){ 
 				caretthis.involuntaryoperations[pos] = new ThingyAddition(rule); 
 				throw opfound;
-			}
+			};
 			
 			//Walk to find involuntary operations available at various caret positions
 			//terminating early using 'opfound' exception hack when first operation is found
@@ -283,7 +283,7 @@ AXLE = function(){
 			
 
 		}			
-	}		
+	};	
 	
 	/** Gets an involuntary operation against a given key
 	 * @param {integer,string} key The key for the operation, which may be an 
@@ -291,7 +291,7 @@ AXLE = function(){
 	 */
 	OperationCaret.prototype.getInvoluntaryOperation = function(key){
 		return this.involuntaryoperations[key];
-	}
+	};
 	
 	/** Gets the list of keys for which there are involuntary operations. */ 
 	OperationCaret.prototype.involuntaryKeys = function(filterfun){
@@ -320,7 +320,7 @@ AXLE = function(){
 	 */
 	OperationCaret.prototype.getVoluntaryOperations = function(key){
 		throw new YOURX.UnsupportedOperationError("getVoluntaryOperations() not (yet) implemented.");	
-	}
+	};
 
 	
 	/** A ThingyOperation represents a change to the children or attributes of the thingy. 
@@ -332,17 +332,17 @@ AXLE = function(){
 	/** @return {String} The text label which should be shown to describe this operation */
 	ThingyOperation.prototype.getLabel = function(){
 		throw new YOURX.UnsupportedOperationError("getLabel() is not yet implemented for this Operation");	
-	}		
+	};		
 	/** @return {boolean} True iff the operation needs user input to proceed. */
 	ThingyOperation.prototype.isInteractive = function(){
 		throw new YOURX.UnsupportedOperationError("isInteractive() is not yet implemented for this Operation");
-	}
+	};
 
 	/** Triggers non-interactive operations
 	 */
 	ThingyOperation.prototype.act = function(user){
 		throw new YOURX.UnsupportedOperationError("act() is not implemented for this Operation. Check the value of isInteractive()");
-	}
+	};
 
 	/** Triggers interactive operations
 	 * Fires requests to get user input until sufficient unknowns have been provided to proceed.
@@ -351,7 +351,7 @@ AXLE = function(){
 	 */
 	ThingyOperation.prototype.interact = function(user){
 		throw new YOURX.UnsupportedOperationError("interact() is not implemented for this Operation. Check the value of isInteractive().");
-	}
+	};
 			
 	/** @param {ThingyRule} rule The rule which this Deletion is trying to satisfy */
 	function ThingyDeletion(rule){
@@ -360,7 +360,7 @@ AXLE = function(){
 	ThingyDeletion.prototype = new ThingyOperation();
 	ThingyDeletion.prototype.isInteractive = function(){
 		return false; //all scenarios for v001 are non-interactive
-	}
+	};
 	/** Executes the deletion of the invalid child. */
 	ThingyDeletion.prototype.act = function(parentthingy, key){
 		if(this.rule instanceof YOURX.ElementThingyRule){
@@ -382,7 +382,7 @@ AXLE = function(){
 		else{
 			throw new YOURX.UnsupportedOperationError('ThingyDeletion cannot (yet) handle this ThingyRule type');
 		}
-	}
+	};
 	
 	/** @param {ThingyRule} rule The rule which this Expansion is trying to satisfy */
 	function ThingyAddition(rule){
@@ -391,7 +391,7 @@ AXLE = function(){
 	ThingyAddition.prototype = new ThingyOperation();
 	ThingyAddition.prototype.isInteractive = function(){
 		return false; //all scenarios for v001 are non-interactive
-	}
+	};
 	/** Executes the addition of a child required by the rule.
 	 * @param {Thingy} parentthingy The thingy which matched the parent rule 
 	 * @param {integer} key The child key indicating where expansion should take place (string=name,integer=pos)
@@ -416,7 +416,7 @@ AXLE = function(){
 		else{
 			throw new YOURX.UnsupportedOperationError('ThingyAddition cannot (yet) handle this ThingyRule type');
 		}
-	}
+	};
 		
 	
 	/** AvixEditor is wired into mouse and keyboard eventing and triggers changes to the ThingyTree
@@ -436,13 +436,13 @@ AXLE = function(){
 		ALLY.RawEditor.prototype.trackThingy.apply(this,arguments); //superclass call
 		var boundselection = this.getBoundSelection(thingy);
 		boundselection.bind("keypress",this.keyPressedListener);
-	}
+	};
 
 	AvixEditor.prototype.untrackThingy= function(thingy){
 		var boundselection = this.getBoundSelection(thingy);
 		boundselection.unbind("keypress",this.keyPressedListener);
 		ALLY.RawEditor.prototype.untrackThingy.apply(this,arguments); //superclass call
-	}
+	};
 
 	/** Records the current thingy and key indicating where the cursor is, and moves the cursor there. */ 
 	AvixEditor.prototype.setCaret = function(){
@@ -552,7 +552,7 @@ AXLE = function(){
 		else{
 			throw new Error("Unexpected thingy type");
 		}
-	}
+	};
 
 	AvixEditor.prototype.rightmostKey = function(thingy){
 		if(thingy instanceof YOURX.ElementThingy || thingy instanceof YOURX.RootThingy){ //end of children
@@ -564,7 +564,7 @@ AXLE = function(){
 		else{
 			throw new Error("Unexpected thingy type");
 		}
-	}
+	};
 	
 	AvixEditor.prototype.getPrecedingCaret = function(targetcaret){
 		/*identify which type caret has*/
@@ -651,7 +651,11 @@ AXLE = function(){
 					return {thingy:targetcaret.thingy, key:0}; //step over to start of content
 				} 
 			}
-			//TODO CH work out conditions for descending
+			//TODO CH work out conditions for ascending/descending
+			//descend when
+			//		at end of element name or last attribute
+			//		...
+			
 		}
 		
 		return null; //if none of the above can find a preceding caret, then give up
@@ -663,7 +667,7 @@ AXLE = function(){
 			return targetcaret.thingy.getName();
 		}
 		else if(this.caretInContent(targetcaret)){
-			return targetcaret.thingy.getValue()
+			return targetcaret.thingy.getValue();
 		}
 		else if(this.caretInDescendants(targetcaret) || this.caretInAttributes(targetcaret)){
 			return ""; //only a placeholder
@@ -695,6 +699,15 @@ AXLE = function(){
 		this.refreshCursor();
 	};
 				
+	/** Given a Thingy caret (identifying a 'focus thingy' and relative position within the ThingyTree)
+	 * this creates the corresponding data structure identifying a document element 
+	 * and a position within the document element where the 'contenteditable' cursor should be placed. 
+	 * Currently, the cursor just provides a visual indicator to the user, as all keypresses are 
+	 * intercepted and default browser behaviour (to add character content) is overridden.
+	 * TODO The default behaviour could be reinstated for efficiency when updating large text blocks.
+	 * @param targetcaret
+	 * @return cursor
+	 */
 	AvixEditor.prototype.calculateCursor = function(targetcaret){
 		
 		//calculate new selection (element which will be contenteditable) and position (location of cursor in Range call)
