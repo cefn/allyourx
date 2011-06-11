@@ -37,15 +37,15 @@ ALLY = function(){
 	 */
 	RecursiveEditor.prototype.boundSelectionImpl = function(thingy){
 		throw new YOURX.UnsupportedException("The boundSelectionImpl() function must be overriden to implement an ALLY.RecursiveEditor");
-	}
+	};
 
 	RecursiveEditor.prototype.getBoundSelection = function(thingy){
 		return this.getMetadata(thingy)["boundselection"];
-	}
+	};
 
 	RecursiveEditor.prototype.getBoundThingy = function(selection){
 		return selection.data("xthingy");
-	}
+	};
 	
 	RecursiveEditor.prototype.trackThingy = function(thingy, data){
 		var boundq = this.boundSelectionImpl(thingy); //create control
@@ -57,13 +57,13 @@ ALLY = function(){
 		}
 		data["boundselection"] = boundq;//store control reference against thingy metadata
 		return Editor.prototype.trackThingy.apply(this,[thingy, data]); 
-	}
+	};
 
 	RecursiveEditor.prototype.untrackThingy = function(thingy){
 		var boundq = this.getBoundSelection(thingy);
 		Editor.prototype.untrackThingy.apply(this,arguments);
 		boundq.remove();
-	}
+	};
 			
 	RecursiveEditor.prototype.childAdded = function(parent,child,childidx){
 		Editor.prototype.childAdded.apply(this, arguments); //creates bound selection
@@ -81,7 +81,7 @@ ALLY = function(){
 		if(targetq.size() !== 1){
 			throw new Error("Could not find parent or unique preceding sibling selection for child added");
 		}
-	}
+	};
 
 	RecursiveEditor.prototype.attributeAdded = function(parent,att){ //attribute appeared
 		Editor.prototype.attributeAdded.apply(this, arguments); //track as normal
@@ -90,7 +90,7 @@ ALLY = function(){
 		if(targetq.size() !== 1){
 			throw new Error("Could not find parent selection for attribute added");
 		}			
-	}
+	};
 			
 	RecursiveEditor.prototype.valueChanged = function(thingy,newvalue,oldvalue){
 		Editor.prototype.valueChanged.apply(this, arguments); //track as normal
@@ -99,14 +99,14 @@ ALLY = function(){
 		if(targetq.size() !== 1){
 			throw new Error("Could not find content selection for value change");
 		}						
-	}		
+	};	
 	
 	/** A RecursiveEditor whose factory methods create class-annotated spans
 	 * as the structural elements corresponding with individual Thingies in the DOM.
 	 */
 	function SpanEditor(){
 		RecursiveEditor.apply(this,arguments);
-	}
+	};
 	SpanEditor.prototype = new RecursiveEditor();
 	/** Constructs nested spans with class annotations representing 
 	 * the type of the specified Thingy, then recursively constructs required
@@ -152,20 +152,20 @@ ALLY = function(){
 		}		
 		
 		return elq;
-	}
+	};
 	
 	SpanEditor.prototype.queryContentWrapper = function(elq){
 		return elq.children().filter(".xcontent");
-	}
+	};
 	SpanEditor.prototype.queryDescendantWrapper = function(elq){
 		return elq.children().filter(".xdescend");
-	}
+	};
 	SpanEditor.prototype.queryOpenWrapper = function(elq){
 		return elq.children().filter(".xopen");
-	}
+	};
 	SpanEditor.prototype.queryCloseWrapper = function(elq){
 		return elq.children().filter(".xclose");
-	}
+	};
 	
 	function RawEditor(){
 		SpanEditor.apply(this,arguments);
@@ -193,7 +193,7 @@ ALLY = function(){
 			}
 		}
 		return superq;
-	}
+	};
 
 	//TODO: Eliminate need to call getBoundSelection for queryXWrapper functions
 	//TODO: Promote common name wrapper functionality into SpanEditor
@@ -203,14 +203,14 @@ ALLY = function(){
 	/** Only works for NamedThingy subclasses. */
 	RawEditor.prototype.queryNameWrapper = function(elq){
 		return elq.children().filter(".xname");
-	}
+	};
 
 	RawEditor.prototype.nameChanged = function(thingy,name){
 		SpanEditor.prototype.nameChanged.apply(this, arguments);
 		var boundq = this.getBoundSelection(thingy);
 		var nameq = this.queryNameWrapper(boundq);
 		nameq.text(name); //set the text in the name spans
-	}
+	};
 		
 	/*
 	function getAnnotationNames(){
