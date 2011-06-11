@@ -101,7 +101,7 @@ document.write = function(){
 			}
 		}
 		return oldfun.apply(this,args);		
-	}
+	};
 }();
 
 /** Replace jquery clean function with one which respects E4X (html) as selector (expands to a string). */
@@ -171,7 +171,7 @@ YOURX = function(){
 		
 	function writeScopeExportCode(propnames){
 		var pairs = [];
-		propnames.forEach(function(item){pairs.push("\"" + item + "\":" + item)});
+		propnames.forEach(function(item){pairs.push("\"" + item + "\":" + item);});
 		return "({" + pairs.join(",") + "})"; 		
 	}
 				
@@ -184,7 +184,7 @@ YOURX = function(){
 			};
 		},
 		hasher:new Guid(),
-		log:function(msg){$(function(){$('body').prepend(msg + "<br/>")});},
+		log:function(msg){$(function(){$('body').prepend(msg + "<br/>");});},
 		xml2e4x:function(xml){ return new XML(ThingyUtil.xmlStripComments(xml));},
 		xml2dom:function(xml){ return (new DOMParser()).parseFromString(xml,"text/xml");},
 		e4x2xml:function(e4x){ return e4x.toXMLString();},
@@ -433,7 +433,7 @@ YOURX = function(){
 				hash = ThingyUtil.hasher.generate();
 			}
 			return hash;
-		}
+		};
 	}
 	Thingy.prototype = {
 		toString:function(){ return "Generic Thingy - toString should be implemented.";},
@@ -548,8 +548,8 @@ YOURX = function(){
 					this.listeners[name].forEach(fun);
 				}
 			}
-		},
-	}
+		}
+	};
 	
 	/** Represents a Thingy which can contain a sequence of children, each of which has a numerical position, starting at 0 
 	 * Can be constructed by passing a DOM whose tree should be recursively replicated in terms of Thingies, 
@@ -601,19 +601,19 @@ YOURX = function(){
 			this.bind('childremoved',onremove);
 		}
 		return this.children;				
-	}
+	};
 	/** Alias for addChild, given all descendants of a generic ContainerThingy are its children. */
 	ContainerThingy.prototype.addThingy = function(thingy){
 		return this.addChild(thingy);
-	}
+	};
 	/** Alias for removeChild, given all descendants of a generic ContainerThingy are its children. */
 	ContainerThingy.prototype.removeThingy = function(thingy){
 		return this.removeChild(thingy);
-	}
+	};
 	/** Alias for getChild, given all descendants of a generic ContainerThingy are its children. */
 	ContainerThingy.prototype.getThingy = function(key){
 		return this.getChildThingy(key);
-	}
+	};
 	/** Adds a child and notifies listeners. */
 	ContainerThingy.prototype.addChild = function(){
 		var child = null;
@@ -685,12 +685,12 @@ YOURX = function(){
 			}
 		}
 		throw new Error("Malformed invocation of ContainerThingy#getChildThingy()");						
-	}
+	};
 	
 	/** Adds a thingy constructed dynamically to mirror a given DOM node. */
 	ContainerThingy.prototype.addNode=function(node){
 		this.addThingy(ThingyUtil.dom2thingy(node));
-	}		
+	};
 	
 	/** Represents a content item which simply stores a value, such as an Attribute or a Text node. 
 	 * @param {Object} value The value to store
@@ -716,7 +716,7 @@ YOURX = function(){
 		else{
 			return this.value;
 		}
-	}
+	};
 	/** Sets the value stored by this content item. */
 	ContentThingy.prototype.setValue = function(value){
 		var oldvalue = this.value;
@@ -725,7 +725,7 @@ YOURX = function(){
 		this.traverseListeners('valuechanged',function(listener){
 			listener(source,source.value,oldvalue);
 		});
-	}
+	};
 	
 	/** Represents the top level container, equivalent to the XML root node. It can have
 	 * no attributes or features of its own. 
@@ -804,7 +804,7 @@ YOURX = function(){
 			onsetname(this, this.name);					
 		}
 		return this.name;
-	}
+	};
 	/** Sets the name, notifying listeners. */
 	ElementThingy.prototype.setName = function(name){
 		var source = this;
@@ -918,11 +918,11 @@ YOURX = function(){
 		else{
 			return null;
 		}
-	}
+	};
 	/** Returns true iff there is an AttributeThingy stored against the given name. */
 	ElementThingy.prototype.hasAttribute = function(name){
 		return name in this.attributes;
-	}
+	};
 	/** Returns the value in the AttributeThingy stored against the given name. */
 	ElementThingy.prototype.getAttribute = function(name){
 		if (name in this.attributes) {
@@ -931,7 +931,7 @@ YOURX = function(){
 		else {
 			return null;
 		}
-	}
+	};
 	/**  Can be invoked empty to just return the map of AttributeThingies,  
 	 * passing one function to get attributeadded events for all attributes now and in the future
 	 * or passing two functions to get attributeremoved events in the future too 
@@ -950,7 +950,7 @@ YOURX = function(){
 			this.bind('attributeremoved',onremove);
 		}
 		return this.attributes;				
-	}
+	};
 	/** Used to store a descendant Thingy (ElementThingy,TextThingy or AttributeThingy). */
 	ElementThingy.prototype.addThingy = function(){
 		if(arguments[0] instanceof AttributeThingy){
@@ -959,7 +959,7 @@ YOURX = function(){
 		else{
 			return ContainerThingy.prototype.addThingy.apply(this,arguments); //call superclass addThingy							
 		}
-	}
+	};
 	/** Used to remove a descendant Thingy (ElementThingy,TextThingy or AttributeThingy). */
 	ElementThingy.prototype.removeThingy = function(){
 		if(arguments[0] instanceof AttributeThingy){
@@ -968,7 +968,7 @@ YOURX = function(){
 		else{
 			return ContainerThingy.prototype.removeChild.apply(this,arguments); //call superclass addChild							
 		}
-	}
+	};
 	
 	/** Represents a content thingy which can store a text value and is a descendant of an ElementThingy, stored as a property, by name.
 	 * 
@@ -1026,7 +1026,7 @@ YOURX = function(){
 		this.children = [].concat(children);
 	}
 	ThingyRule.prototype = {
-		toString:function(){ return "ThingyRule"},
+		toString:function(){ return "ThingyRule"; },
 		getChildren:function(){
 			return this.children;
 		},
@@ -1036,7 +1036,7 @@ YOURX = function(){
 		walkSequence:function(ths, walker, startidx){
 			throw new UnsupportedOperationError("Walk not yet implemented");
 		}
-	}
+	};
 	
 	function ContainerThingyRule(){}
 	ContainerThingyRule.prototype = new ThingyRule();
@@ -1051,7 +1051,7 @@ YOURX = function(){
 		var childrls = this.getChildren().filter(function(rule){return ! (rule instanceof AttributeThingyRule); });
 		var childths = thingy.getChildren();
 		ThingyUtil.walkSequenceWithRulesOrReject(childrls,childths,childwalker,this);
-	}
+	};
 	ContainerThingyRule.prototype.matchThingy=function(thingy, shallow){
 		try{
 			if(!shallow){
@@ -1074,7 +1074,7 @@ YOURX = function(){
 				throw e;
 			}
 		}
-	}
+	};
 
 	function ThingyGrammar(){
 		if(arguments.length == 1 && arguments[0] instanceof Document){
@@ -1099,7 +1099,7 @@ YOURX = function(){
 			walker.posRequired(startidx,this);
 			walker.posRejected(startidx,this);
 		}
-	}
+	};
 			
 	function TypedThingyRule(typename, children){
 		this.typename = typename;
@@ -1108,7 +1108,7 @@ YOURX = function(){
 	TypedThingyRule.prototype = new ThingyRule();
 	TypedThingyRule.prototype.matchThingy = function(thingy){
 		return thingy instanceof YOURX[this.typename];
-	}
+	};
 	
 	function NamedThingyRule(name, typename, children){
 		TypedThingyRule.apply(this,[typename, children]);
@@ -1120,7 +1120,7 @@ YOURX = function(){
 			return thingy.name === this.name;
 		}
 		return false;
-	}
+	};
 	
 	function ElementThingyRule(){
 		if(arguments[0] instanceof Element){ //creation from values in DOM node
@@ -1164,7 +1164,7 @@ YOURX = function(){
 			return ContainerThingyRule.prototype.matchThingy.apply(this,arguments);
 		}
 		return false;
-	}
+	};
 	
 	ElementThingyRule.prototype.walkSequence = function(sequence,walker,startidx){
 		if(sequence.length > startidx){ //check there is a candidate at all
@@ -1179,7 +1179,7 @@ YOURX = function(){
 		else{
 			walker.posRequired(startidx, this);
 		}
-	}
+	};
 	
 	/** Walks an element's attributes along with attribute rules. 
 	 * Each existing attribute triggers exactly one call of either
@@ -1192,7 +1192,7 @@ YOURX = function(){
 	ElementThingyRule.prototype.walkAttributes= function(thingy,attwalker) {
 		var attrls = this.getChildren().filter(function(rule){return rule instanceof AttributeThingyRule;});
 		ThingyUtil.walkMapWithRulesOrReject(attrls,thingy.getAttributes(),attwalker, this);
-	}
+	};
 			
 	function AttributeThingyRule(){
 		var children = []; //Attribute rules have no children - force empty child array
@@ -1224,7 +1224,7 @@ YOURX = function(){
 			return thingy.name === this.name;
 		}
 		return false;
-	}
+	};
 	AttributeThingyRule.prototype.walkMap = function(map,walker){
 		if(this.name in map){ //for v001 this is the simplest validation
 			var thingy = map[this.name];
@@ -1238,7 +1238,7 @@ YOURX = function(){
 		else{
 			walker.nameRequired(this.name, this);
 		}
-	}
+	};
 
 	function TextThingyRule(){
 		TypedThingyRule.apply(this,['TextThingy',[]]); //Text rules have no children - empty child array
@@ -1307,13 +1307,13 @@ YOURX = function(){
 			accepted:{},
 			rejected:{},
 			required:{}
-		}
+		};
 		//indexed by position
 		this.mapsbypos = {
 			accepted:{},
 			rejected:{},
 			required:{}
-		}
+		};
 	};
 	CachingWalker.prototype = (function(){
 		var proto = new ElementWalker();
@@ -1371,22 +1371,22 @@ YOURX = function(){
 	ValidationWalker.prototype = new ElementWalker();	
 	ValidationWalker.prototype.nameAccepted = function(name,rule){
 		//do nothing
-	}
+	};
 	ValidationWalker.prototype.nameRejected = function(name,rule){
 		throw new ThingyRuleError("Attribute rejected");
-	}
+	};
 	ValidationWalker.prototype.nameRequired = function(name,rule){
 		throw new ThingyRuleError("Attribute missing");
-	}		
+	};		
 	ValidationWalker.prototype.posAccepted = function(pos,rule){
 		//do nothing
-	}
+	};
 	ValidationWalker.prototype.posRejected = function(pos,rule){
 		throw new ThingyRuleError("Thingy at pos " + pos + " rejected");
-	}
+	};
 	ValidationWalker.prototype.posRequired = function(pos,rule){
 		throw new ThingyRuleError("Child missing");
-	}
+	};
 	
 	function RecursiveValidationWalker(parent){
 		this.parent = parent;
@@ -1398,7 +1398,7 @@ YOURX = function(){
 			var walker = new RecursiveValidationWalker(child);
 			ThingyUtil.walkBelow(rule,child, walker);				
 		}
-	}
+	};
 	
 	function CompoundWalker(wrapped){
 		this.wrapped = [].concat(wrapped);
@@ -1408,22 +1408,22 @@ YOURX = function(){
 		this.wrapped.forEach(function(walker){
 			walker.nameAccepted(name,rule);
 		});
-	}
+	};
 	CompoundWalker.prototype.nameRejected = function(name,rule){
 		this.wrapped.forEach(function(walker){walker.nameRejected(name,rule);});
-	}
+	};
 	CompoundWalker.prototype.nameRequired = function(name,rule){
 		this.wrapped.forEach(function(walker){walker.nameRequired(name,rule);});
-	}		
+	};		
 	CompoundWalker.prototype.posAccepted = function(pos,rule){
 		this.wrapped.forEach(function(walker){walker.posAccepted(pos,rule);});
-	}
+	};
 	CompoundWalker.prototype.posRejected = function(pos,rule){
 		this.wrapped.forEach(function(walker){walker.posRejected(pos,rule);});
-	}
+	};
 	CompoundWalker.prototype.posRequired = function(pos,rule){
 		this.wrapped.forEach(function(walker){walker.posRequired(pos,rule);});
-	}
+	};
 	
 	/** Maintains a data structure to accelerate traversal and retrieval requests below the specified thingy. 
 	 * @param {Object} node
@@ -1451,7 +1451,7 @@ YOURX = function(){
 
 	ThingyTracker.prototype.isTracked = function(thingy){
 		return this.metadata.containsKey(thingy);
-	}		
+	};		
 
 	ThingyTracker.prototype.nameChanged = function(thingy, newname){
 		//superclass does nothing
@@ -1527,11 +1527,11 @@ YOURX = function(){
 		else{
 			throw new Error("Thingy is not being tracked");
 		}
-	} 
+	};
 			
 	ThingyTracker.prototype.getParent = function(thingy){
 		return this.getMetadata(thingy)['parent'];
-	}
+	};
 
 
 	/** Todo consider efficiency of caching by monitoring child insertion/removal. 
@@ -1551,7 +1551,7 @@ YOURX = function(){
 			}
 		}
 		return -1; 
-	}
+	};
 	
 	/** Performs a document order traversal, visiting elements in sequence 
 	 * of their first appearance in the document. Siblings are visited after 
@@ -1597,7 +1597,7 @@ YOURX = function(){
 			}
 		}
 		return null;
-	}
+	};
 	
 	//evaluate the export function in this scope	
 	return eval(writeScopeExportCode([
