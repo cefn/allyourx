@@ -1,4 +1,9 @@
 $(function(){
+	
+	function getDomFocus(){
+		return document.querySelector(":focus");
+	}
+	
     var UNITTEST = {}; //create namespace object for temporary unittest properties
     UNITTEST.viewportq = $("#UNITTEST"); //target this element when binding controls
     executeTests([
@@ -86,8 +91,8 @@ $(function(){
 			$("*[contenteditable=true]").trigger(evt);
 			return 	UNITTEST.thingy.getChildren().length === 1 && 
 					UNITTEST.editor.caret.thingy == UNITTEST.thingy.getChildren()[0] &&
-					$(document.activeElement).hasClass("xname") && 
-					$(document.activeElement).parent().hasClass("xelement");
+					$(getDomFocus()).hasClass("xname") && 
+					$(getDomFocus()).parent().hasClass("xelement");
 		}],		
 		["Keydown alpha modifies element name", function(){
 			var evt = $.Event('keypress');
@@ -106,8 +111,8 @@ $(function(){
 					(att = atts[""]) instanceof YOURX.AttributeThingy && 
 					UNITTEST.editor.caret.thingy == att &&
 					UNITTEST.editor.caretInName() && 
-					$(document.activeElement).hasClass("xname") && 
-					$(document.activeElement).parent().hasClass("xattribute");
+					$(getDomFocus()).hasClass("xname") && 
+					$(getDomFocus()).parent().hasClass("xattribute");
 		}],
 		["Keydown alpha modifies attribute name", function(){
 			var evt = $.Event('keypress');
@@ -126,8 +131,8 @@ $(function(){
 					(att = atts["b"]) && 
 					UNITTEST.editor.caret.thingy == att &&
 					UNITTEST.editor.caretInContent() && 
-					$(document.activeElement).hasClass("xcontent") && 
-					$(document.activeElement).parent().hasClass("xattribute");
+					$(getDomFocus()).hasClass("xcontent") && 
+					$(getDomFocus()).parent().hasClass("xattribute");
 		}],
 		["Keydown quote returns focus to element open tag", function(){
 			var evt = $.Event('keypress');
@@ -136,8 +141,8 @@ $(function(){
 			return 	UNITTEST.editor.caret.thingy == UNITTEST.thingy.getChildren()[0] &&
 					UNITTEST.editor.caretInAttributes() && 
 					UNITTEST.editor.caret.key == "b" &&
-					$(document.activeElement).hasClass("xopen") && 
-					$(document.activeElement).parent().hasClass("xelement");
+					$(getDomFocus()).hasClass("xopen") && 
+					$(getDomFocus()).parent().hasClass("xelement");
 		}],
 		["Keydown right angle-bracket moves focus to available descendants", function(){
 			var evt = $.Event('keypress');
@@ -146,8 +151,8 @@ $(function(){
 			return 	UNITTEST.editor.caret.thingy == UNITTEST.thingy.getChildren()[0] &&
 					UNITTEST.editor.caretInDescendants() && 
 					UNITTEST.editor.caret.key == 0 &&
-					$(document.activeElement).hasClass("xdescend") && 
-					$(document.activeElement).parent().hasClass("xelement");
+					$(getDomFocus()).hasClass("xdescend") && 
+					$(getDomFocus()).parent().hasClass("xelement");
 		}],
 		["Element key sequence creates additional descendant", function(){
 			var evt;
@@ -166,8 +171,8 @@ $(function(){
 					UNITTEST.editor.caret.thingy == grandchild &&
 					UNITTEST.editor.caretInDescendants() && 
 					UNITTEST.editor.caret.key == 0 &&
-					$(document.activeElement).hasClass("xdescend") && 
-					$(document.activeElement).parent().hasClass("xelement");
+					$(getDomFocus()).hasClass("xdescend") && 
+					$(getDomFocus()).parent().hasClass("xelement");
 		}],
 		["Text input creates text node", function(){
 			var evt;
@@ -179,8 +184,8 @@ $(function(){
 					focusthingy.value == "d" && 
 					UNITTEST.editor.caretInContent() && 
 					UNITTEST.editor.caret.key == 1 &&
-					$(document.activeElement).hasClass("xcontent") && 
-					$(document.activeElement).parent().hasClass("xtext");
+					$(getDomFocus()).hasClass("xcontent") && 
+					$(getDomFocus()).parent().hasClass("xtext");
 		}],
 		["Keydown right angle-bracket moves focus beyond close tag to parent", function(){
 			var evt;
@@ -193,8 +198,8 @@ $(function(){
 					(focusthingy == child) &&
 					UNITTEST.editor.caretInDescendants() && 
 					UNITTEST.editor.caret.key == 1 &&
-					$(document.activeElement).hasClass("xdescend") && 
-					$(document.activeElement).parent().hasClass("xelement");
+					$(getDomFocus()).hasClass("xdescend") && 
+					$(getDomFocus()).parent().hasClass("xelement");
 		}],
 		["Keydown right angle-bracket moves focus to parent when descendants exhausted", function(){
 			return false;

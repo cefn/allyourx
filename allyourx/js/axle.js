@@ -715,8 +715,8 @@ AXLE = function(){
 			selection:null,position:null
 		};
 		var boundselection = this.getBoundSelection(targetcaret.thingy);
-		if(this.caretInName(targetcaret)){ //position cursor in text node of the name
-			cursor.selection = this.queryNameWrapper(boundselection);
+		if(this.caretInName(targetcaret)){ //position cursor in text node of the first name node
+			cursor.selection = this.queryNameWrapper(boundselection).filter(":first");
 			cursor.position = targetcaret.thingy.name.length + targetcaret.key + 1; //expecting negative value of key
 		}	
 		else if(this.caretInContent(targetcaret)){ //position cursor in text node of the content  
@@ -758,6 +758,9 @@ AXLE = function(){
 			neweditable.selection.focus();
 			
 			//choose anchor node
+			var anchornode = neweditable.selection[0];
+
+			/* CH temporarily disabled - do we need this distinction?
 			var anchornode = null; 
 			if(this.caretInName() || this.caretInContent()){ //character position in first DOM child (text node)
 				anchornode = neweditable.selection.contents()[0];
@@ -765,6 +768,7 @@ AXLE = function(){
 			if(this.caretInDescendants() || this.caretInAttributes()){ //child position in parent DOM element 
 				anchornode = neweditable.selection[0];
 			}
+			*/
 			
 		/** Note this from http://www.w3.org/TR/2000/REC-DOM-Level-2-Traversal-Range-20001113/ranges.html
 		 * It is also possible to set a Range's position relative to nodes in the tree:
@@ -776,18 +780,25 @@ AXLE = function(){
 			
 			//TODO: Below implementation dependent on W3C - will break in IE
 			
-			//position cursor by creating range
+			//position cursor
+			
+			//create or load range
 			var winselection = window.getSelection();
 			var range;
 			if(winselection.rangeCount == 0){ 
 				range = document.createRange();
-				winselection.addRange(range);
 			} 
 			else{
 				range = winselection.getRangeAt(0); 
 			}
+			
+			//configure the range
 			range.setStart(anchornode, neweditable.position);
 			range.setEnd(anchornode, neweditable.position);
+			
+			//remove and reset range
+			winselection.removeAllRanges();
+			winselection.addRange(range);
 			
 			//store new values
 			this.editable = neweditable;

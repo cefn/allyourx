@@ -32,19 +32,17 @@ $(function(){
 	    }], 
 		["Element name is in open and close tag of editor", function(){
 			UNITTEST.firstchild = UNITTEST.rootthingy.getChildren()[0];
-			var nameq = UNITTEST.editor.queryNameWrapper(UNITTEST.editor.getBoundSelection(UNITTEST.firstchild));
 			var firstname = UNITTEST.firstchild.getName();
-			var openname = nameq.eq(0).text();
-			var closename = nameq.eq(1).text();
-			return (openname === firstname) && (closename === firstname);
+			var nameq = UNITTEST.editor.queryNameWrapper(UNITTEST.editor.getBoundSelection(UNITTEST.firstchild));
+			nameq = nameq.filter(function(){ return $(this).text()===firstname; });
+			return nameq.size() === 2;
 	    }], 
-		["Element name change modifies open and close tag of SpanEditor", function(){
+		["Element name change modifies both open and close tag of SpanEditor", function(){
 			var newname = "something";
 			UNITTEST.firstchild.setName(newname);
 			var nameq = UNITTEST.editor.queryNameWrapper(UNITTEST.editor.getBoundSelection(UNITTEST.firstchild));
-			var openname = nameq.eq(0).text();
-			var closename = nameq.eq(1).text();
-			return (openname === newname) && (closename === newname);
+			nameq = nameq.filter(function(){ return $(this).text()===newname; });
+			return nameq.size() === 2;
 	    }], 
 		["bindThingy: Removing attribute nodes removes all descendants bound to attributes", function(){
 	        UNITTEST.boundq.find(".xattribute").each(function(){

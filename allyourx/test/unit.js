@@ -16,7 +16,16 @@ function testReport(desc,classes,report){
 }
 
 /** Expects an array containing array-pairs of test descriptions and no-arg test functions. */
-function executeTests(testpairs, options){ 
+function executeTests(testpairs){
+	
+	//initialise options and merge from second function argument
+	//guarantees all expected fields are assigned to defaults or overridden
+	var options = {reportonlyfailure:true,quitonfailure:true};
+	if(arguments.length > 1){
+		options = YOURX.copyProperties(arguments[1],options);
+	}
+
+	//execute tests using regime as defined in options
 	for (var idx = 0; idx < testpairs.length; idx++) {
 		/** Unmarshall test items. */
 		var currentpair = testpairs[idx];
@@ -27,12 +36,22 @@ function executeTests(testpairs, options){
 		var testmsg = function(outcome){ return (outcome===true ? "Success" : "Failure")};
 		var result = false;
 		try{
-			var result = test.apply(this, []);		
-			testReport(desc, testclasses(result), testmsg(result));
+			//execute test
+			result = test.apply(this, []);
+			//optionally report on test
+			if(result===false || options.reportonlyfailure===false){
+				testReport(desc, testclasses(result), testmsg(result));				
+			}
 		}
 		catch(e){
 			testReport(desc, testclasses(result), "Exception thrown " + e);
 		}
+		//optionally quit on failure
+		if(result === false && options.quitonfailure===true){
+			//exit the test loop
+			break;
+		}
+		
 	}
 }
 
