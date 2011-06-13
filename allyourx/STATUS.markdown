@@ -47,3 +47,5 @@ Strategic targets are long term and define the evolution of the toolset through 
 You can see the expressiveness milestones for v001 through v005 as well as the final target expressiveness for the schema language. All dialects of the AllyourX schema language are a strict subset of RelaxNG annotated to provide information to style and define behaviour for user-facing controls.
 
 Although the project is committed to a roadmap in which schema complexity increases only incrementally, we welcome contributions to re-prioritise schema features according to the needs of the user community.
+
+Code should ideally conform to the guidance at http://javascript.crockford.com/code.html
