@@ -20,7 +20,7 @@ function executeTests(testpairs){
 	
 	//initialise options and merge from second function argument
 	//guarantees all expected fields are assigned to defaults or overridden
-	var options = {reportonlyfailure:true,quitonfailure:true};
+	var options = {reportonlyfailure:true,quitonfailure:true,catchexceptions:true};
 	if(arguments.length > 1){
 		options = YOURX.copyProperties(arguments[1],options);
 	}
@@ -44,7 +44,12 @@ function executeTests(testpairs){
 			}
 		}
 		catch(e){
-			testReport(desc, testclasses(result), "Exception thrown " + e);
+			if(options.catchexceptions===true){
+				testReport(desc, testclasses(result), "Exception thrown " + e);				
+			}
+			else{
+				throw e;
+			}
 		}
 		//optionally quit on failure
 		if(result === false && options.quitonfailure===true){
