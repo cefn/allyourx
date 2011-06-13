@@ -1,11 +1,47 @@
 $(function(){
 	
+    var UNITTEST = {}; //create namespace object for temporary unittest properties
+    UNITTEST.viewportq = $("#UNITTEST"); //target this element when binding controls
+
+    var rootName = "aa";
+    var attName = "bb";
+    var childName = "cc";
+	var textContent = "dd";
+    
 	function getDomFocus(){
+		//a recent and more widely supported alternative to document.activeElement
 		return document.querySelector(":focus");
 	}
 	
-    var UNITTEST = {}; //create namespace object for temporary unittest properties
-    UNITTEST.viewportq = $("#UNITTEST"); //target this element when binding controls
+	function emulateFocusEvent(evt){
+		$("*[contenteditable=true]").trigger(evt);
+		//$("*:focus").trigger(evt); //CH should be focus item for all tests
+	}
+	
+	function typeCharacters(characters){
+		var idx, evt;
+		for(idx = 0; idx < characters.length; idx++){
+			evt = $.Event('keypress');
+			evt.which = characters.charCodeAt(idx);
+			emulateFocusEvent(evt);
+		}
+	}
+	
+	function typeControlKey(controlName){
+		if("AXLE" in YOURX.getGlobal()){
+			for(var keyCode in AXLE.AvixEditor.prototype.navkeys){
+				var handler = AXLE.AvixEditor.prototype.navkeys[keyCode];
+				if(handler.name === controlName){
+					evt = $.Event('keydown');
+					evt.keyCode = keyCode;
+					emulateFocusEvent(evt);					
+					return;
+				}
+			}
+		}
+		throw Error("Could not identify matching symbolic name for control key.");
+	};
+	
     executeTests([
 		["OperationCaret on Empty Root Thingy signals Element ThingyAddition needed", function(){
 			UNITTEST.grammar = YOURX.ThingyUtil.url2rule("schema/yourx/examples.001/team.001.rng");
@@ -86,25 +122,19 @@ $(function(){
 			return UNITTEST.editable.size() === 1;
 		}],
 		["Keydown left angle-bracket where editable creates and focuses element name", function(){
-			var evt = $.Event('keypress');
-			evt.which = '<'.charCodeAt(0); // '<' character
-			$("*[contenteditable=true]").trigger(evt);
+			typeCharacters('<');	
 			return 	UNITTEST.thingy.getChildren().length === 1 && 
 					UNITTEST.editor.caret.thingy == UNITTEST.thingy.getChildren()[0] &&
 					$(getDomFocus()).hasClass("xname") && 
 					$(getDomFocus()).parent().hasClass("xelement");
 		}],		
 		["Keydown alpha modifies element name", function(){
-			var evt = $.Event('keypress');
-			evt.which = 'a'.charCodeAt(0);
-			$("*[contenteditable=true]").trigger(evt);
+			typeCharacters(rootName);
 			var name = UNITTEST.thingy.getChildren()[0].getName();
-			return name ==="a"; 
+			return name ===rootName;
 		}],
 		["Keydown space creates attribute and focuses attribute name", function(){
-			var evt = $.Event('keypress');
-			evt.which = ' '.charCodeAt(0);
-			$("*[contenteditable=true]").trigger(evt);
+			typeCharacters(' ');
 			var atts = UNITTEST.thingy.getChildren()[0].getAttributes();
 			var att;
 			return 	"" in atts && 
@@ -115,39 +145,31 @@ $(function(){
 					$(getDomFocus()).parent().hasClass("xattribute");
 		}],
 		["Keydown alpha modifies attribute name", function(){
-			var evt = $.Event('keypress');
-			evt.which = 'b'.charCodeAt(0);
-			$("*[contenteditable=true]").trigger(evt);
+			typeCharacters(attName);
 			var atts = UNITTEST.thingy.getChildren()[0].getAttributes();
-			return "b" in atts && atts["b"].name === "b";
+			return attName in atts && atts[attName].name === attName;
 		}],
 		["Keydown equals moves focus to attribute value", function(){
-			var evt = $.Event('keypress');
-			evt.which = '='.charCodeAt(0);
-			$("*[contenteditable=true]").trigger(evt);
+			typeCharacters('=');
 			var atts = UNITTEST.thingy.getChildren()[0].getAttributes();
 			var att;
-			return 	"b" in atts && 
-					(att = atts["b"]) && 
+			return 	attName in atts && 
+					(att = atts[attName]) && 
 					UNITTEST.editor.caret.thingy == att &&
 					UNITTEST.editor.caretInContent() && 
 					$(getDomFocus()).hasClass("xcontent") && 
 					$(getDomFocus()).parent().hasClass("xattribute");
 		}],
 		["Keydown quote returns focus to element open tag", function(){
-			var evt = $.Event('keypress');
-			evt.which = '"'.charCodeAt(0);
-			$("*[contenteditable=true]").trigger(evt);
+			typeCharacters('"');
 			return 	UNITTEST.editor.caret.thingy == UNITTEST.thingy.getChildren()[0] &&
 					UNITTEST.editor.caretInAttributes() && 
-					UNITTEST.editor.caret.key == "b" &&
+					UNITTEST.editor.caret.key == attName &&
 					$(getDomFocus()).hasClass("xopen") && 
 					$(getDomFocus()).parent().hasClass("xelement");
 		}],
 		["Keydown right angle-bracket moves focus to available descendants", function(){
-			var evt = $.Event('keypress');
-			evt.which = '>'.charCodeAt(0);
-			$("*[contenteditable=true]").trigger(evt);
+			typeCharacters('>');
 			return 	UNITTEST.editor.caret.thingy == UNITTEST.thingy.getChildren()[0] &&
 					UNITTEST.editor.caretInDescendants() && 
 					UNITTEST.editor.caret.key == 0 &&
@@ -155,19 +177,10 @@ $(function(){
 					$(getDomFocus()).parent().hasClass("xelement");
 		}],
 		["Element key sequence creates additional descendant", function(){
-			var evt;
-			evt = $.Event('keypress');
-			evt.which = '<'.charCodeAt(0);
-			$("*[contenteditable=true]").trigger(evt);
-			evt = $.Event('keypress');
-			evt.which = 'c'.charCodeAt(0);
-			$("*[contenteditable=true]").trigger(evt);
-			evt = $.Event('keypress');
-			evt.which = '>'.charCodeAt(0);
-			$("*[contenteditable=true]").trigger(evt);
+			typeCharacters("<" + childName + ">");
 			var child,grandchild;
-			return 	(child = UNITTEST.thingy.getChildren()[0]).getName() == "a" &&
-					(grandchild = child.getChildren()[0]).getName() == "c" &&
+			return 	(child = UNITTEST.thingy.getChildren()[0]).getName() == rootName &&
+					(grandchild = child.getChildren()[0]).getName() == childName &&
 					UNITTEST.editor.caret.thingy == grandchild &&
 					UNITTEST.editor.caretInDescendants() && 
 					UNITTEST.editor.caret.key == 0 &&
@@ -175,23 +188,28 @@ $(function(){
 					$(getDomFocus()).parent().hasClass("xelement");
 		}],
 		["Text input creates text node", function(){
-			var evt;
-			evt = $.Event('keypress');
-			evt.which = 'd'.charCodeAt(0);
-			$("*[contenteditable=true]").trigger(evt);
+			typeCharacters(textContent);
 			var focusthingy;
 			return 	(focusthingy = UNITTEST.editor.caret.thingy) instanceof YOURX.TextThingy &&
-					focusthingy.value == "d" && 
+					focusthingy.value == textContent && 
 					UNITTEST.editor.caretInContent() && 
-					UNITTEST.editor.caret.key == 1 &&
+					UNITTEST.editor.caret.key == textContent.length &&
+					$(getDomFocus()).hasClass("xcontent") && 
+					$(getDomFocus()).parent().hasClass("xtext");
+		}],
+		["Typed character followed by Backspace means no change", function(){
+			typeCharacters("d");
+			typeControlKey("Backspace");
+			var focusthingy;
+			return 	(focusthingy = UNITTEST.editor.caret.thingy) instanceof YOURX.TextThingy &&
+					focusthingy.value === textContent && 
+					UNITTEST.editor.caretInContent() && 
+					UNITTEST.editor.caret.key === textContent.length &&
 					$(getDomFocus()).hasClass("xcontent") && 
 					$(getDomFocus()).parent().hasClass("xtext");
 		}],
 		["Keydown right angle-bracket moves focus beyond close tag to parent", function(){
-			var evt;
-			evt = $.Event('keypress');
-			evt.which = '>'.charCodeAt(0);
-			$("*[contenteditable=true]").trigger(evt);
+			typeCharacters(">");
 			var child, focusthingy;
 			return 	(child = UNITTEST.thingy.getChildren()[0]) instanceof YOURX.ElementThingy &&
 					(focusthingy = UNITTEST.editor.caret.thingy)  &&
