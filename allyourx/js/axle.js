@@ -427,6 +427,7 @@ AXLE = function(){
 	function AvixEditor(){
 		ALLY.RawEditor.apply(this,arguments);
 		this.keyPressedListener = YOURX.ThingyUtil.methodHandoffFunction(this, "handleKeypress");
+		this.keyDownListener = YOURX.ThingyUtil.methodHandoffFunction(this, "handleKeydown");
 	}
 	AvixEditor.prototype = new ALLY.RawEditor();
 	
@@ -436,11 +437,13 @@ AXLE = function(){
 		ALLY.RawEditor.prototype.trackThingy.apply(this,arguments); //superclass call
 		var boundselection = this.getBoundSelection(thingy);
 		boundselection.bind("keypress",this.keyPressedListener);
+		boundselection.bind("keydown",this.keyDownListener);
 	};
 
 	AvixEditor.prototype.untrackThingy= function(thingy){
 		var boundselection = this.getBoundSelection(thingy);
 		boundselection.unbind("keypress",this.keyPressedListener);
+		boundselection.unbind("keydown",this.keyDownListener);
 		ALLY.RawEditor.prototype.untrackThingy.apply(this,arguments); //superclass call
 	};
 
@@ -675,6 +678,11 @@ AXLE = function(){
 		else throw new Error("Unexpected caret status");
 	};
 
+	/** N.B. This does not cause the caret to be updated, so it may be at an 
+	 * invalid value after the content is changed.
+	 * @param newtext
+	 * @param targetcaret
+	 */
 	AvixEditor.prototype.setFieldText = function(newtext, targetcaret){
 		if(arguments.length === 1) targetcaret = this.caret;
 		if(this.caretInName(targetcaret)){
@@ -696,7 +704,6 @@ AXLE = function(){
 		}
 		else throw new Error("Unexpected caret status");
 		
-		this.refreshCursor();
 	};
 				
 	/** Given a Thingy caret (identifying a 'focus thingy' and relative position within the ThingyTree)
@@ -745,22 +752,10 @@ AXLE = function(){
 		//update to the new new selection and position
 		if((neweditable.selection !== null) && (neweditable.position !== null)){
 
-			//control which elements are editable
-			var EDITABLEATTR = "contenteditable";
-
-			//TODO can avoid this if selections are equal
-			if(this.editable && this.editable.selection){
-				this.editable.selection.children().andSelf().removeAttr(EDITABLEATTR); //strip old assignments from self and children
-				this.editable.selection.blur();
-			}
-			neweditable.selection.attr(EDITABLEATTR,"true"); //ensure element editable
-			neweditable.selection.children().attr(EDITABLEATTR,"false"); //ensure children not editable
-			neweditable.selection.focus();
+			//move selection (cursor)
 			
 			//choose anchor node
-			var anchornode = neweditable.selection[0];
-
-			/* CH temporarily disabled - do we need this distinction?
+			// CH do we need this distinction, or can we always use neweditable.selection[0] ?
 			var anchornode = null; 
 			if(this.caretInName() || this.caretInContent()){ //character position in first DOM child (text node)
 				anchornode = neweditable.selection.contents()[0];
@@ -768,7 +763,6 @@ AXLE = function(){
 			if(this.caretInDescendants() || this.caretInAttributes()){ //child position in parent DOM element 
 				anchornode = neweditable.selection[0];
 			}
-			*/
 			
 		/** Note this from http://www.w3.org/TR/2000/REC-DOM-Level-2-Traversal-Range-20001113/ranges.html
 		 * It is also possible to set a Range's position relative to nodes in the tree:
@@ -784,27 +778,70 @@ AXLE = function(){
 			
 			//create or load range
 			var winselection = window.getSelection();
-			var range;
-			if(winselection.rangeCount == 0){ 
-				range = document.createRange();
-			} 
-			else{
-				range = winselection.getRangeAt(0); 
-			}
+			winselection.removeAllRanges();
+
+			var range = document.createRange();
 			
 			//configure the range
 			range.setStart(anchornode, neweditable.position);
+			range.collapse(true);
+			/** CH looks like the above is equivalent according to https://developer.mozilla.org/en/DOM/range.collapse
 			range.setEnd(anchornode, neweditable.position);
+			*/
 			
 			//remove and reset range
-			winselection.removeAllRanges();
 			winselection.addRange(range);
+			
+			//control which elements are editable and force focus change
+			var EDITABLEATTR = "contenteditable";
+
+			//TODO can avoid this if selections are equal
+			if(this.editable && this.editable.selection){
+				this.editable.selection.children().andSelf().removeAttr(EDITABLEATTR); //strip old assignments from self and children
+				this.editable.selection.blur();
+			}
+			neweditable.selection.attr(EDITABLEATTR,"true"); //ensure element editable
+			neweditable.selection.children().attr(EDITABLEATTR,"false"); //ensure children not editable
+			neweditable.selection.focus();
 			
 			//store new values
 			this.editable = neweditable;
 		}
 	};
 	
+	//TODO consider use of CTRL to override non-empty protection
+	//TODO simplify using preceding/following/sibling caret logic
+	AvixEditor.prototype.deleteCaret = function(targetcaret){
+		
+		if(arguments.length == 0){
+			targetcaret = this.caret;
+		}
+				
+		if(this.caretInName(targetcaret) || this.caretInContent(targetcaret)){
+			//it's an editable character field
+			if(this.getFieldText(targetcaret).length > 0){
+				var targeteditable = this.calculateCursor(targetcaret);
+				//remove a character from the text
+				var oldtext = this.getFieldText(targetcaret);
+				var newtext = oldtext.slice(0,targeteditable.position -1) + oldtext.slice(targeteditable.position, oldtext.length);
+				//update the field text to match
+				this.setFieldText(newtext, targetcaret);
+				//field is one character shorter
+				//negatively-indexed name carets will reduce by one
+				if(this.caretInName(targetcaret)){
+					return getFollowingCaret(targetcaret);
+				}
+			}
+						
+		}
+
+		//TODO CH create deletion behaviour for elements and attributes
+
+		//fall through to default decremented caret
+		return targetcaret;
+
+	}
+
 	/*
 	AvixEditor.prototype.deleteCaret = function(targetcaret){
 		if(arguments.length == 0){
@@ -814,8 +851,6 @@ AXLE = function(){
 		if(targetcaret){
 			
 		}
-					//TODO consider use of CTRL to override non-empty protection
-					//TODO simplify using preceding/following/sibling caret logic
 					//supports use of 'forward delete' too
 					if(this.caretInName() || this.caretInContent()){ //in some kind of field
 						if(this.editable.position > 0){ //in middle of field
@@ -1002,13 +1037,13 @@ AXLE = function(){
 			backspace:{
 				name:"Backspace",
 				action:function(){
-					this.deleteCaret(this.getPrecedingCaret(this.caret));
+					this.setCaret(this.deleteCaret(this.getPrecedingCaret(this.caret)));
 				}
 			},
 			del:{
 				name:"Delete",
 				action:function(){ //forward delete not yet implemented
-					this.deleteCaret(this.caret);
+					this.setCaret(this.deleteCaret(this.caret));
 				}
 			},
 			tab:{name:"Tab"},enter:{name:"Enter"},shift:{name:"Shift"},ctrl:{name:"Control"},alt:{name:"Alt"},escape:{name:"Escape"},
@@ -1031,79 +1066,83 @@ AXLE = function(){
 		
 	})();
 
-		
-	//TODO handle non-character keycodes
-	AvixEditor.prototype.handleKeypress = function(evt){
-		//TODO refactor for efficiency by caching values and functions below
-
+	/** Only keydown events are issued for control keys by at least some browsers, 
+	 * meaning this logic cannot be in handleKeypress.
+	 */
+	AvixEditor.prototype.handleKeydown = function(evt){
 		if (evt.keyCode in this.navkeys) { //found handler for special key
 			var handler = this.navkeys[evt.keyCode]; 
 			if("action" in handler){
-				//trigger handling behaviour
-				handler["action"]();
 				//key has been handled - suppress browser behaviour (appending characters)
 				evt.stopPropagation();
 				evt.preventDefault();
+				//trigger handling behaviour
+				handler["action"].apply(this);
 			}
 		}
-		else{ //update the field text
+	};
+		
+	AvixEditor.prototype.handleKeypress = function(evt){
 
-			//key has been handled - suppress browser behaviour (appending characters)
-			evt.stopPropagation();
-			evt.preventDefault();
+		//update the field text
 
-			//calculate field after character added
-			var charpressed = String.fromCharCode(evt.which);
-			var oldtext = this.getFieldText();
-			var newtext;
-			if(oldtext && oldtext != ""){ //insert in existing text
-				newtext = oldtext.slice(0,this.editable.position) + charpressed + oldtext.slice(this.editable.position, oldtext.length);
-			}
-			else{ //no existing text
-				newtext = charpressed;
-			}
-
-			//get the patterns which can handle keys on these types of element
-			var patterns = null;
-			if(this.caret.thingy instanceof YOURX.RootThingy){
-				if(this.caretInDescendants()){ patterns = this.treelogic.container.descendants.patterns;}
-				else{throw new Error("RootThingies only have descendants.");}
-			}
-			else if(this.caret.thingy instanceof YOURX.ElementThingy){
-				if(this.caretInName()){ patterns = this.treelogic.element.name.patterns;}
-				else if(this.caretInAttributes()){ patterns = this.treelogic.element.attributes.patterns;}
-				else if(this.caretInDescendants()){ patterns = this.treelogic.element.descendants.patterns;}
-				else{throw new Error("ElementThingies only have names, attributes and descendants.");}
-			}
-			else if(this.caret.thingy instanceof YOURX.AttributeThingy){
-				if(this.caretInName()){ patterns = this.treelogic.attribute.name.patterns;}
-				else if(this.caretInContent()){ patterns = this.treelogic.attribute.content.patterns;}
-				else{throw new Error("AttributeThingies only have a name and value.");}
-			}
-			else if(this.caret.thingy instanceof YOURX.TextThingy){ 
-				if(this.caretInContent()){ patterns = this.treelogic.text.content.patterns; }
-				else{ throw new Error("TextThingies only have a value.");}
-			}
-			
-			if(patterns != null){
-				//keys are regexp matches, values are functions 
-				for(var pattern in patterns){ //trigger function against first matching pattern and return
-					var regexp = new RegExp(pattern);
-					var matches = newtext.match(regexp);
-					if(matches && matches.length > 0){
-						
-						//execute matching function
-						patterns[pattern].apply(this,[matches[0]]); 
-
-						return;
-					}
-				} //fallthrough to error condition
-				throw new Error("Invalid character inserted, no matches available.");			
-			}
-			else{
-				throw new Error("No patterns available");
-			}
+		//calculate field after character added
+		var charpressed = String.fromCharCode(evt.which);
+		var oldtext = this.getFieldText();
+		var newtext;
+		if(oldtext && oldtext != ""){ //insert in existing text
+			newtext = oldtext.slice(0,this.editable.position) + charpressed + oldtext.slice(this.editable.position, oldtext.length);
 		}
+		else{ //no existing text
+			newtext = charpressed;
+		}
+
+		//get the patterns which can handle keys on these types of element
+		var patterns = null;
+		if(this.caret.thingy instanceof YOURX.RootThingy){
+			if(this.caretInDescendants()){ patterns = this.treelogic.container.descendants.patterns;}
+			else{throw new Error("RootThingies only have descendants.");}
+		}
+		else if(this.caret.thingy instanceof YOURX.ElementThingy){
+			if(this.caretInName()){ patterns = this.treelogic.element.name.patterns;}
+			else if(this.caretInAttributes()){ patterns = this.treelogic.element.attributes.patterns;}
+			else if(this.caretInDescendants()){ patterns = this.treelogic.element.descendants.patterns;}
+			else{throw new Error("ElementThingies only have names, attributes and descendants.");}
+		}
+		else if(this.caret.thingy instanceof YOURX.AttributeThingy){
+			if(this.caretInName()){ patterns = this.treelogic.attribute.name.patterns;}
+			else if(this.caretInContent()){ patterns = this.treelogic.attribute.content.patterns;}
+			else{throw new Error("AttributeThingies only have a name and value.");}
+		}
+		else if(this.caret.thingy instanceof YOURX.TextThingy){ 
+			if(this.caretInContent()){ patterns = this.treelogic.text.content.patterns; }
+			else{ throw new Error("TextThingies only have a value.");}
+		}
+		
+		if(patterns !== null){
+			//keys are regexp matches, values are functions 
+			for(var pattern in patterns){ //trigger function against first matching pattern and return
+				var regexp = new RegExp(pattern);
+				var matches = newtext.match(regexp);
+				if(matches && matches.length > 0){
+					
+					//key has been handled - suppress browser behaviour (appending characters)
+					evt.stopPropagation();
+					evt.preventDefault();
+					
+					//execute matching function
+					patterns[pattern].apply(this,[matches[0]]); 
+
+					//pattern found so terminate
+					return;
+				}
+			} //fallthrough to error condition
+			throw new Error("Invalid character inserted, no matches available.");			
+		}
+		else{
+			throw new Error("No patterns available");
+		}
+		
 	};
 
 	return eval(YOURX.writeScopeExportCode([
