@@ -38,7 +38,7 @@ ALLY = function(){
 	RecursiveEditor.prototype.boundSelectionImpl = function(thingy){
 		throw new YOURX.UnsupportedException("The boundSelectionImpl() function must be overriden to implement an ALLY.RecursiveEditor");
 	};
-
+	
 	RecursiveEditor.prototype.getBoundSelection = function(thingy){
 		return this.getMetadata(thingy)["boundselection"];
 	};
@@ -104,16 +104,16 @@ ALLY = function(){
 	/** A RecursiveEditor whose factory methods create class-annotated spans
 	 * as the structural elements corresponding with individual Thingies in the DOM.
 	 */
-	function SpanEditor(){
+	function StyledEditor(){
 		RecursiveEditor.apply(this,arguments);
 	};
-	SpanEditor.prototype = new RecursiveEditor();
+	StyledEditor.prototype = new RecursiveEditor();
 	/** Constructs nested spans with class annotations representing 
 	 * the type of the specified Thingy, then recursively constructs required
 	 * spans for all descendants.
 	 * @param {Object} thingy
 	 */
-	SpanEditor.prototype.boundSelectionImpl = function(thingy){
+	StyledEditor.prototype.boundSelectionImpl = function(thingy){
 		var elq = $("<span/>");			
 
 		//bind thingy and add structural elements
@@ -154,29 +154,29 @@ ALLY = function(){
 		return elq;
 	};
 	
-	SpanEditor.prototype.queryContentWrapper = function(elq){
+	StyledEditor.prototype.queryContentWrapper = function(elq){
 		return elq.children().filter(".xcontent");
 	};
-	SpanEditor.prototype.queryDescendantWrapper = function(elq){
+	StyledEditor.prototype.queryDescendantWrapper = function(elq){
 		return elq.children().filter(".xdescend");
 	};
-	SpanEditor.prototype.queryOpenWrapper = function(elq){
+	StyledEditor.prototype.queryOpenWrapper = function(elq){
 		return elq.children().filter(".xopen");
 	};
-	SpanEditor.prototype.queryCloseWrapper = function(elq){
+	StyledEditor.prototype.queryCloseWrapper = function(elq){
 		return elq.children().filter(".xclose");
 	};
 	
 	function RawEditor(){
-		SpanEditor.apply(this,arguments);
+		StyledEditor.apply(this,arguments);
 	}
-	RawEditor.prototype = new SpanEditor();
+	RawEditor.prototype = new StyledEditor();
 	/** Add xraw class and contentEditable behaviour to content elements
 	 * @param {Object} thingy
 	 * @param {Object} descend
 	 */
 	RawEditor.prototype.boundSelectionImpl = function(thingy){
-		var superq = SpanEditor.prototype.boundSelectionImpl.apply(this,arguments);
+		var superq = StyledEditor.prototype.boundSelectionImpl.apply(this,arguments);
 		superq.addClass("xraw");
 		if(thingy instanceof YOURX.ContainerThingy){
 			if(thingy instanceof YOURX.ElementThingy){
@@ -196,7 +196,7 @@ ALLY = function(){
 	};
 
 	//TODO: Eliminate need to call getBoundSelection for queryXWrapper functions
-	//TODO: Promote common name wrapper functionality into SpanEditor
+	//TODO: Promote common name wrapper functionality into StyledEditor
 	
 	//TODO ensure getValue/setValue in ThingyTracker matches getName/setName in behaviour
 
@@ -206,7 +206,7 @@ ALLY = function(){
 	};
 
 	RawEditor.prototype.nameChanged = function(thingy,name){
-		SpanEditor.prototype.nameChanged.apply(this, arguments);
+		StyledEditor.prototype.nameChanged.apply(this, arguments);
 		var boundq = this.getBoundSelection(thingy);
 		var nameq = this.queryNameWrapper(boundq);
 		nameq.text(name); //set the text in the name spans
@@ -219,7 +219,7 @@ ALLY = function(){
 	*/
 	
 	return eval(YOURX.writeScopeExportCode([
-		'RecursiveEditor', 'SpanEditor', 'RawEditor']
+		'RecursiveEditor', 'StyledEditor', 'RawEditor']
 	));	
 	
 }();
