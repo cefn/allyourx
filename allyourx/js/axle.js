@@ -755,6 +755,16 @@ AXLE = function(){
 			//move selection (cursor)
 			
 			//choose anchor node
+			var anchornode;
+			var contentsq = neweditable.selection.contents();
+			if(contentsq.size()==0){
+				anchornode = neweditable.selection.get(0);
+			}
+			else{
+				anchornode = contentsq.get(0);
+			}
+
+			/*
 			// CH do we need this distinction, or can we always use neweditable.selection[0] ?
 			var anchornode = null; 
 			if(this.caretInName() || this.caretInContent()){ //character position in first DOM child (text node)
@@ -763,6 +773,7 @@ AXLE = function(){
 			if(this.caretInDescendants() || this.caretInAttributes()){ //child position in parent DOM element 
 				anchornode = neweditable.selection[0];
 			}
+			*/
 			
 		/** Note this from http://www.w3.org/TR/2000/REC-DOM-Level-2-Traversal-Range-20001113/ranges.html
 		 * It is also possible to set a Range's position relative to nodes in the tree:
@@ -786,29 +797,29 @@ AXLE = function(){
 			/** CH looks like the above is equivalent according to https://developer.mozilla.org/en/DOM/range.collapse
 			range.setEnd(anchornode, neweditable.position);
 			*/
-			
-			//reset range to newly calculated range
-			winselection.removeAllRanges();
-			winselection.addRange(range);
-			
+						
 			//control which elements are editable and force focus change
 			var EDITABLEATTR = "contenteditable";
 			
 			//reset contenteditable flags in the editor tree
-			/**var rootselection = this.getBoundSelection(this.getRoot(this.caret.thingy));
+			var rootselection = this.getBoundSelection(this.getRoot(this.caret.thingy));
 			rootselection.find(EDITABLEATTR).removeAttr(EDITABLEATTR);
-			rootselection.attr(EDITABLEATTR,"true");
-			*/
+			rootselection.attr(EDITABLEATTR,"true"); //elements below inherit by default
 
 			//TODO can avoid this if selections are equal
 			if(this.editable && this.editable.selection){
-				this.editable.selection.children().andSelf().removeAttr(EDITABLEATTR); //strip old assignments from self and children
+				//this.editable.selection.children().andSelf().removeAttr(EDITABLEATTR); //strip old assignments from self and children
 				this.editable.selection.blur();
 			}
-			neweditable.selection.attr(EDITABLEATTR,"true"); //ensure element editable
-			neweditable.selection.children().attr(EDITABLEATTR,"inherit"); //ensure children not editable
-			neweditable.selection.focus();
+			//neweditable.selection.attr(EDITABLEATTR,"true"); //ensure element editable
+			//neweditable.selection.children().attr(EDITABLEATTR,"inherit"); //ensure children not editable
 			
+			//reset range to newly calculated range
+			winselection.removeAllRanges();
+			winselection.addRange(range);
+
+			neweditable.selection.focus();
+
 			//store new values
 			this.editable = neweditable;
 		}
@@ -865,9 +876,9 @@ AXLE = function(){
 				}
 				else{
 					// caretInName() reverse numbered so caret unchanged, 
-					// but cursor needs refresh
-					//this.setCaret(this.caret);
-					this.refreshCursor();
+					// but cursor in dom needs refresh anyway
+					//this.refreshCursor();
+					this.setCaret(this.caret);
 				}
 			}
 		};
