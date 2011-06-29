@@ -684,14 +684,14 @@ AXLE = function(){
 	 * @param targetcaret
 	 */
 	AvixEditor.prototype.setFieldText = function(newtext, targetcaret){
-		if(arguments.length === 1) targetcaret = this.caret;
+		if(arguments.length === 1) var targetcaret = this.caret;
 		if(this.caretInName(targetcaret)){
 			var parentelement = (targetcaret.thingy instanceof YOURX.AttributeThingy ? this.getParent(targetcaret.thingy) : null);
 			if(parentelement){ //handle case that attribute is parented and name table needs updating
 				parentelement.renameAttribute(targetcaret.thingy.getName(),newtext);
 			}
 			else{ //just rename directly
-				targetcaret.thingy.setName(newtext);		
+				targetcaret.thingy.setName(newtext);
 			}
 		}
 		else if(this.caretInContent(targetcaret)){
@@ -776,10 +776,8 @@ AXLE = function(){
 			
 			//position cursor
 			
-			//create or load range
+			//create a new range
 			var winselection = window.getSelection();
-			winselection.removeAllRanges();
-
 			var range = document.createRange();
 			
 			//configure the range
@@ -789,11 +787,18 @@ AXLE = function(){
 			range.setEnd(anchornode, neweditable.position);
 			*/
 			
-			//remove and reset range
+			//reset range to newly calculated range
+			winselection.removeAllRanges();
 			winselection.addRange(range);
 			
 			//control which elements are editable and force focus change
 			var EDITABLEATTR = "contenteditable";
+			
+			//reset contenteditable flags in the editor tree
+			/**var rootselection = this.getBoundSelection(this.getRoot(this.caret.thingy));
+			rootselection.find(EDITABLEATTR).removeAttr(EDITABLEATTR);
+			rootselection.attr(EDITABLEATTR,"true");
+			*/
 
 			//TODO can avoid this if selections are equal
 			if(this.editable && this.editable.selection){
@@ -801,7 +806,7 @@ AXLE = function(){
 				this.editable.selection.blur();
 			}
 			neweditable.selection.attr(EDITABLEATTR,"true"); //ensure element editable
-			neweditable.selection.children().attr(EDITABLEATTR,"false"); //ensure children not editable
+			neweditable.selection.children().attr(EDITABLEATTR,"inherit"); //ensure children not editable
 			neweditable.selection.focus();
 			
 			//store new values
@@ -823,7 +828,7 @@ AXLE = function(){
 				var targeteditable = this.calculateCursor(targetcaret);
 				//remove a character from the text
 				var oldtext = this.getFieldText(targetcaret);
-				var newtext = oldtext.slice(0,targeteditable.position -1) + oldtext.slice(targeteditable.position, oldtext.length);
+				var newtext = oldtext.slice(0,targeteditable.position) + oldtext.slice(targeteditable.position+1, oldtext.length);
 				//update the field text to match
 				this.setFieldText(newtext, targetcaret);
 				//field is one character shorter
@@ -842,60 +847,6 @@ AXLE = function(){
 
 	}
 
-	/*
-	AvixEditor.prototype.deleteCaret = function(targetcaret){
-		if(arguments.length == 0){
-			targetcaret = this.caret;
-		}
-		
-		if(targetcaret){
-			
-		}
-					//supports use of 'forward delete' too
-					if(this.caretInName() || this.caretInContent()){ //in some kind of field
-						if(this.editable.position > 0){ //in middle of field
-							//remove a character from the text
-							var oldtext = this.getFieldText();
-							var newtext = oldtext.slice(0,this.editable.position -1) + oldtext.slice(this.editable.position, oldtext.length);
-							this.setFieldText(newtext);
-							//move the cursor back one position
-							this.setCaret(this.caret.thingy, this.caret.key - 1);
-						}
-						else if(this.editable.position == 0){ //at beginning of field
-							if(this.getFieldText().length == 0){ //at start of empty field
-								if(this.caretInContent()){ //it's a content field
-									var newcaret = this.getPrecedingCaret();
-									if(this.caret.thingy instanceof YOURX.ElementThingy || this.caret.thingy instanceof YOURX.AttributeThingy){
-										//just move the cursor into the name
-										this.setCaret(newcaret);
-									}
-									else if(this.caret.thingy instanceof YOURX.Text){
-										//delete the thingy
-										var parent = this.getParent(this.caret.thingy);
-										var pos = this.getPosition(this.caret.thingy);
-										parent.removeThingy(this.caret.thingy);
-										//caret where text thingy was
-										this.setCaret(newcaret);
-									}									
-								}
-								else if(this.caretInName()){ //it's a name field
-									//place the cursor before the item, then delete it
-									var newcaret = this.getPrecedingCaret();
-									var parent = this.getParent(this.caret.thingy);
-									if(parent){
-										parent.removeThingy(this.caret.thingy);										
-										if(newcaret){
-											this.setCaret(newcaret);
-										}
-									}
-								}
-							}
-						}
-					}
-
-	};
-	*/
-
 	;(function(){
 		
 		//TODO Puzzle through issue with attributes dynamically changing name during edit, 
@@ -908,8 +859,15 @@ AXLE = function(){
 			if(newtext != oldtext){
 				var growth = newtext.length - oldtext.length;
 				this.setFieldText(newtext);
-				if(this.caretInContent()){ // caretInName() reverse numbered so no increment
-					this.setCaret(this.caret.thingy, this.caret.key + growth); //setField and this may trigger a double refreshCursor call
+				if(this.caretInContent()){ 
+					//content field has been extended
+					this.setCaret(this.caret.thingy, this.caret.key + growth); 
+				}
+				else{
+					// caretInName() reverse numbered so caret unchanged, 
+					// but cursor needs refresh
+					//this.setCaret(this.caret);
+					this.refreshCursor();
 				}
 			}
 		};
@@ -929,6 +887,7 @@ AXLE = function(){
 				}
 			}				
 		};
+		
 		treelogic.element = {
 			name:{ //cursor is in the name string (key is negative)
 				patterns:{
@@ -975,7 +934,7 @@ AXLE = function(){
 					"^[A-Za-z]+$":keeppattern,
 					"=":function(){
 						this.setCaret(this.caret.thingy,0);//move to content
-					}				
+					}
 				}
 			},
 			content:{ //cursor is in value
@@ -1120,15 +1079,17 @@ AXLE = function(){
 		}
 		
 		if(patterns !== null){
+
+			//key expected to be handled - suppress browser behaviour (appending characters)
+			evt.stopPropagation();
+			evt.preventDefault();
+
 			//keys are regexp matches, values are functions 
 			for(var pattern in patterns){ //trigger function against first matching pattern and return
 				var regexp = new RegExp(pattern);
 				var matches = newtext.match(regexp);
 				if(matches && matches.length > 0){
 					
-					//key has been handled - suppress browser behaviour (appending characters)
-					evt.stopPropagation();
-					evt.preventDefault();
 					
 					//execute matching function
 					patterns[pattern].apply(this,[matches[0]]); 
@@ -1136,8 +1097,11 @@ AXLE = function(){
 					//pattern found so terminate
 					return;
 				}
-			} //fallthrough to error condition
-			throw new Error("Invalid character inserted, no matches available.");			
+			} 
+			
+			//fallthrough to error condition
+			throw new Error("Invalid character inserted, no matches available.");
+			
 		}
 		else{
 			throw new Error("No patterns available");
