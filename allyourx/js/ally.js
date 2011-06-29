@@ -182,8 +182,8 @@ ALLY = function(){
 			if(thingy instanceof YOURX.ElementThingy){
 				this.queryOpenWrapper(superq).before('&lt;<span class="xname"></span>');					
 				this.queryOpenWrapper(superq).after('&gt;');					
-				this.queryCloseWrapper(superq).before('&lt;<span class="xname"></span>');					
-				this.queryCloseWrapper(superq).after('/&gt;');
+				this.queryCloseWrapper(superq).before('&lt;/<span class="xname"></span>');					
+				this.queryCloseWrapper(superq).after('&gt;');
 			}					
 		}
 		else if (thingy instanceof YOURX.ContentThingy){
