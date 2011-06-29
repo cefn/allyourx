@@ -9,17 +9,15 @@ $(function(){
 	var textContent = "jkl";
     
 	/** N.B. Some debugging scenarios (e.g. Eclipse breakpoints) will cause browser 
-	 * window to lose focus, and therefore this will unexpectedly return null
+	 * window to lose focus, and therefore actual focused elements will unexpectedly 
+	 * return null
 	 */
 	function getDomFocus(){
-		//a recent and more widely supported alternative to document.activeElement
-		return document.querySelector(":focus");
+		return UNITTEST.editor.editable.selection;
 	}
 	
 	function emulateFocusEvent(evt){
-		//$("*[contenteditable=true]").trigger(evt);
-		//$("*:focus").trigger(evt); //CH should be focus item for all tests
-		$(getDomFocus()).trigger(evt); 
+		$(getDomFocus()).trigger(evt);
 	}
 	
 	function typeCharacters(characters){
@@ -118,22 +116,34 @@ $(function(){
 		["Create editor without grammar and find focus", function(){
 			UNITTEST.thingy = new YOURX.RootThingy(); //empty root element
 			UNITTEST.editor = new AXLE.AvixEditor(); //create editor
-			UNITTEST.editor.trackThingy(UNITTEST.thingy);
-			UNITTEST.boundq = UNITTEST.editor.getBoundSelection(UNITTEST.thingy); //bind the empty thingy
+			UNITTEST.editor.trackThingy(UNITTEST.thingy);//bind the empty thingy
+			UNITTEST.boundq = UNITTEST.editor.getBoundSelection(UNITTEST.thingy); //retrieve binding
 			UNITTEST.viewportq.append(UNITTEST.boundq); //append to the page
 			UNITTEST.editor.setCaret(UNITTEST.thingy, 0); //move caret to empty root thingy
-			UNITTEST.editable = $("*[contenteditable=true]"); //try to identify focused element
-			return UNITTEST.editable.size() === 1;
+			var descendantq = UNITTEST.editor.queryDescendantWrapper(UNITTEST.boundq);
+			return descendantq.add(getDomFocus()).size() === descendantq.size(); //check sets are the same
 		}],
-		["Keydown left angle-bracket where editable creates and focuses element name", function(){
-			typeCharacters('<');	
+		["Keydown left angle-bracket where editable creates element and places cursor in element", function(){
+			typeCharacters('<');
+			var range = window.getSelection().getRangeAt(0);
 			return 	UNITTEST.thingy.getChildren().length === 1 && 
 					UNITTEST.editor.caret.thingy == UNITTEST.thingy.getChildren()[0] &&
-					$(getDomFocus()).hasClass("xname") && 
-					$(getDomFocus()).parent().hasClass("xelement");
+					$(UNITTEST.editor.editable.selection).hasClass("xname") && 
+					$(UNITTEST.editor.editable.selection).parent().hasClass("xelement");
 		}],		
-		["Keydown alpha modifies element name", function(){
-			typeCharacters(rootName);
+		["Single typed character modifies element name and moves cursor", function(){
+			var typed = rootName.substring(0, 1);
+			typeCharacters(typed);
+			var name = UNITTEST.thingy.getChildren()[0].getName();
+			var domtext = $(UNITTEST.editor.editable.selection).text();
+			var range = window.getSelection().getRangeAt(0);
+			return name === typed && domtext == typed && 
+			range.collapsed && range.startOffset == 1 && 
+			range.startContainer == $(UNITTEST.editor.editable.selection).contents().get(0);
+		}],
+		["Remaining typed characters complete element name", function(){
+			var typed = rootName.substring(1,rootName.length);
+			typeCharacters(typed);
 			var name = UNITTEST.thingy.getChildren()[0].getName();
 			var domtext = $(UNITTEST.editor.editable.selection).text();
 			return name ===rootName && domtext == rootName;
