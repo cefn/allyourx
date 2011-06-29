@@ -3,19 +3,23 @@ $(function(){
     var UNITTEST = {}; //create namespace object for temporary unittest properties
     UNITTEST.viewportq = $("#UNITTEST"); //target this element when binding controls
 
-    var rootName = "aa";
-    var attName = "bb";
-    var childName = "cc";
-	var textContent = "dd";
+    var rootName = "abc";
+    var attName = "def";
+    var childName = "ghi";
+	var textContent = "jkl";
     
+	/** N.B. Some debugging scenarios (e.g. Eclipse breakpoints) will cause browser 
+	 * window to lose focus, and therefore this will unexpectedly return null
+	 */
 	function getDomFocus(){
 		//a recent and more widely supported alternative to document.activeElement
 		return document.querySelector(":focus");
 	}
 	
 	function emulateFocusEvent(evt){
-		$("*[contenteditable=true]").trigger(evt);
+		//$("*[contenteditable=true]").trigger(evt);
 		//$("*:focus").trigger(evt); //CH should be focus item for all tests
+		$(getDomFocus()).trigger(evt); 
 	}
 	
 	function typeCharacters(characters){
@@ -131,7 +135,16 @@ $(function(){
 		["Keydown alpha modifies element name", function(){
 			typeCharacters(rootName);
 			var name = UNITTEST.thingy.getChildren()[0].getName();
-			return name ===rootName;
+			var domtext = $(UNITTEST.editor.editable.selection).text();
+			return name ===rootName && domtext == rootName;
+		}],
+		["Keydown of invalid character not inserted", function(){
+			var err;
+			try{ typeCharacters('"');} catch(thrown){err=thrown;}
+			var name = UNITTEST.thingy.getChildren()[0].getName();
+			var domtext = $(UNITTEST.editor.editable.selection).text();
+			return name ===rootName && domtext == rootName && 
+			err.message === "Invalid character inserted, no matches available.";
 		}],
 		["Keydown space creates attribute and focuses attribute name", function(){
 			typeCharacters(' ');
@@ -219,6 +232,7 @@ $(function(){
 					$(getDomFocus()).hasClass("xdescend") && 
 					$(getDomFocus()).parent().hasClass("xelement");
 		}],
+		/*
 		["Keydown right angle-bracket moves focus to parent when descendants exhausted", function(){
 			return false;
 		}],
@@ -255,6 +269,7 @@ $(function(){
 		["Click after element open tag in an element sets focus in descendant area", function(){
 			return false;
 		}],
+		*/
 	]);
 });
 
