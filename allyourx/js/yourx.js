@@ -1533,6 +1533,16 @@ YOURX = function(){
 		return this.getMetadata(thingy)['parent'];
 	};
 
+	/** Consider caching the root in metadata as an acceleration 
+	 * if this function is called a lot. */
+	ThingyTracker.prototype.getRoot = function(thingy){
+		var parent;
+		var pointer = thingy;
+		while((parent=this.getParent(pointer)) != null){
+			pointer = parent;
+		}
+		return pointer;
+	};
 
 	/** Todo consider efficiency of caching by monitoring child insertion/removal. 
 	 * Todo consider possibility of normalising position and 'key' into YOURX ThingyTracker conventions
