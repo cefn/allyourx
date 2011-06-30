@@ -500,8 +500,8 @@ AXLE = function(){
 	};
 	
 	AvixEditor.prototype.precedingNameKey = function(targetcaret){
-		if(targetcaret.key > - targetcaret.thingy.getName().length){
-			return targetcaret.key -1;
+		if(targetcaret.key >= - targetcaret.thingy.getName().length){
+			return targetcaret.key - 1;
 		}
 		return null;
 	};
@@ -514,7 +514,7 @@ AXLE = function(){
 	};
 
 	AvixEditor.prototype.precedingContentKey = function(targetcaret){
-		if(targetcaret.key > 1){
+		if(targetcaret.key > 0){
 			return targetcaret.key -1;
 		}
 		return null;
@@ -594,10 +594,10 @@ AXLE = function(){
 		}
 		/* handle cases where current caret type is exhausted */
 		else if( inname || //at start of attribute or element
-				(incontent && targetcaret.thingy instanceof TextThingy)){ //at start of text
-			return {thingy:this.getParent(targetcaret.thingy),key:this.getKey(targetcaret.thingy)}; //ascend to parent
+				(incontent && targetcaret.thingy instanceof YOURX.TextThingy)){ //at start of text
+			return {thingy:this.getParent(targetcaret.thingy),key:this.getPosition(targetcaret.thingy)}; //ascend to parent
 		}
-		else if( incontent && targetcaret.thingy instanceof AttributeThingy){ //at start of content
+		else if( incontent && targetcaret.thingy instanceof YOURX.AttributeThingy){ //at start of content
 			return {thingy:targetcaret.thingy, key:-1}; //go to end of name
 		}
 		else if( indescendants ){ //at start of children
@@ -826,35 +826,53 @@ AXLE = function(){
 	};
 	
 	//TODO consider use of CTRL to override non-empty protection
+	//TODO consider use of ranges to indicate staged deletions arising
+	//(deleting element means deleting children and attributes)
 	//TODO simplify using preceding/following/sibling caret logic
 	AvixEditor.prototype.deleteCaret = function(targetcaret){
 		
+		var newcaret = null;
+				
+		//if no caret specified then use current editor caret
 		if(arguments.length == 0){
 			targetcaret = this.caret;
 		}
 				
+		
 		if(this.caretInName(targetcaret) || this.caretInContent(targetcaret)){
 			//it's an editable character field
-			if(this.getFieldText(targetcaret).length > 0){
-				var targeteditable = this.calculateCursor(targetcaret);
-				//remove a character from the text
-				var oldtext = this.getFieldText(targetcaret);
-				var newtext = oldtext.slice(0,targeteditable.position) + oldtext.slice(targeteditable.position+1, oldtext.length);
-				//update the field text to match
-				this.setFieldText(newtext, targetcaret);
-				//field is one character shorter
-				//negatively-indexed name carets will reduce by one
-				if(this.caretInName(targetcaret)){
-					return getFollowingCaret(targetcaret);
-				}
-			}
-						
+			var targeteditable = this.calculateCursor(targetcaret);
+			//remove a character from the text
+			var oldtext = this.getFieldText(targetcaret);
+			var newtext = oldtext.slice(0,targeteditable.position) + oldtext.slice(targeteditable.position+1, oldtext.length);
+			//update the field text to match
+			this.setFieldText(newtext, targetcaret);
+		}
+		
+		//if caret not in a field, or if text field has been made empty
+		//then remove thingy from tree
+		if(	this.caretInAttributes(targetcaret) || 
+			this.caretInDescendants(targetcaret) ||
+			((targetcaret.thingy instanceof YOURX.TextThingy) && (this.getFieldText(targetcaret).length === 0))){
+			//work out new caret position and delete item at old position
+			newcaret = this.getPrecedingCaret(targetcaret); 
+			this.getParent(targetcaret.thingy).removeThingy(targetcaret.thingy); 
 		}
 
-		//TODO CH create deletion behaviour for elements and attributes
-
-		//fall through to default decremented caret
-		return targetcaret;
+		//lazy populate newcaret
+		if(newcaret === null){
+			if(this.caretInName(targetcaret)){
+				//field is one character shorter
+				//negatively-indexed name carets will reduce by one
+				newcaret = this.getFollowingCaret(targetcaret)
+			}
+			else{
+				//fall through to default caret
+				newcaret = targetcaret;
+			}
+		}
+		
+		return newcaret;
 
 	}
 
@@ -1007,13 +1025,31 @@ AXLE = function(){
 			backspace:{
 				name:"Backspace",
 				action:function(){
-					this.setCaret(this.deleteCaret(this.getPrecedingCaret(this.caret)));
+					var precedingcaret = this.getPrecedingCaret(this.caret);
+					if(precedingcaret !== null){
+						var newcaret = this.deleteCaret(precedingcaret);
+						if(newcaret !== null){
+							this.setCaret(newcaret);
+						}
+						else{
+							throw new Error("No caret returned by deleteCaret()");
+						}
+					}
+					else{
+						throw new Error("No caret returned by getPrecedingCaret()");
+					}
 				}
 			},
 			del:{
 				name:"Delete",
-				action:function(){ //forward delete not yet implemented
-					this.setCaret(this.deleteCaret(this.caret));
+				action:function(){
+					var newcaret = this.deleteCaret(this.caret); 
+					if(newcaret !== null){
+						this.setCaret(newcaret);
+					}
+					else{
+						throw new Error("No caret returned by deleteCaret()");
+					}
 				}
 			},
 			tab:{name:"Tab"},enter:{name:"Enter"},shift:{name:"Shift"},ctrl:{name:"Control"},alt:{name:"Alt"},escape:{name:"Escape"},
