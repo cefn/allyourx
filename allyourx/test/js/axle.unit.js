@@ -141,6 +141,21 @@ $(function(){
 			range.collapsed && range.startOffset == 1 && 
 			range.startContainer == $(UNITTEST.editor.editable.selection).contents().get(0);
 		}],
+		["Backspace makes element name empty", function(){
+			typeControlKey("Backspace");
+			var name = UNITTEST.thingy.getChildren()[0].getName();
+			return name === "";
+		}],
+		["Single typed character modifies element name and moves cursor", function(){
+			var typed = rootName.substring(0, 1);
+			typeCharacters(typed);
+			var name = UNITTEST.thingy.getChildren()[0].getName();
+			var domtext = $(UNITTEST.editor.editable.selection).text();
+			var range = window.getSelection().getRangeAt(0);
+			return name === typed && domtext == typed && 
+			range.collapsed && range.startOffset == 1 && 
+			range.startContainer == $(UNITTEST.editor.editable.selection).contents().get(0);
+		}],
 		["Remaining typed characters complete element name", function(){
 			var typed = rootName.substring(1,rootName.length);
 			typeCharacters(typed);
@@ -199,6 +214,27 @@ $(function(){
 					$(getDomFocus()).hasClass("xdescend") && 
 					$(getDomFocus()).parent().hasClass("xelement");
 		}],
+		["Text insertion adds a text thingy", function(){
+			typeCharacters(textContent);
+			var childthingies, textthingy;
+			return (childthingies = UNITTEST.thingy.getChildren()[0].getChildren()).length === 1 &&
+					(textthingy = childthingies[0]) instanceof YOURX.TextThingy &&
+					textthingy.value === textContent;
+		}],		
+		["Backspaces delete text content", function(){
+			for(var count = 0; count < textContent.length - 1; count++){
+				typeControlKey("Backspace");				
+			}
+			var childthingies, textthingy;
+			return (childthingies = UNITTEST.thingy.getChildren()[0].getChildren()).length === 1 &&
+					(textthingy = childthingies[0]) instanceof YOURX.TextThingy &&
+					textthingy.value === textContent.substring(0,1);
+		}],
+		["Final backspace makes text thingy zero length, so it is removed", function(){
+			typeControlKey("Backspace");
+			var childthingies;
+			return (childthingies = UNITTEST.thingy.getChildren()[0].getChildren()).length === 0;
+		}],
 		["Element key sequence creates additional descendant", function(){
 			typeCharacters("<" + childName + ">");
 			var child,grandchild;
@@ -243,6 +279,9 @@ $(function(){
 					$(getDomFocus()).parent().hasClass("xelement");
 		}],
 		/*
+		["Element key sequence creates additional descendant even when cursor inside text element", function(){
+			return false;
+		}],
 		["Keydown right angle-bracket moves focus to parent when descendants exhausted", function(){
 			return false;
 		}],
