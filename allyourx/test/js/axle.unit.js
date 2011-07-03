@@ -141,6 +141,18 @@ $(function(){
 			range.collapsed && range.startOffset == 1 && 
 			range.startContainer == $(UNITTEST.editor.editable.selection).contents().get(0);
 		}],
+		["Left navigation key moves cursor back one character", function(){
+			typeControlKey("Arrow Left");
+			return 
+				UNITTEST.editor.caret.thingy === UNITTEST.thingy.getChildren()[0] && 
+				UNITTEST.editor.caret.key === 0;
+		}],
+		["Right navigation key moves cursor forward one character", function(){
+			typeControlKey("Arrow Right");
+			return 
+				UNITTEST.editor.caret.thingy === UNITTEST.thingy.getChildren()[0] && 
+				UNITTEST.editor.caret.key === 1;
+		}],
 		["Backspace makes element name empty", function(){
 			typeControlKey("Backspace");
 			var name = UNITTEST.thingy.getChildren()[0].getName();
@@ -279,6 +291,10 @@ $(function(){
 					$(getDomFocus()).parent().hasClass("xelement");
 		}],
 		/*
+		["Mouse click moves cursor", function(){
+		}],
+		["Backspace after element deletes element", function(){
+		}],
 		["Element key sequence creates additional descendant even when cursor inside text element", function(){
 			return false;
 		}],
