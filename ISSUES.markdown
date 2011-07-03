@@ -8,18 +8,26 @@ In all content
 Between attributes
 ...unhandled character (only space or > allowed) not intercepted and browser inserts character
 
+Everywhere
+...backspace and delete should only delete when following... or preceding... caret are within the same range (same node and field)
+
 Within text
+...left arrow at zero character doesn't move to parent
 ...deleting last character doesn't remove text thingy
 ...inserting [<] doesn't trigger sibling element creation
 
 Within names
 ...deleting zeroth character of element/attribute doesn't delete element/attribute
+...blank names are considered valid, but should be impossible 
 
 Within element name 
+...cannot self-close
+...empty elements aren't automatically self-closed
 ...no mechanism for controlling switch between self-closing or paired tags
 
 Within element content
-...cannot open an element by inserting [<] while typing in a text element
+...cannot exit an element by typing[>] in text element or at element root
+...text node creation routine is triggered even when text node exists
 
 Design questions
 ...make whole tree contenteditable and monitor cursor location changes for round-tripping? 
