@@ -570,6 +570,12 @@ AXLE = function(){
 	};
 	
 	AvixEditor.prototype.getPrecedingCaret = function(targetcaret){
+
+		//if no caret specified then use current editor caret
+		if(arguments.length == 0){
+			targetcaret = this.caret;
+		}
+				
 		/*identify which type caret has*/
 		var inname = this.caretInName(targetcaret);
 		var incontent = (inname) ? false : this.caretInContent(targetcaret);
@@ -615,6 +621,12 @@ AXLE = function(){
 	};
 	
 	AvixEditor.prototype.getFollowingCaret = function(targetcaret){
+		
+		//if no caret specified then use current editor caret
+		if(arguments.length == 0){
+			targetcaret = this.caret;
+		}
+				
 		/*identify which type caret has*/
 		var inname = this.caretInName(targetcaret);
 		var incontent = (inname) ? false : this.caretInContent(targetcaret);
@@ -949,9 +961,19 @@ AXLE = function(){
 				{ 
 					//no keeppattern
 					"[^<]": function(match){ //also allow text in an element tag
-						var tx = new YOURX.TextThingy(match);
-						this.caret.thingy.addThingy(tx);
-						this.setCaret(tx, 1);
+						//try to find text node first
+						var children,textchild;
+						if((children=this.caret.thingy.getChildren()).length > 0 && 
+							children[0] instanceof YOURX.TextThingy){
+							//TODO - figure out adding character at position zero
+							textchild = children[0];
+							this.setCaret(textchild, 1);
+						}
+						else{
+							textchild = new YOURX.TextThingy(match);
+							this.caret.thingy.addThingy(textchild);
+							this.setCaret(textchild, 1);
+						}
 					}
 				})
 			}
@@ -1008,19 +1030,39 @@ AXLE = function(){
 		var nav = { //handlers for symbolically named operations on the document
 			left:{
 				name:"Arrow Left",
-				action:function(){ var newcaret; return (newcaret = this.getPrecedingCaret()) != null ? setCaret(newcaret) : null; }
+				action:function(){ 
+					var newcaret = this.getPrecedingCaret();
+					if(newcaret !== null ) {
+						this.setCaret(newcaret); 
+					}
+				}
 			},
 			right:{
 				name:"Arrow Right",
-				action:function(){ var newcaret; return (newcaret = this.getFollowingCaret()) != null ? setCaret(newcaret) : null; }
+				action:function(){ 
+					var newcaret = this.getFollowingCaret();
+					if(newcaret !== null ) {
+						this.setCaret(newcaret); 
+					}
+				}
 			},
 			up:{
 				name:"Arrow Up",
-				action:function(){ var newcaret; return (newcaret = this.getPrecedingSiblingCaret()) != null ? setCaret(newcaret) : null; }
+				action:function(){ 
+					var newcaret = this.getPrecedingSiblingCaret();
+					if(newcaret !== null ) {
+						this.setCaret(newcaret); 
+					}
+				}
 			},
 			down:{
 				name:"Arrow Down",
-				action:function(){ var newcaret; return (newcaret = this.getFollowingSiblingCaret()) != null ? setCaret(newcaret) : null; }
+				action:function(){ 
+					var newcaret = this.getFollowingSiblingCaret();
+					if(newcaret !== null ) {
+						this.setCaret(newcaret); 
+					}
+				}
 			},
 			backspace:{
 				name:"Backspace",
