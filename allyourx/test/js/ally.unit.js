@@ -7,9 +7,9 @@ $(function(){
 	        return UNITTEST.rootthingy.getChildren().length != 0;
 	    }],
 		["bindThingy adds some text nodes", function(){
-	        UNITTEST.editor = new ALLY.RawEditor();
-			UNITTEST.editor.trackThingy(UNITTEST.rootthingy);
-	        UNITTEST.boundq = UNITTEST.editor.getBoundSelection(UNITTEST.rootthingy);
+	        UNITTEST.view = new ALLY.XmlView();
+			UNITTEST.view.trackThingy(UNITTEST.rootthingy);
+	        UNITTEST.boundq = UNITTEST.view.getBoundSelection(UNITTEST.rootthingy);
 	        UNITTEST.viewportq.append(UNITTEST.boundq);
 	        var counttext = UNITTEST.viewportq.find(".xtext").size();
 	        return counttext === 14;
@@ -33,22 +33,22 @@ $(function(){
 		["Element name is in open and close tag of editor", function(){
 			UNITTEST.firstchild = UNITTEST.rootthingy.getChildren()[0];
 			var firstname = UNITTEST.firstchild.getName();
-			var nameq = UNITTEST.editor.queryNameWrapper(UNITTEST.editor.getBoundSelection(UNITTEST.firstchild));
+			var nameq = UNITTEST.view.queryNameWrapper(UNITTEST.view.getBoundSelection(UNITTEST.firstchild));
 			nameq = nameq.filter(function(){ return $(this).text()===firstname; });
 			return nameq.size() === 2;
 	    }], 
 		["Element name change modifies both open and close tag of SpanEditor", function(){
 			var newname = "something";
 			UNITTEST.firstchild.setName(newname);
-			var nameq = UNITTEST.editor.queryNameWrapper(UNITTEST.editor.getBoundSelection(UNITTEST.firstchild));
+			var nameq = UNITTEST.view.queryNameWrapper(UNITTEST.view.getBoundSelection(UNITTEST.firstchild));
 			nameq = nameq.filter(function(){ return $(this).text()===newname; });
 			return nameq.size() === 2;
 	    }], 
 		["bindThingy: Removing attribute nodes removes all descendants bound to attributes", function(){
 	        UNITTEST.boundq.find(".xattribute").each(function(){
 				var thisq = $(this);
-	            var attthingy = UNITTEST.editor.getBoundThingy(thisq);
-				var elthingy = UNITTEST.editor.getParent(attthingy);
+	            var attthingy = UNITTEST.view.getBoundThingy(thisq);
+				var elthingy = UNITTEST.view.getParent(attthingy);
 	            elthingy.removeAttribute(attthingy);
 	        });
 	        return UNITTEST.boundq.find(".xattribute").length === 0;
