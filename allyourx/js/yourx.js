@@ -234,6 +234,38 @@ YOURX = function(){
 				}
 			}
 		},
+		thingy2xml:function(thingy) {
+			var thingystring = "";
+			if(thingy instanceof ElementThingy){
+				thingystring += '<' + thingy.getName();
+				var atts = thingy.getAttributes();
+				for(var attname in atts){
+					thingystring += ' ' + ThingyUtil.thingy2xml(thingy.getAttributeThingy(attname));
+				}
+				if(thingy.getChildren().length > 0){
+					thingystring += '>';
+					thingy.getChildren().forEach(function(childthingy){ 
+						thingystring += ThingyUtil.thingy2xml(childthingy);
+					});
+					thingystring += '</' + thingy.getName() + '>';
+				}
+				else{
+					thingystring += '/>';
+				}						
+			}
+			else if(thingy instanceof AttributeThingy){
+				thingystring += thingy.getName() + '="' + thingy.getValue() + '"';
+			}
+			else if(thingy instanceof TextThingy){
+				thingystring += thingy.getValue();
+			}
+			else if(thingy instanceof RootThingy){
+				thingy.getChildren().forEach(function(childthingy){ 
+					thingystring += ThingyUtil.thingy2xml(childthingy);
+				});
+			}
+			return thingystring;
+		},
 		url2node:function(url){
 			var xhttp;
             if (window.XMLHttpRequest) {
@@ -436,7 +468,7 @@ YOURX = function(){
 		};
 	}
 	Thingy.prototype = {
-		toString:function(){ return "Generic Thingy - toString should be implemented.";},
+		toString:function(){ return "toString() not yet implemented";},
 		serialiser:new XMLSerializer(),
 		/** Always returns existing value for key. Overwrites new value if provided. Purpose similar to JQuery data() function. */
 		data:function(key, newval){
@@ -692,12 +724,13 @@ YOURX = function(){
 		this.addThingy(ThingyUtil.dom2thingy(node));
 	};
 	
+	//TODO CH introduce a ContainerThingy#hasChildren() method which returns strict boolean and replace getChildren().length globally
+	
 	/** Represents a content item which simply stores a value, such as an Attribute or a Text node. 
 	 * @param {Object} value The value to store
 	 */
 	function ContentThingy(value){
 		this.value = value;
-		this.setvaluelisteners = [];
 		Thingy.apply(this,[]);
 	}
 	ContentThingy.prototype = new Thingy();
@@ -949,7 +982,7 @@ YOURX = function(){
 			var onremove = arguments[1];
 			this.bind('attributeremoved',onremove);
 		}
-		return this.attributes;				
+		return this.attributes;		
 	};
 	/** Used to store a descendant Thingy (ElementThingy,TextThingy or AttributeThingy). */
 	ElementThingy.prototype.addThingy = function(){
