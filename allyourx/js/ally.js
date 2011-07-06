@@ -1,53 +1,67 @@
 /*
- * Various functions defined in a a private scope, 
- * with public functions served under the ALLY namespace.
+ * Various utility classes providing functionality for real-time updating views
+ * of Thingy Trees, defined in a a private scope with public functions served 
+ * under the ALLY namespace.
+ * 
  */
 ALLY = function(){
 	
-	/** Abstract definition of an editor, which coordinates between an in-memory
-	 * Thingy tree, and an in-page DOM based representation. The definition relies 
-	 * on the Sizzle engine to define sets of page resources which are bound
-	 * to subtrees (provided through JQuery sets for convenience). 
+	/** Abstract definition of a View. Subclasses are expected to coordinate between an in-memory
+	 * Thingy tree, and an in-page DOM based representation. Definitions can rely on the Sizzle engine 
+	 * to select sets of page resources which are bound to subtrees. The current implementation uses 
+	 * JQuery for convenience, but the use of Sizzle directly could be more lightweight in suitable 
+	 * cases. 
 	 */
-	function Editor(){
+	function View(){
 		YOURX.ThingyTracker.apply(this,arguments);
 	}
-	Editor.prototype = new YOURX.ThingyTracker();
+	View.prototype = new YOURX.ThingyTracker();
 	
 	//TODO consider moving bind functions into ThingyUtil
+	//where they can be shared more generally
 	
-	/** Acquire listener implementations from YOURX.Thingy */
-	Editor.prototype.bind = YOURX.Thingy.prototype.bind;
-	Editor.prototype.unbind = YOURX.Thingy.prototype.unbind;
+	//TODO CH this was unused? What was it intended for? Undo levels?
+	/*
+	//Acquire listener implementations from YOURX.Thingy 
+	View.prototype.bind = YOURX.Thingy.prototype.bind; 
+	View.prototype.unbind = YOURX.Thingy.prototype.unbind;
+	*/
 	
-	
-	/** Abstract definition for any editor which monitors a tree node for changes, 
+	/** Abstract definition for any View which monitors a tree node for changes, 
 	 * keeping its DOM structures in sync. Recursively subscribes to events 
 	 * from all new descendant nodes as subtrees appear. This implementation triggers 
 	 * factory methods to create new DOM structures, which should be overridden by subclasses.
 	 */
-	function RecursiveEditor(){
-		Editor.apply(this,arguments);
+	function RecursiveView(){
+		View.apply(this,arguments);
 	}
-	RecursiveEditor.prototype = new Editor();
+	RecursiveView.prototype = new View();
 
-	/** Creates a new set of DOM elements to represent the specified Thingy in the Editor.
+	/** Should create a new set of DOM elements to represent the specified Thingy in the View.
 	 * @param {Thingy} thingy The thingy to create elements for
 	 * @return A JQuery set of elements not yet attached to a DOM. 
 	 */
-	RecursiveEditor.prototype.boundSelectionImpl = function(thingy){
-		throw new YOURX.UnsupportedException("The boundSelectionImpl() function must be overriden to implement an ALLY.RecursiveEditor");
+	RecursiveView.prototype.boundSelectionImpl = function(thingy){
+		throw new YOURX.UnsupportedException("The boundSelectionImpl() function must be overriden to implement an ALLY.RecursiveView");
 	};
-	
-	RecursiveEditor.prototype.getBoundSelection = function(thingy){
+
+	/** Retrieves the DOM selection matching the provided thingy. */
+	RecursiveView.prototype.getBoundSelection = function(thingy){
 		return this.getMetadata(thingy)["boundselection"];
 	};
 
-	RecursiveEditor.prototype.getBoundThingy = function(selection){
+	/** Retrieves the thingy matching the provided DOM selection. */
+	RecursiveView.prototype.getBoundThingy = function(selection){
 		return selection.data("xthingy");
 	};
 	
-	RecursiveEditor.prototype.trackThingy = function(thingy, data){
+	/** Starts tracking an individual Thingy. Creates corresponding content for the 
+	 * DOM, makes a cross-referenced record of both DOM and Thingy and then 
+	 * hands off to superclass implementation to wire up insertion, deletion and change events. 
+	 * @param thingy The thingy to track
+	 * @param data An optional data structure argument used for bootstrapping internally to the library
+	 */
+	RecursiveView.prototype.trackThingy = function(thingy, data){
 		var boundq = this.boundSelectionImpl(thingy); //create control
 		//TODO, should caret be stored instead?
 		boundq.data("xthingy",thingy); //store thingy reference in control
@@ -56,17 +70,26 @@ ALLY = function(){
 			data = {};
 		}
 		data["boundselection"] = boundq;//store control reference against thingy metadata
-		return Editor.prototype.trackThingy.apply(this,[thingy, data]); 
+		return View.prototype.trackThingy.apply(this,[thingy, data]); 
 	};
 
-	RecursiveEditor.prototype.untrackThingy = function(thingy){
+	/** Stops tracking an individual Thingy. Tidies up the content and records 
+	 * associated with it and stops listening for future events.
+	 * @param thingy The thingy to stop tracking.
+	 */
+	RecursiveView.prototype.untrackThingy = function(thingy){
 		var boundq = this.getBoundSelection(thingy);
-		Editor.prototype.untrackThingy.apply(this,arguments);
+		View.prototype.untrackThingy.apply(this,arguments);
 		boundq.remove();
 	};
 			
-	RecursiveEditor.prototype.childAdded = function(parent,child,childidx){
-		Editor.prototype.childAdded.apply(this, arguments); //creates bound selection
+	/** Triggered when a new child is added to a tracked Thingy. 
+	 * @param parent The parent thingy to which the child is being added
+	 * @param child The new child thingy
+	 * @param childidx The child's new position
+	 * */
+	RecursiveView.prototype.childAdded = function(parent,child,childidx){
+		View.prototype.childAdded.apply(this, arguments); //creates bound selection
 		var childq = this.getBoundSelection(child);
 		var pos = this.getPosition(child);
 		var targetq = null;
@@ -83,8 +106,12 @@ ALLY = function(){
 		}
 	};
 
-	RecursiveEditor.prototype.attributeAdded = function(parent,att){ //attribute appeared
-		Editor.prototype.attributeAdded.apply(this, arguments); //track as normal
+	/** Triggered when a new attribute is added to a tracked Thingy. 
+	 * @param parent The parent thingy to which the attribute is being added
+	 * @param child The new attribute thingy
+	 * */
+	RecursiveView.prototype.attributeAdded = function(parent,att){ //attribute appeared
+		View.prototype.attributeAdded.apply(this, arguments); //track as normal
 		var targetq = this.queryOpenWrapper(this.getBoundSelection(parent));
 		targetq.append(this.getBoundSelection(att));
 		if(targetq.size() !== 1){
@@ -92,8 +119,13 @@ ALLY = function(){
 		}			
 	};
 			
-	RecursiveEditor.prototype.valueChanged = function(thingy,newvalue,oldvalue){
-		Editor.prototype.valueChanged.apply(this, arguments); //track as normal
+	/** Triggered when a the content of a Thingy changes (YOURX.TextThingy or YOURX.AttributeThingy). 
+	 * @param thingy The thingy whose content is changed
+	 * @param newvalue The new content
+	 * @param oldvalue The old content
+	 * */
+	RecursiveView.prototype.valueChanged = function(thingy,newvalue,oldvalue){
+		View.prototype.valueChanged.apply(this, arguments); //track as normal
 		var targetq = this.queryContentWrapper(this.getBoundSelection(thingy));
 		targetq.text(newvalue);
 		if(targetq.size() !== 1){
@@ -101,19 +133,20 @@ ALLY = function(){
 		}						
 	};	
 	
-	/** A RecursiveEditor whose factory methods create class-annotated spans
+	/** A RecursiveView whose factory methods create class-annotated spans
 	 * as the structural elements corresponding with individual Thingies in the DOM.
 	 */
-	function StyledEditor(){
-		RecursiveEditor.apply(this,arguments);
+	function StyledView(){
+		RecursiveView.apply(this,arguments);
 	};
-	StyledEditor.prototype = new RecursiveEditor();
+	StyledView.prototype = new RecursiveView();
+	
 	/** Constructs nested spans with class annotations representing 
 	 * the type of the specified Thingy, then recursively constructs required
 	 * spans for all descendants.
 	 * @param {Object} thingy
 	 */
-	StyledEditor.prototype.boundSelectionImpl = function(thingy){
+	StyledView.prototype.boundSelectionImpl = function(thingy){
 		var elq = $("<span/>");			
 
 		//bind thingy and add structural elements
@@ -154,29 +187,29 @@ ALLY = function(){
 		return elq;
 	};
 	
-	StyledEditor.prototype.queryContentWrapper = function(elq){
+	StyledView.prototype.queryContentWrapper = function(elq){
 		return elq.children().filter(".xcontent");
 	};
-	StyledEditor.prototype.queryDescendantWrapper = function(elq){
+	StyledView.prototype.queryDescendantWrapper = function(elq){
 		return elq.children().filter(".xdescend");
 	};
-	StyledEditor.prototype.queryOpenWrapper = function(elq){
+	StyledView.prototype.queryOpenWrapper = function(elq){
 		return elq.children().filter(".xopen");
 	};
-	StyledEditor.prototype.queryCloseWrapper = function(elq){
+	StyledView.prototype.queryCloseWrapper = function(elq){
 		return elq.children().filter(".xclose");
 	};
 	
-	function RawEditor(){
-		StyledEditor.apply(this,arguments);
+	function XmlView(){
+		StyledView.apply(this,arguments);
 	}
-	RawEditor.prototype = new StyledEditor();
+	XmlView.prototype = new StyledView();
 	/** Add xraw class and contentEditable behaviour to content elements
 	 * @param {Object} thingy
 	 * @param {Object} descend
 	 */
-	RawEditor.prototype.boundSelectionImpl = function(thingy){
-		var superq = StyledEditor.prototype.boundSelectionImpl.apply(this,arguments);
+	XmlView.prototype.boundSelectionImpl = function(thingy){
+		var superq = StyledView.prototype.boundSelectionImpl.apply(this,arguments);
 		superq.addClass("xraw");
 		if(thingy instanceof YOURX.ContainerThingy){
 			if(thingy instanceof YOURX.ElementThingy){
@@ -196,22 +229,23 @@ ALLY = function(){
 	};
 
 	//TODO: Eliminate need to call getBoundSelection for queryXWrapper functions
-	//TODO: Promote common name wrapper functionality into StyledEditor
+	//TODO: Promote common name wrapper functionality into StyledView
 	
 	//TODO ensure getValue/setValue in ThingyTracker matches getName/setName in behaviour
 
 	/** Only works for NamedThingy subclasses. */
-	RawEditor.prototype.queryNameWrapper = function(elq){
+	XmlView.prototype.queryNameWrapper = function(elq){
 		return elq.children().filter(".xname");
 	};
 
-	RawEditor.prototype.nameChanged = function(thingy,name){
-		StyledEditor.prototype.nameChanged.apply(this, arguments);
+	/** Handle situation where attribute or element names change. */
+	XmlView.prototype.nameChanged = function(thingy,name){
+		StyledView.prototype.nameChanged.apply(this, arguments);
 		var boundq = this.getBoundSelection(thingy);
 		var nameq = this.queryNameWrapper(boundq);
-		nameq.text(name); //set the text in the name spans
+		nameq.text(name); //set the text in the name span(s)
 	};
-		
+			
 	/*
 	function getAnnotationNames(){
 		return ['a:label','a:help','a:xpathselect','a:tabindex']; //incrementally support use name, type and ordinary facets from RelaxNG
@@ -219,7 +253,7 @@ ALLY = function(){
 	*/
 	
 	return eval(YOURX.writeScopeExportCode([
-		'RecursiveEditor', 'StyledEditor', 'RawEditor']
+		'RecursiveView', 'StyledView', 'XmlView']
 	));	
 	
 }();
