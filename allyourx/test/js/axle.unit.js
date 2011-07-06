@@ -27,6 +27,7 @@ $(function(){
 			evt.which = characters.charCodeAt(idx);
 			emulateFocusEvent(evt);
 		}
+		return;
 	}
 	
 	function typeControlKey(controlName){
@@ -278,6 +279,26 @@ $(function(){
 					UNITTEST.editor.caret.key === textContent.length &&
 					$(getDomFocus()).hasClass("xcontent") && 
 					$(getDomFocus()).parent().hasClass("xtext");
+		}],
+		["Xml dump produces correct string", function(){
+			var xmlstring = YOURX.ThingyUtil.thingy2xml(UNITTEST.thingy);
+			return xmlstring === '<abc def=""><ghi>jkl</ghi></abc>';
+		}],
+		["Left navigation key moves cursor back one character", function(){
+			var textthingy = UNITTEST.editor.caret.thingy;
+			var textkey = UNITTEST.editor.caret.key;
+			typeControlKey("Arrow Left");
+			return 
+				UNITTEST.editor.caret.thingy === textthingy && 
+				UNITTEST.editor.caret.key === textkey - 1;
+		}],
+		["Right navigation key moves cursor forward one character", function(){
+			var textthingy = UNITTEST.editor.caret.thingy;
+			var textkey = UNITTEST.editor.caret.key;
+			typeControlKey("Arrow Right");
+			return 
+				UNITTEST.editor.caret.thingy === textthingy && 
+				UNITTEST.editor.caret.key === textkey + 1;
 		}],
 		["Keydown right angle-bracket moves focus beyond close tag to parent", function(){
 			typeCharacters(">");
