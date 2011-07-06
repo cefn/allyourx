@@ -23,6 +23,19 @@
 				session.boundq = session.editor.getBoundSelection(session.thingy); //grab the ui binding 
 				session.viewportq.append(session.boundq); //append to the page
 				session.editor.setCaret(session.thingy, 0); //move editor focus to root
+				var evtHandler = function(){
+					window.setTimeout(function(){
+						$("#caretthingy").contents().remove();
+						$("#caretkey").contents().remove();
+						if(session.editor.caret.thingy instanceof YOURX.Thingy){
+							$("#caretthingy").text(YOURX.ThingyUtil.thingy2xml(session.editor.caret.thingy));
+							$("#caretkey").text(session.editor.caret.key);							
+						}
+					}, 0);
+				}
+				$("*").keypress(evtHandler);
+				$("*").keydown(evtHandler);
+				$("*").mouseup(evtHandler);
 			});
         //]]>		
 	</script>
@@ -34,5 +47,7 @@
     		This editor file is used for interactive testing only occasionally and can therefore be well behind HEAD. 
     	</p>
     	<div id="editor"></div>
+    	<div id="caretthingy"></div>
+    	<div id="caretkey"></div>
     </body>
 </html>
