@@ -1,26 +1,26 @@
-/** AXLE is the home for components coordinating the Schema (YOURX) and Editor (ALLY) libraries to 
- * make schema-driven editors.
+/** AXLE is the home for components coordinating the Schema (YOURX) and View (ALLY) libraries, adding the handling of mouse
+ * and keyboard events to create a schema-driven editor.
  *  
  * OperationCaret provides a logic 'model' for schema driven editing, indicating what operations are available. 
  * It incorporates conventions for representing _focus_ and _change operations_ in trees of Thingies.
  * 
- * AvixEditor is an example 'view' extending ALLY.RawEditor with smart autocompletion behaviours driven by keyboard text entry. 
+ * AvixEditor is an example editor extending ALLY.XmlView with smart autocompletion behaviours driven by keyboard text entry. 
  * It draws heavily on the YOURX.ThingyTracker tree-monitoring, querying and metadata storage structure.
  * 
- * Focus within a tree is represented by a caret pair, combining a thingy, and a key. 
+ * Focus within a tree is represented by a caret pair, combining a thingy, and a key.
  * The Thingy is the item in focus and the key represents the relative position of the cursor within the thingy.
  * Keys are drawn from a set combining the integer number line and the space of all possible text strings, which map as follows.
  * 
  * Elements :
- * 	Integers	[ Zero or positive => child position in descendants] [ Negative => name]
+ * 	Integers	[ Negative => name] [ Zero or positive => child position in descendants]
  * 	Strings		[QName => Named attribute in open tag] [special value '>' => end of open tag]
  * 
  * Attribute :   
- * 	Integers	[ Zero or positive => character position in value] [ Negative => name] 
+ * 	Integers	[ Negative => name] [ Zero or positive => character position in value] 
  *	Strings		[ N/A ]
  * 
  * Text :
- * 	Integers	[ Zero or positive => character position in value] [ Less than zero => N/A ]
+ * 	Integers	[ Less than zero => N/A ] [ Zero or positive => character position in value]
  * 	Strings		[ N/A ] 
  * 
  * Operations are provided to define relations between caret positions, such as preceding and following.
@@ -33,7 +33,7 @@ AXLE = function(){
 	/** 
 	 * @param {Thingy} parentthingy A parent thingy which, it is assumed, shallow-validates 
 	 * against the corresponding ThingyRule in the grammar, as do all its ancestors and preceding siblings.
-	 * @param {ThingyRule} parentrule The corresponding ThingyRule which parentthingy statisfies.
+	 * @param {ThingyRule} parentrule The corresponding ThingyRule which parentthingy satisfies.
 	 * 
 	 * @classDescription  An OperationCaret applies to the attributes and children of one Thingy in an existing tree, 
 	 * represented by 'parentthingy'. For the proper functioning of the OperationCaret it is assumed that all ancestors
@@ -65,9 +65,9 @@ AXLE = function(){
 	 * 
 	 * ThingyOperations for which #isInteractive() returns true require the user to make a selection or provide a value 
 	 * before they can proceed. Passing a user object into ThingyOperation's interactWithUser method triggers callbacks
-	 * to get information.
+	 * to get information, those callbacks may be served as a dialog or other form of user interface.
 	 * 
-	 * The getInvoluntaryOperation() method will return operations until the Tree passes shallow validation. If no 
+	 * The getInvoluntaryOperation() method will return a series of atomic operations until the Tree passes shallow validation. If no 
 	 * further operations are required to satisfy validation then it will return null;
 	 * 
 	 * The getVoluntaryOperation() method may return operations only if the Tree has already passed shallow validation,
@@ -86,14 +86,15 @@ AXLE = function(){
 		this.setParentThingy(parentthingy);
 	}
 	
-	//TODO consider how OperationCaret should bind to ContentThingies (Attributes and Text) where validation rules are highly granular (e.g. RegExp)
+	//TODO consider how, in the future, OperationCaret could bind within ContentThingies (Attributes and Text) 
+	//where validation rules are highly granular (e.g. RegExp)
 	// Position cld be character position? What is name hashmap for? 
-	//TODO position representation for large number of positions (e.g. text blocks) could be more efficient using integers/arrays than
-	//strings/hashmap
 	
-	//TODO handle the issue that keys have to be typed as string to index properties
-	//but need to be numbers and strings to be used elsewhere, or perhaps this is already 
-	//implicitly addressed 
+	//TODO position representation for large number of positions (e.g. text blocks) could be more efficient 
+	//using integers/arrays than strings/hashmap
+	
+	//TODO handle the issue that keys have to be of type string in order to index properties
+	//but need to be numbers and strings to be used elsewhere, (perhaps this is already implicitly addressed)
 
 	/** Returns the key of the next involuntary operation. If this is a number, then the operation will act at a given
 	 * numbered position (e.g. act on a child node). If it is a string, then the operation will act at a given named 
@@ -156,7 +157,6 @@ AXLE = function(){
 
 	/** Unsubscribes all listener relationships for a given thingy. */
 	OperationCaret.prototype.stopListeningTo = function(thingy){
-		var listener = this.getRecacheFunction();
 		if("getChildren" in thingy){
 			thingy.unbind('childadded',this.treeUpdatedListener);
 			thingy.unbind('childremoved',this.treeUpdatedListener);
@@ -167,9 +167,9 @@ AXLE = function(){
 		}				
 	};
 
-	/** Used to configure the parentthingy of the OperationCaret. In principle this means
-	 * that an OperationCaret can be reused for multiple points in the tree, although
-	 * this should be tested. 
+	/** Used to configure the parentthingy of the OperationCaret. In principle this containment 
+	 * means an OperationCaret can be reused for multiple points in the tree, although
+	 * this should be tested, and is perhaps of questionable value compared to a clean object. 
 	 * @param {Object} parentthingy The thingy monitored
 	 */
 	OperationCaret.prototype.setParentThingy = function(parentthingy){			
@@ -189,7 +189,7 @@ AXLE = function(){
 	
 	/** Used to configure the parentrule of the OperationCaret. In principle this means
 	 * that an OperationCaret can be reused through different validation scenarios for the 
-	 * same thingy, although this should be tested. 
+	 * same thingy, although this should be tested, and is perhaps of questionable value compared to a clean object. 
 	 * @param {Object} parentrule The rule monitored
 	 */
 	OperationCaret.prototype.setParentRule = function(parentrule){
@@ -215,7 +215,7 @@ AXLE = function(){
 	/** Refreshes the set of possible valid operations on the current parentthingy given
 	 * the current parentrule. Typically this is re-executed after every change in 
 	 * the tree. It will either create a set of involuntary operations if the tree is not 
-	 * yet valid, or voluntary ones, if the tree is valid but optional operations are 
+	 * yet valid, or voluntary ones if the tree is valid but optional operations are 
 	 * available. Currently, it terminates after it has found the next involuntary operation,
 	 * and does not search for voluntary operations.
 	 */ 
@@ -321,7 +321,6 @@ AXLE = function(){
 	OperationCaret.prototype.getVoluntaryOperations = function(key){
 		throw new YOURX.UnsupportedOperationError("getVoluntaryOperations() not (yet) implemented.");	
 	};
-
 	
 	/** A ThingyOperation represents a change to the children or attributes of the thingy. 
 	 * @param {Object} rule The rule which this operation attempts to satisfy.
@@ -340,7 +339,7 @@ AXLE = function(){
 
 	/** Triggers non-interactive operations
 	 */
-	ThingyOperation.prototype.act = function(user){
+	ThingyOperation.prototype.act = function(parentthingy, key){
 		throw new YOURX.UnsupportedOperationError("act() is not implemented for this Operation. Check the value of isInteractive()");
 	};
 
@@ -349,7 +348,7 @@ AXLE = function(){
 	 * Operations which represent a compound set may pass the user object to their components.
 	 * @param {YOURX.User} user
 	 */
-	ThingyOperation.prototype.interact = function(user){
+	ThingyOperation.prototype.interact = function(parentthingy, key, user){
 		throw new YOURX.UnsupportedOperationError("interact() is not implemented for this Operation. Check the value of isInteractive().");
 	};
 			
@@ -425,16 +424,16 @@ AXLE = function(){
 	
 	/** Alternate names; Exemplar, FixEditor, PoxEditor */
 	function AvixEditor(){
-		ALLY.RawEditor.apply(this,arguments);
+		ALLY.XmlView.apply(this,arguments);
 		this.keyPressedListener = YOURX.ThingyUtil.methodHandoffFunction(this, "handleKeypress");
 		this.keyDownListener = YOURX.ThingyUtil.methodHandoffFunction(this, "handleKeydown");
 	}
-	AvixEditor.prototype = new ALLY.RawEditor();
+	AvixEditor.prototype = new ALLY.XmlView();
 	
 	//TODO set editor caret based on mouse click in DOM
 	
 	AvixEditor.prototype.trackThingy= function(thingy){
-		ALLY.RawEditor.prototype.trackThingy.apply(this,arguments); //superclass call
+		ALLY.XmlView.prototype.trackThingy.apply(this,arguments); //superclass call
 		var boundselection = this.getBoundSelection(thingy);
 		boundselection.bind("keypress",this.keyPressedListener);
 		boundselection.bind("keydown",this.keyDownListener);
@@ -444,7 +443,7 @@ AXLE = function(){
 		var boundselection = this.getBoundSelection(thingy);
 		boundselection.unbind("keypress",this.keyPressedListener);
 		boundselection.unbind("keydown",this.keyDownListener);
-		ALLY.RawEditor.prototype.untrackThingy.apply(this,arguments); //superclass call
+		ALLY.XmlView.prototype.untrackThingy.apply(this,arguments); //superclass call
 	};
 
 	/** Records the current thingy and key indicating where the cursor is, and moves the cursor there. */ 
@@ -515,20 +514,20 @@ AXLE = function(){
 
 	AvixEditor.prototype.precedingContentKey = function(targetcaret){
 		if(targetcaret.key > 0){
-			return targetcaret.key -1;
+			return targetcaret.key - 1;
 		}
 		return null;
 	};
 
 	AvixEditor.prototype.followingContentKey = function(targetcaret){
-		if(targetcaret.key < targetcaret.thingy.getContent().length){
+		if(targetcaret.key < targetcaret.thingy.getValue().length){
 			return targetcaret.key + 1;
 		}
 		return null;
 	};
 
 	AvixEditor.prototype.precedingAttributeKey = function(targetcaret){
-		var attnames = this.orderedAttributeNames();
+		var attnames = this.orderedAttributeNames(targetcaret.thingy);
 		var attpos = attnames.indexOf(targetcaret.key) - 1;
 		if(attpos > 0){
 			return attnames[attpos];
@@ -583,38 +582,41 @@ AXLE = function(){
 		var inattributes = (inname || incontent || indescendants) ? false : this.caretInAttributes(targetcaret);
 		
 		/*try to get preceding key of current caret type where applicable */
-		var newkey; 
+		var newkey = null, newthingy = null; 
 		if (inname) { newkey = this.precedingNameKey(targetcaret); }
 		else if (incontent) { newkey = this.precedingContentKey(targetcaret); }
-		else if (indescendants) { newkey = this.precedingDescendantKey(targetcaret); }		
 		else if (inattributes) { newkey = this.precedingAttributeKey(targetcaret); }
+		else if (indescendants) { newkey = this.precedingDescendantKey(targetcaret);}
 
-		/* if corresponding key available, caret can be returned */
-		if(newkey != null){
-			if(inname || incontent){ //simply step back in same field
+		if(newkey !== null){ //preceding key is found at current level
+			if(inname || incontent){ //caret has same scope, use key within existing scope
 				return {thingy:targetcaret.thingy,key:newkey};
 			}
-			else if(inattributes || indescendants){ //step back into preceding attribute or descendant
-				return rightmostCaret(targetcaret.thingy.getThingy(newkey));
+			else if(inattributes || indescendants){ //caret has new scope, use key to retrieve it
+				var newthingy = targetcaret.thingy.getThingy(newkey);
+				return {thingy:newthingy,key:this.rightmostKey(thingy)};
 			}
 		}
-		/* handle cases where current caret type is exhausted */
-		else if( inname || //at start of attribute or element
-				(incontent && targetcaret.thingy instanceof YOURX.TextThingy)){ //at start of text
-			return {thingy:this.getParent(targetcaret.thingy),key:this.getPosition(targetcaret.thingy)}; //ascend to parent
-		}
-		else if( incontent && targetcaret.thingy instanceof YOURX.AttributeThingy){ //at start of content
-			return {thingy:targetcaret.thingy, key:-1}; //go to end of name
-		}
-		else if( indescendants ){ //at start of children
-			var numatts = targetcaret.thingy.getAttributes().length;
-			if(numatts > 0){ //get last attribute
-				var attname = this.orderedAttributeNames(targetcaret.thingy)[numatts-1];
-				return rightmostCaret(targetcaret.thingy.getAttribute(attname)); //go to end of attribute content
+		else { //handle cases where key range is exhausted
+			if(	inname || //at start of attribute or element name
+				(incontent && targetcaret.thingy instanceof YOURX.TextThingy)){ //at start of text content
+				//step up to child's position within parent
+				return {thingy:this.getParent(targetcaret.thingy),key:this.getPosition(targetcaret.thingy)}; //ascend to parent
 			}
-			else{//no attributes, go to end of name
-				return {thingy:targetcaret.thingy,key:-1}; 
+			else if( incontent && targetcaret.thingy instanceof YOURX.AttributeThingy){ //at start of attribute content
+				//go to end of name
+				return {thingy:targetcaret.thingy, key:-1}; 
 			}
+			else if( indescendants ){ //at start of element children
+				var numatts = targetcaret.thingy.getAttributes().length;
+				if(numatts > 0){ //get last attribute
+					var attname = this.orderedAttributeNames(targetcaret.thingy)[numatts-1];
+					return rightmostCaret(targetcaret.thingy.getAttribute(attname)); //go to end of attribute content
+				}
+				else{//no attributes, go to end of name
+					return {thingy:targetcaret.thingy,key:-1}; 
+				}				
+			}			
 		}
 		
 		return null; //if none of the above can find a preceding caret, then give up
@@ -960,20 +962,22 @@ AXLE = function(){
 				patterns:YOURX.copyProperties(treelogic.container.descendants.patterns, //merge with container descendants
 				{ 
 					//no keeppattern
-					"[^<]": function(match){ //also allow text in an element tag
+					"[^<>]": function(match){ //also allow text in an element tag
 						//try to find text node first
 						var children,textchild;
 						if((children=this.caret.thingy.getChildren()).length > 0 && 
-							children[0] instanceof YOURX.TextThingy){
-							//TODO - figure out adding character at position zero
-							textchild = children[0];
-							this.setCaret(textchild, 1);
+							children[this.caret.key] instanceof YOURX.TextThingy){
+							//if text node exists use it
+							textchild = children[this.caret.key];
 						}
 						else{
-							textchild = new YOURX.TextThingy(match);
-							this.caret.thingy.addThingy(textchild);
-							this.setCaret(textchild, 1);
+							//create a new blank text thingy
+							textchild = new YOURX.TextThingy("");
+							this.caret.thingy.addThingy(textchild,this.caret.key);
 						}
+						//insert matched character and place caret after
+						textchild.setValue(match + textchild.getValue());
+						this.setCaret(textchild, 1);
 					}
 				})
 			}
