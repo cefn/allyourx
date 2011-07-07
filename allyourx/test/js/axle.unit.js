@@ -5,6 +5,7 @@ $(function(){
 
     var rootName = "abc";
     var attName = "def";
+    var attNameAgain = "zxy";
     var childName = "ghi";
 	var textContent = "jkl";
     
@@ -13,7 +14,14 @@ $(function(){
 	 * return null
 	 */
 	function getDomFocus(){
-		return UNITTEST.editor.editable.selection;
+		var selection = UNITTEST.editor.editable.selection;
+		var node = selection.get(0);
+		if(node.nodeType===3){ //workaround bug in JQuery eventing
+			return selection.parent();
+		}
+		else{
+			return selection;
+		}
 	}
 	
 	function emulateFocusEvent(evt){
@@ -129,8 +137,8 @@ $(function(){
 			var range = window.getSelection().getRangeAt(0);
 			return 	UNITTEST.thingy.getChildren().length === 1 && 
 					UNITTEST.editor.caret.thingy == UNITTEST.thingy.getChildren()[0] &&
-					$(UNITTEST.editor.editable.selection).hasClass("xname") && 
-					$(UNITTEST.editor.editable.selection).parent().hasClass("xelement");
+					$(UNITTEST.editor.editable.selection).parent().hasClass("xname") && 
+					$(UNITTEST.editor.editable.selection).parent().parent().hasClass("xelement");
 		}],		
 		["Single typed character modifies element name and moves cursor", function(){
 			var typed = rootName.substring(0, 1);
@@ -138,9 +146,9 @@ $(function(){
 			var name = UNITTEST.thingy.getChildren()[0].getName();
 			var domtext = $(UNITTEST.editor.editable.selection).text();
 			var range = window.getSelection().getRangeAt(0);
-			return name === typed && domtext == typed && 
-			range.collapsed && range.startOffset == 1 && 
-			range.startContainer == $(UNITTEST.editor.editable.selection).contents().get(0);
+			return name === typed && domtext === typed && 
+			range.collapsed && range.startOffset === 1 && 
+			range.startContainer === $(UNITTEST.editor.editable.selection).get(0);
 		}],
 		["Left navigation key moves cursor back one character", function(){
 			typeControlKey("Arrow Left");
@@ -159,15 +167,15 @@ $(function(){
 			var name = UNITTEST.thingy.getChildren()[0].getName();
 			return name === "";
 		}],
-		["Single typed character modifies element name and moves cursor", function(){
+		["Repeat - Single typed character modifies element name and moves cursor", function(){
 			var typed = rootName.substring(0, 1);
 			typeCharacters(typed);
 			var name = UNITTEST.thingy.getChildren()[0].getName();
 			var domtext = $(UNITTEST.editor.editable.selection).text();
 			var range = window.getSelection().getRangeAt(0);
-			return name === typed && domtext == typed && 
-			range.collapsed && range.startOffset == 1 && 
-			range.startContainer == $(UNITTEST.editor.editable.selection).contents().get(0);
+			return name === typed && domtext === typed && 
+			range.collapsed && range.startOffset === 1 && 
+			range.startContainer === $(UNITTEST.editor.editable.selection).get(0);
 		}],
 		["Remaining typed characters complete element name", function(){
 			var typed = rootName.substring(1,rootName.length);
@@ -215,7 +223,42 @@ $(function(){
 			typeCharacters('"');
 			return 	UNITTEST.editor.caret.thingy == UNITTEST.thingy.getChildren()[0] &&
 					UNITTEST.editor.caretInAttributes() && 
-					UNITTEST.editor.caret.key == attName &&
+					UNITTEST.editor.caret.key === '>' &&
+					$(getDomFocus()).hasClass("xopen") && 
+					$(getDomFocus()).parent().hasClass("xelement");
+		}],
+		["Repeat - Keydown space creates attribute and focuses attribute name", function(){
+			typeCharacters(' ');
+			var atts = UNITTEST.thingy.getChildren()[0].getAttributes();
+			var att;
+			return 	"" in atts && 
+					(att = atts[""]) instanceof YOURX.AttributeThingy && 
+					UNITTEST.editor.caret.thingy == att &&
+					UNITTEST.editor.caretInName() && 
+					$(getDomFocus()).hasClass("xname") && 
+					$(getDomFocus()).parent().hasClass("xattribute");
+		}],
+		["Repeat - Keydown alpha modifies attribute name", function(){
+			typeCharacters(attNameAgain);
+			var atts = UNITTEST.thingy.getChildren()[0].getAttributes();
+			return attName in atts && atts[attNameAgain].name === attNameAgain;
+		}],
+		["Repeat - Keydown equals moves focus to attribute value", function(){
+			typeCharacters('=');
+			var atts = UNITTEST.thingy.getChildren()[0].getAttributes();
+			var att;
+			return 	attNameAgain in atts && 
+					(att = atts[attNameAgain]) && 
+					UNITTEST.editor.caret.thingy == att &&
+					UNITTEST.editor.caretInContent() && 
+					$(getDomFocus()).hasClass("xcontent") && 
+					$(getDomFocus()).parent().hasClass("xattribute");
+		}],
+		["Repeat - Keydown quote returns focus to element open tag", function(){
+			typeCharacters('"');
+			return 	UNITTEST.editor.caret.thingy == UNITTEST.thingy.getChildren()[0] &&
+					UNITTEST.editor.caretInAttributes() && 
+					UNITTEST.editor.caret.key === '>' &&
 					$(getDomFocus()).hasClass("xopen") && 
 					$(getDomFocus()).parent().hasClass("xelement");
 		}],
@@ -282,7 +325,7 @@ $(function(){
 		}],
 		["Xml dump produces correct string", function(){
 			var xmlstring = YOURX.ThingyUtil.thingy2xml(UNITTEST.thingy);
-			return xmlstring === '<abc def=""><ghi>jkl</ghi></abc>';
+			return xmlstring === '<abc def="" zxy=""><ghi>jkl</ghi></abc>';
 		}],
 		["Left navigation key moves cursor back one character", function(){
 			var textthingy = UNITTEST.editor.caret.thingy;
