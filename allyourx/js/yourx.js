@@ -601,7 +601,7 @@ YOURX = function(){
 			}
 			else {
 				this.children = this.children.concat(arguments[0]);
-			}				
+			}
 		}
 		Thingy.apply(this,[]);
 	}
@@ -634,6 +634,11 @@ YOURX = function(){
 		}
 		return this.children;				
 	};
+	
+	ContainerThingy.prototype.hasChildren = function(thingy){
+		return this.getChildren().length !== 0;
+	};
+
 	/** Alias for addChild, given all descendants of a generic ContainerThingy are its children. */
 	ContainerThingy.prototype.addThingy = function(thingy){
 		return this.addChild(thingy);
@@ -713,7 +718,12 @@ YOURX = function(){
 	ContainerThingy.prototype.getChildThingy = function(key){
 		if(arguments.length === 1){
 			if(typeof(arguments[0]) === "number"){
-				return children[key];
+				if(key >= 0 && key < this.children.length){
+					return this.children[key];					
+				}
+				else{
+					return null;
+				}
 			}
 		}
 		throw new Error("Malformed invocation of ContainerThingy#getChildThingy()");						
@@ -984,6 +994,14 @@ YOURX = function(){
 		}
 		return this.attributes;		
 	};
+	
+	ElementThingy.prototype.hasAttributes = function(thingy){
+		for(var key in this.getAttributes()){
+			return true;
+		}
+		return false;
+	};
+	
 	/** Used to store a descendant Thingy (ElementThingy,TextThingy or AttributeThingy). */
 	ElementThingy.prototype.addThingy = function(){
 		if(arguments[0] instanceof AttributeThingy){
@@ -1577,6 +1595,19 @@ YOURX = function(){
 		return pointer;
 	};
 
+	/** Todo consider efficiency of caching by monitoring child insertion/removal. 
+	 * Todo consider possibility of normalising position and 'key' into YOURX ThingyTracker conventions
+	 * @param {Object} thingy
+	 */
+	ThingyTracker.prototype.getKey = function(thingy){
+		if(!(thingy instanceof AttributeThingy)){
+			return this.getPosition(thingy);
+		}
+		else{
+			return thingy.getName();
+		}
+	}
+	
 	/** Todo consider efficiency of caching by monitoring child insertion/removal. 
 	 * Todo consider possibility of normalising position and 'key' into YOURX ThingyTracker conventions
 	 * @param {Object} thingy
