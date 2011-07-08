@@ -343,8 +343,11 @@ $(function(){
 				UNITTEST.editor.caret.thingy === textthingy && 
 				UNITTEST.editor.caret.key === textkey + 1;
 		}],
-		["Keydown right angle-bracket moves focus beyond close tag to parent", function(){
-			typeCharacters(">");
+		["Keydown right arrow (twice) moves focus beyond close tag to parent", function(){
+			//typeCharacters(">");
+			//TODO CH you should only have to type this once - see caret ambiguity problem in ISSUES.markdown
+			typeControlKey("Arrow Right");
+			typeControlKey("Arrow Right");
 			var child, focusthingy;
 			return 	(child = UNITTEST.thingy.getChildren()[0]) instanceof YOURX.ElementThingy &&
 					(focusthingy = UNITTEST.editor.caret.thingy)  &&
