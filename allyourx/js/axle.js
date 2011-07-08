@@ -620,10 +620,17 @@ AXLE = function(){
 			}
 		}
 		else { //handle cases where key range is exhausted
-			if(	inname && (targetcaret.thingy instanceof YOURX.ElementThingy || targetcaret.thingy instanceof YOURX.AttributeThingy) || //at start of element/attribute name
+			if(	inname /* && (targetcaret.thingy instanceof YOURX.ElementThingy || targetcaret.thingy instanceof YOURX.AttributeThingy) */ || //at start of element/attribute name
 				incontent && targetcaret.thingy instanceof YOURX.TextThingy ){ //at start of text content
 				//step up to child's position within parent
-				return {thingy:this.getParent(targetcaret.thingy),key:this.getKey(targetcaret.thingy)}; //ascend to parent
+				newthingy = this.getParent(targetcaret.thingy);
+				if(newthingy !== null){ //all elements and attributes have parents
+					newkey = this.getKey(targetcaret.thingy);
+					return {thingy:newthingy,key:newkey};
+				}
+				else{ //root container has no parent
+					return null;
+				}
 			}
 			else if( inattributes || //at start of an element's attributes
 					 incontent && targetcaret.thingy instanceof YOURX.AttributeThingy || //at start of an attribute's content
@@ -686,7 +693,14 @@ AXLE = function(){
 			}
 			else if(indescendants || (incontent && targetcaret.thingy instanceof YOURX.TextThingy)){ //at end of descendants or text content
 				//step up to after child's position within parent
-				return {thingy:this.getParent(targetcaret.thingy),key:this.getPosition(targetcaret.thingy) + 1}; //ascend to parent				
+				newthingy = this.getParent(targetcaret.thingy);
+				if(newthingy !== null){ //all elements have a parent
+					newkey = this.getPosition(targetcaret.thingy) + 1;
+					return {thingy:newthingy,key:newkey};		
+				}
+				else{ //root container doesn't
+					return null;
+				}
 			}
 			else if( incontent && targetcaret.thingy instanceof YOURX.AttributeThingy){
 				//step up to following attribute key
@@ -700,7 +714,7 @@ AXLE = function(){
 	};	
 	
 	AvixEditor.prototype.getFieldText = function(targetcaret){
-		if(arguments.length == 0) targetcaret = this.caret;		
+		if(arguments.length === 0) targetcaret = this.caret;		
 		if(this.caretInName(targetcaret)){
 			return targetcaret.thingy.getName();
 		}
@@ -948,6 +962,7 @@ AXLE = function(){
 	//TODO consider use of ranges to indicate staged deletions arising
 	//(deleting element means deleting children and attributes)
 	//TODO simplify using preceding/following/sibling caret logic
+	//TODO CH introduce logic for fusing contiguous text nodes into one when intermediate element is removed
 	AvixEditor.prototype.deleteCaret = function(targetcaret){
 		
 		var newcaret = null;
@@ -1111,23 +1126,26 @@ AXLE = function(){
 			content:{ //cursor is in content
 				patterns:{
 					"^[^<>]*$":keeppattern,
-					"<":function(){ //add element to parent after your position
-						var el = new YOURX.ElementThingy();
+					"<":function(){ //add element to parent after current text position
+						var el = new YOURX.ElementThingy(""); //create element with blank name
 						var txpos = this.getPosition(this.caret.thingy);
-						this.getParent(this.caret.thingy).addThingy(el, txpos + 1);
-						this.setCaret(el,-1);
-					}	,			
-					">":function(){ //move focus beyond current text into grandparent 
-						//TODO CH establish editor functions focusBefore() focusAfter()   
-						var text = this.caret.thingy;
-						var parent = this.getParent(text);
-						if(parent){
-							var grandparent = this.getParent(parent);
-							if (grandparent) {
-								var pos = this.getPosition(parent);
-								this.setCaret(grandparent, pos + 1);															
-							}
+						var parent = this.getParent(this.caret.thingy); 
+						if(this.caret.key === this.leftmostKey(this.caret.thingy)){ //place before
+							parent.addChild(el, txpos);
 						}
+						else if(this.caret.key === this.rightmostKey(this.caret.thingy)){ //place after
+							parent.addChild(el, txpos + 1);
+						}
+						else{ //split the text node and place in middle
+							var txval = this.caret.thingy.getValue(); //get text value
+							var txvalbefore = txval.substring(0, this.caret.key); 
+							var txvalafter = txval.substring(this.caret.key, txval.length);
+							this.caret.thingy.setValue(txvalbefore); //remove remaining text
+							var newtx = new YOURX.TextThingy(txvalafter); //create new text node to contain it
+							parent.addChild(el, txpos + 1); //insert element
+							parent.addChild(newtx, txpos + 2); //reinsert new text node
+						}
+						this.setCaret(el,-1);
 					}				
 				}
 			}
@@ -1177,12 +1195,14 @@ AXLE = function(){
 				action:function(){
 					var precedingcaret = this.getPrecedingCaret(this.caret);
 					if(precedingcaret !== null){
-						var newcaret = this.deleteCaret(precedingcaret);
-						if(newcaret !== null){
-							this.setCaret(newcaret);
-						}
-						else{
-							throw new Error("No caret returned by deleteCaret()");
+						if(precedingcaret.thingy === this.caret.thingy){ //preceding caret in same thingy
+							var newcaret = this.deleteCaret(precedingcaret);
+							if(newcaret !== null){
+								this.setCaret(newcaret);
+							}
+							else{
+								throw new Error("No caret returned by deleteCaret()");
+							}							
 						}
 					}
 					else{
