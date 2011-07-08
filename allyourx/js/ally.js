@@ -99,7 +99,7 @@ ALLY = function(){
 		}
 		else{ //just place below parent in its descendant wrapper
 			targetq = this.queryDescendantWrapper(this.getBoundSelection(parent));
-			targetq.append(childq);
+			targetq.prepend(childq);
 		}
 		if(targetq.size() !== 1){
 			throw new Error("Could not find parent or unique preceding sibling selection for child added");
