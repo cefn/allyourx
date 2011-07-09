@@ -3,6 +3,23 @@
  * of Thingy Trees, defined in a a private scope with public functions served 
  * under the ALLY namespace.
  * 
+ * Copyright 2009-2011 Cefn Hoile, AllyourX.org 
+ *
+ * This file is part of Avix
+ *
+ * Avix is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
  */
 ALLY = function(){
 	
@@ -94,7 +111,7 @@ ALLY = function(){
 		var pos = this.getPosition(child);
 		var targetq = null;
 		if(pos > 0){ //place after preceding sibling, which is already in the descendant wrapper
-			targetq = this.getBoundSelection(parent.children[pos -1]);
+			targetq = this.getBoundSelection(parent.children[pos - 1]);
 			targetq.after(childq);					
 		}
 		else{ //just place below parent in its descendant wrapper
