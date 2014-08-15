@@ -730,6 +730,10 @@ AXLE = function(){
 		return null; //if none of the above can find a preceding caret, then give up
 	};	
 	
+	/** Returns the text value of the 'field' which the cursor is currently in. 
+	 * For example a field could be the content of a text node or attribute, or
+	 * the name of an element or attribute. If the cursor is not within a field
+	 * a placeholder value of "" is returned. */
 	AvixEditor.prototype.getFieldText = function(targetcaret){
 		if(arguments.length === 0) targetcaret = this.caret;		
 		if(this.caretInName(targetcaret)){
@@ -1071,7 +1075,7 @@ AXLE = function(){
 		treelogic.element = {
 			name:{ //cursor is in the name string (key is negative)
 				patterns:{
-					"^[A-Za-z]+$":keeppattern, //field matches
+					"^[A-Za-z][A-Za-z0-9]*$":keeppattern, //field matches
 					">":function(){ //focus content
 						this.setCaret(this.caret.thingy,0);
 					},
@@ -1123,7 +1127,7 @@ AXLE = function(){
 		treelogic.attribute = {
 			name:{ //cursor is in name
 				patterns:{
-					"^[A-Za-z]+$":keeppattern,
+					"^[A-Za-z][A-Za-z0-9]*$":keeppattern,
 					"=":function(){
 						this.setCaret(this.caret.thingy,0);//move to content
 					}
@@ -1334,7 +1338,7 @@ AXLE = function(){
 			} 
 			
 			//fallthrough to error condition
-			throw new Error("Invalid character inserted, no matches available.");
+			throw new Error("Invalid character inserted, '" + charpressed + "' no matches available.");
 			
 		}
 		else{
