@@ -22,7 +22,13 @@
 				session.editor.trackThingy(session.thingy); //load root into editor
 				session.boundq = session.editor.getBoundSelection(session.thingy); //grab the ui binding 
 				session.viewportq.append(session.boundq); //append to the page
-				session.editor.setCaret(session.thingy, 0); //move editor focus to root
+				
+                //TODO, creating a child and moving cursor into the name is a workaround for Firefox not showing the cursor when using session.editor.setCaret(session.docnode, -1)
+				session.docnode = new YOURX.ElementThingy("");
+				session.thingy.addChild(session.docnode);
+				session.editor.setCaret(session.docnode, -1); //move editor focus
+
+                //causes a debugging report to be updated as the cursor moves around.
 				var evtHandler = function(evt){
 					if(evt.target === this){
 						window.setTimeout(function(){
@@ -36,6 +42,7 @@
 					}
 				}
 				$("*").contents().keypress(evtHandler).keydown(evtHandler).click(evtHandler);
+
 			});
         //]]>		
 	</script>
