@@ -1392,7 +1392,7 @@ YOURX = function(){
 		copyProperties({
 			putCache:function(allmaps,mapkey,rulekey,rule){
 				if(!ThingyUtil.putUniqueKey(allmaps,mapkey,rulekey,rule)){
-					throw new ThingyRuleError("Pos " + pos + " already claimed by another rule");
+					throw new ThingyRuleError("Key " + rulekey + " already claimed by another rule"); 
 				}					
 			},
 			getCacheStatus:function(rulekey){
@@ -1523,7 +1523,7 @@ YOURX = function(){
 
 	ThingyTracker.prototype.isTracked = function(thingy){
 		return this.metadata.containsKey(thingy);
-	};		
+	};
 
 	ThingyTracker.prototype.nameChanged = function(thingy, newname){
 		//superclass does nothing
