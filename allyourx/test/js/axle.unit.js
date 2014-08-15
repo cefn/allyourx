@@ -152,15 +152,13 @@ $(function(){
 		}],
 		["Left navigation key moves cursor back one character", function(){
 			typeControlKey("Arrow Left");
-			return 
-				UNITTEST.editor.caret.thingy === UNITTEST.thingy.getChildren()[0] && 
-				UNITTEST.editor.caret.key === 0;
+			return 	UNITTEST.editor.caret.thingy === UNITTEST.thingy.getChildren()[0] && 
+					UNITTEST.editor.caret.key === -2;
 		}],
 		["Right navigation key moves cursor forward one character", function(){
 			typeControlKey("Arrow Right");
-			return 
-				UNITTEST.editor.caret.thingy === UNITTEST.thingy.getChildren()[0] && 
-				UNITTEST.editor.caret.key === 1;
+			return 	UNITTEST.editor.caret.thingy === UNITTEST.thingy.getChildren()[0] && 
+					UNITTEST.editor.caret.key === -1;
 		}],
 		["Backspace makes element name empty", function(){
 			typeControlKey("Backspace");
@@ -190,7 +188,7 @@ $(function(){
 			var name = UNITTEST.thingy.getChildren()[0].getName();
 			var domtext = $(UNITTEST.editor.editable.selection).text();
 			return name ===rootName && domtext == rootName && 
-			err.message === "Invalid character inserted, no matches available.";
+			err.message === "Invalid character inserted, '\"' no matches available.";
 		}],
 		["Keydown space creates attribute and focuses attribute name", function(){
 			typeCharacters(' ');
@@ -331,17 +329,15 @@ $(function(){
 			var textthingy = UNITTEST.editor.caret.thingy;
 			var textkey = UNITTEST.editor.caret.key;
 			typeControlKey("Arrow Left");
-			return 
-				UNITTEST.editor.caret.thingy === textthingy && 
-				UNITTEST.editor.caret.key === textkey - 1;
+			return	UNITTEST.editor.caret.thingy === textthingy && 
+					UNITTEST.editor.caret.key === textkey - 1;
 		}],
 		["Right navigation key moves cursor forward one character", function(){
 			var textthingy = UNITTEST.editor.caret.thingy;
 			var textkey = UNITTEST.editor.caret.key;
 			typeControlKey("Arrow Right");
-			return 
-				UNITTEST.editor.caret.thingy === textthingy && 
-				UNITTEST.editor.caret.key === textkey + 1;
+			return	UNITTEST.editor.caret.thingy === textthingy && 
+					UNITTEST.editor.caret.key === textkey + 1;
 		}],
 		["Keydown right arrow (twice) moves focus beyond close tag to parent", function(){
 			//typeCharacters(">");
