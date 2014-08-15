@@ -15,9 +15,11 @@ Everywhere
 ...introduce verification/validation step to intervene when caret changes, leaving element with zero-length name, attribute with zero-length name, text node with zero length and so on
 ...can navigate to invalid caret by moving beyond last character of root container
 ...ensure that deleting zeroth character of element/attribute/text deletes element/attribute/text
+...find out why mouse-clicking in elements doesn't set cursorthingy and cursorkey in editor.html, but keyboard navigation does 
 
 Firefox
-...when empty root node is loaded, cursor does not appear and document is invisible (zero height?). Could be CSS problem.
+...when empty root node is loaded, cursor does not appear and document is invisible (zero height). Could be fixed in CSS? Workaround has been added in editor.html for the time being to move the cursor to inside the first child (with additional content, Firefox is then happy to render the cursor).
+
 
 Within Containers
 ...containers (not just elements) should support text handler triggered on < - e.g. root container
