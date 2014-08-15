@@ -1,10 +1,11 @@
 .xraw{
+    font-size:28pt;
 }
 
 .xraw.xcontainer, .xraw.xelement{
     display:block;
     color:#FFFFFF;
-    background-color:#AAAAFF;
+    background-color:#8888CC;
     padding:0;
     padding-left:4em; 
 }
@@ -17,17 +18,17 @@
 .xraw.xelement {
     border-width:1px;
     border-style:solid;
-    background-color:#AAFFAA;
+    background-color:#88CC88;
     clear:both;
 }
 .xraw.xattribute {
     color:#FF0000;
-    background-color:#AAFFAA;
+    background-color:#88CC88;
     clear:left;
 }
 .xraw.xtext {
     color:#000000;
-    background-color:#CCCCCC;
+    background-color:#AAAAAA;
 }
 .xraw.xcontent {
     
