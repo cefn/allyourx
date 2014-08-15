@@ -21,7 +21,7 @@ Three types of milestone are important in the development of this canonical code
 
 ### Hosts and Ports
 
-The use of the client-side javascript libraries in a server-side javascript environment such as Jack, or simply Rhino running in a Java servlet, is specifically anticipated. 
+The use of the client-side javascript libraries in a server-side javascript environment such as Node, Jack, or simply Rhino running in a Java servlet, is specifically anticipated. 
 
 Prototyping to date has taken place running in the Plain Old Webserver Xulrunner-based webserver (also available as a Firefox plugin). The Appenginejs project provides a proof of concept of running javascript on Google App Engine which is perhaps a better target for long term centralised hosting.
 
