@@ -20,7 +20,7 @@ function executeTests(testpairs){
 	
 	//initialise options and merge from second function argument
 	//guarantees all expected fields are assigned to defaults or overridden
-	var options = {reportonlyfailure:true,quitonfailure:true,catchexceptions:true};
+	var options = {reportonlyfailure:false,quitonfailure:true,catchexceptions:true};
 	if(arguments.length > 1){
 		options = YOURX.copyProperties(arguments[1],options);
 	}
