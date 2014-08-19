@@ -1,7 +1,7 @@
 $(function() {
 	var UNITTEST = {}; //create namespace object for temporary unittest properties
 	executeTests([
-		["load schema from examples.001/team.rng", function(){
+		["load schema from examples.001/team.001.rng", function(){
 			UNITTEST.grammar = YOURX.ThingyUtil.url2rule("schema/yourx/examples.001/team.001.rng");
 			var rule, rulechild0, rulechild1;
 			return (UNITTEST.grammar) instanceof YOURX.ThingyGrammar && 
