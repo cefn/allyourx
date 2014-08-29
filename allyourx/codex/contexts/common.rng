@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grammar 
+  xmlns="http://relaxng.org/ns/structure/1.0"
+  xmlns:a="http://relaxng.org/ns/compatibility/annotations/1.0"
+  datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
+    <start>
+        <ref name="script"/>
+    </start>
+
+    <define name="script">
+        <element name="script">
+            <oneOrMore>
+                <ref name="statement" />
+            </oneOrMore>            
+        </element>
+    </define>
+    
+    <define name="statement">
+        <choice>
+            <ref name="if" />
+            <ref name="ifelse" />
+            <ref name="while" />
+        </choice>
+    </define>
+    
+    <define name="expression">
+        <ref name="boolean" />
+        <ref name="number" />
+    </define>
+    
+    <define name="number">
+        <choice>
+            <ref name="float"/>
+            <ref name="integer"/>
+        </choice>
+    </define>
+    
+    <define name="if">
+        <element name="if">
+            <ref name="boolean"/>
+            <ref name="script"/>
+        </element>
+    </define>
+
+    <define name="ifelse">
+        <element name="ifelse">
+            <ref name="boolean"/>
+            <ref name="script"/>
+            <ref name="script"/>
+        </element>
+    </define>
+    
+    <define name="while">
+        <element name="while">
+            <ref name="boolean"/>
+            <ref name="script"/>
+        </element>
+    </define>
+    
+    <define name="boolean">
+        <choice>
+            <ref name="true"/>
+            <ref name="false"/>
+            <ref name="equal" />
+            <ref name="notequal" />
+            <ref name="greaterthan" />
+            <ref name="lessthan" />
+        </choice>
+    </define>
+    
+    <define name="float">
+        <choice>
+            <element name="floatvalue">
+                <data type="float"/>
+            </element>
+        </choice>
+    </define>
+
+    <define name="integer">
+        <choice>
+            <element name="integervalue">
+                <data type="integer"/>
+            </element>
+        </choice>
+    </define>
+    
+    <define name="true">
+        <element name="true">
+            <empty/>
+        </element>
+    </define>
+
+    <define name="false">
+        <element name="false">
+            <empty/>
+        </element>
+    </define>
+    
+    <define name="equal">
+        <element name="equal">
+            <ref name="expression"/>
+            <ref name="expression"/>
+        </element>
+    </define>
+
+    <define name="notequal">
+        <element name="notequal">
+            <ref name="expression"/>
+            <ref name="expression"/>
+        </element>
+    </define>
+    
+    <define name="greaterthan">
+        <element name="greaterthan">
+            <ref name="expression"/>
+            <ref name="expression"/>
+        </element>
+    </define>
+    
+    <define name="lessthan">
+        <element name="lessthan">
+            <ref name="expression"/>
+            <ref name="expression"/>
+        </element>
+    </define>
+    
+</grammar>
