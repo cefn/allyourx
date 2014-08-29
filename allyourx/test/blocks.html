@@ -2,31 +2,138 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <title>Example Blocks</title>
+    <script type="text/javascript" src="http://localhost:3000/allyourx/lib/jquery-1.11.1/jquery.js"></script>
+    <script type="text/javascript" src="http://localhost:3000/allyourx/lib/jquery-ui-1.11.1/jquery-ui.js"></script>
     <script type="text/javascript">
         //<![CDATA[
+        $(function(){
+            $('.tile').draggable();
+            $('.slot').droppable({
+                accept: ".tile",
+                hoverClass:"hovering",
+                tolerance:"touch",
+                helper:"clone"
+            });
+        });
         //]]>
     </script>
+    <!-- -->
+    <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.17.2/build/cssreset/cssreset-min.css" />
+    <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.17.2/build/cssfonts/cssfonts-min.css"/>
+    <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.17.2/build/cssgrids/cssgrids-min.css"/>
     <style type="text/css">
+        th, td{
+            border-width:0px;
+        }
         body *{
             font-size:8pt;
         }
         .tile, .slot{
-            border-radius:1em;
             font-family:sans;
             font-weight: bold;
             color:white;
+            margin:0;
+            padding:0;
         }
 
-        .label {
-            padding:1em;
-            padding-top:0.5em;
-            padding-bottom:0.5em;
+        .tile>.north>.west, .tile>.north>.east, .tile>.south>.west, .tile>.south>.east{
+            width:10px;
+            height:10px;
+        }
+
+        .hollow>.north>.west, .hollow>.north>.east, .hollow>.south>.west, .hollow>.south>.east{
+            width:10px;
+            height:10px;
+        }
+
+        .tile.boolean>.north>.west{
+            background-image: url('../codex/tiles/concave_inverse_north_west.png');
+        }
+
+        .tile.boolean>.north>.east{
+            background-image: url('../codex/tiles/concave_inverse_north_east.png');
+        }
+
+        .tile.boolean>.south>.west{
+            background-image: url('../codex/tiles/concave_inverse_south_west.png');
+        }
+
+        .tile.boolean .south .east{
+            background-image: url('../codex/tiles/concave_inverse_south_east.png');
+        }
+
+        .tile.block>.north>.west{
+            background-image: url('../codex/tiles/concave_inverse_north_west.png');
+        }
+
+        .tile.block>.north>.east{
+            background-image: url('../codex/tiles/concave_inverse_north_east.png');
+        }
+
+        .tile.block>.south>.west{
+            background-image: url('../codex/tiles/concave_inverse_south_west.png');
+        }
+
+        .tile.block>.south>.east{
+            background-image: url('../codex/tiles/concave_inverse_south_east.png');
+        }
+
+        .hollow.boolean>.north>.west{
+            background-image: url('../codex/tiles/concave_north_west.png');
+            background-size:100%;
+        }
+
+        .hollow.boolean>.north>.east{
+            background-image: url('../codex/tiles/concave_north_east.png');
+            background-size:100%;
+        }
+
+        .hollow.boolean .south .west{
+            background-image: url('../codex/tiles/concave_south_west.png');
+            background-size:100%;
+        }
+
+        .hollow.boolean>.south>.east{
+            background-image: url('../codex/tiles/concave_south_east.png');
+            background-size:100%;
+        }
+
+        .hollow.block>.north>.west{
+            background-image: url('../codex/tiles/concave_north_west.png');
+            background-size:100%;
+        }
+
+        .hollow.block>.north>.east{
+            background-image: url('../codex/tiles/concave_north_east.png');
+            background-size:100%;
+        }
+
+        .hollow.block>.south>.west{
+            background-image: url('../codex/tiles/concave_south_west.png');
+            background-size:100%;
+        }
+
+        .hollow.block>.south>.east{
+            background-image: url('../codex/tiles/concave_south_east.png');
+            background-size:100%;
+        }
+
+        .hollow>.center>.west, .hollow>.center>.east, .hollow>.center>.center, .hollow>.north>.center, .hollow>.south>.center{
+            background-color:white;
+        }
+
+        .hollow.block{
+            margin-top:1em;
+        }
+
+        .label{
+            margin:10px;
+            margin-top:5px;
+            margin-bottom:5px;
         }
 
         .slot{
-            background-color:white;
             width:8em;
-            margin:0.5em;
         }
 
         .slot.block {
@@ -41,12 +148,16 @@
             background-color:blue;
         }
 
+        .hovering {
+            background-color:black;
+        }
+
     </style>
 </head>
 <body>
 <div>
     <!-- this table is here to allow convex graphical features in the corners of a tile. -->
-    <table class="if tile" cellpadding="0" cellspacing="0">
+    <table class="if tile block" cellpadding="0" cellspacing="0">
         <tr class="north">
             <td class="west"></td>
             <td class="center"></td>
@@ -55,12 +166,12 @@
         <tr class="center">
             <td class="west"></td>
             <td class="center">
-                <table>
+                <table cellpadding="0" cellspacing="0">
                     <tr>
-                        <td class="label">If</td>
+                        <td><div class="label">If</div></td>
                         <td>
                             <!-- this table is here to allow concave graphical features in the corners of a slot. -->
-                            <table cellpadding="0" cellspacing="0">
+                            <table class="hollow boolean" cellpadding="0" cellspacing="0">
                                 <tr class="north">
                                     <td class="west"></td>
                                     <td class="center"></td>
@@ -68,7 +179,11 @@
                                 </tr>
                                 <tr class="center">
                                     <td class="west"></td>
-                                    <td class="center slot">&#160;</td>
+                                    <td class="center">
+                                        <div class="slot boolean">
+                                            &#160;
+                                        </div>
+                                    </td>
                                     <td class="east"></td>
                                 </tr>
                                 <tr class="south">
@@ -80,8 +195,31 @@
                         </td>
                     </tr>
                     <tr>
-                        <td class="label">then</td>
-                        <td class="slot block"></td>
+                        <td><div class="label">then</div></td>
+                        <td>
+                            <!-- this table is here to allow concave graphical features in the corners of a slot. -->
+                            <table class="hollow block" cellpadding="0" cellspacing="0">
+                                <tr class="north">
+                                    <td class="west"></td>
+                                    <td class="center"></td>
+                                    <td class="east"></td>
+                                </tr>
+                                <tr class="center">
+                                    <td class="west"></td>
+                                    <td class="center">
+                                        <div class="slot block">
+                                            &#160;
+                                        </div>
+                                    </td>
+                                    <td class="east"></td>
+                                </tr>
+                                <tr class="south">
+                                    <td class="west"></td>
+                                    <td class="center"></td>
+                                    <td class="east"></td>
+                                </tr>
+                            </table>
+                        </td>
                     </tr>
                 </table>
             </td>
@@ -94,7 +232,7 @@
         </tr>
     </table>
 
-    <table class="lt tile boolean">
+    <table class="lt tile boolean" cellpadding="0" cellspacing="0">
         <tr class="north">
             <td class="west"></td>
             <td class="center"></td>
@@ -103,13 +241,55 @@
         <tr class="center">
             <td class="west"></td>
             <td class="center">
-                <table>
+                <table class="hollow">
                     <tr>
-                        <td class="slot boolean">
-
+                        <td>
+                            <!-- this table is here to allow concave graphical features in the corners of a slot. -->
+                            <table class="hollow boolean" cellpadding="0" cellspacing="0">
+                                <tr class="north">
+                                    <td class="west"></td>
+                                    <td class="center"></td>
+                                    <td class="east"></td>
+                                </tr>
+                                <tr class="center">
+                                    <td class="west"></td>
+                                    <td class="center slot boolean">
+                                        &#160;
+                                    </td>
+                                    <td class="east"></td>
+                                </tr>
+                                <tr class="south">
+                                    <td class="west"></td>
+                                    <td class="center"></td>
+                                    <td class="east"></td>
+                                </tr>
+                            </table>
                         </td>
-                        <td class="label"> is greater than </td>
-                        <td class="slot boolean"></td>
+                        <td>
+                            <div class="label"> is greater than </div>
+                        </td>
+                        <td >
+                            <!-- this table is here to allow concave graphical features in the corners of a slot. -->
+                            <table class="hollow boolean" cellpadding="0" cellspacing="0">
+                                <tr class="north">
+                                    <td class="west"></td>
+                                    <td class="center"></td>
+                                    <td class="east"></td>
+                                </tr>
+                                <tr class="center">
+                                    <td class="west"></td>
+                                    <td class="center slot boolean">
+                                        &#160;
+                                    </td>
+                                    <td class="east"></td>
+                                </tr>
+                                <tr class="south">
+                                    <td class="west"></td>
+                                    <td class="center"></td>
+                                    <td class="east"></td>
+                                </tr>
+                            </table>
+                        </td>
                     </tr>
                 </table>
             </td>
