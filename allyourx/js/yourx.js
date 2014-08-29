@@ -189,7 +189,8 @@ YOURX = function(){
 		}
 		return to;
 	}
-		
+
+    /** Writes javascript which populates names in a new object, using items with the same names from the current scope. */
 	function writeScopeExportCode(propnames){
 		var pairs = [];
 		propnames.forEach(function(item){pairs.push("\"" + item + "\":" + item);});
@@ -198,21 +199,31 @@ YOURX = function(){
 				
 	/** Utility methods in a 'static' library object */		
 	var ThingyUtil = { //TODO consider reusing single static DOMParser and XMLSerializer
+        /** Constructs a function which redirects calls with all their arguments to a specific method on a specific object. */
 		methodHandoffFunction:function(obj,name){ //could now be superceded by JQuery proxy
 			return function(){
 				var fun = obj[name];
 				fun.apply(obj, arguments);
 			};
 		},
+        /** Creates unique hashes to assign distinct identities to items. */
 		hasher:new Guid(),
+        /** Logs a message by just writing text at the top of the html body. */
 		log:function(msg){$(function(){$('body').prepend(msg + "<br/>");});},
+        /** Translates from serialized XML to E4X format. */
 		xml2e4x:function(xml){ return new XML(ThingyUtil.xmlStripComments(xml));},
+        /** Translates from serialized XML to DOM format. */
 		xml2dom:function(xml){ return (new DOMParser()).parseFromString(xml,"text/xml");},
-		e4x2xml:function(e4x){ return e4x.toXMLString();},
-		e4x2dom:function(e4x){ return ThingyUtil.xml2dom(ThingyUtil.e4x2xml(e4x));}, /** From http://www.xml.com/pub/a/2007/11/28/introducing-e4x.html?page=4 */
+        /** Translates from E4X to serialized XML. */
+        e4x2xml:function(e4x){ return e4x.toXMLString();},
+        /** Translates from E4Xto DOM format. */
+        e4x2dom:function(e4x){ return ThingyUtil.xml2dom(ThingyUtil.e4x2xml(e4x));}, /** From http://www.xml.com/pub/a/2007/11/28/introducing-e4x.html?page=4 */
+        /** Translates from DOM to E4X. */
 		dom2e4x:function(dom){ return new XML(ThingyUtil.dom2xml(dom));}, /** From http://www.xml.com/pub/a/2007/11/28/introducing-e4x.html?page=4 */
-		dom2xml:function(dom){ return (new XMLSerializer()).serializeToString(dom);},
-		dom2thingy:function(node) {
+		/** Translates from DOM to serialized XML. */
+        dom2xml:function(dom){ return (new XMLSerializer()).serializeToString(dom);},
+		/** Translates from DOM to Thingy tree. */
+        dom2thingy:function(node) {
 			if(node instanceof Document){
 				return new RootThingy(node);		
 			}
@@ -238,6 +249,7 @@ YOURX = function(){
 				throw new Error("Unexpected node type when parsing XML");					
 			}
 		},
+        /** Translates from RelaxNG DOM to ThingyGrammar tree. */
 		dom2rule:function(node) {
 			if(node instanceof Document){
 				return new ThingyGrammar(node);
@@ -255,6 +267,7 @@ YOURX = function(){
 				}
 			}
 		},
+        /** Translates from Thingy tree format to serialized XML. */
 		thingy2xml:function(thingy) {
 			var thingystring = "";
 			if(thingy instanceof ElementThingy){
@@ -287,6 +300,7 @@ YOURX = function(){
 			}
 			return thingystring;
 		},
+        /** Visits an XML document at the specified URL, and tries to load it in a DOM. */
 		url2node:function(url){
 			var xhttp;
             if (window.XMLHttpRequest) {
@@ -301,12 +315,15 @@ YOURX = function(){
 			ThingyUtil.domStripSpace(xhttp.responseXML);
 			return xhttp.responseXML;
 		},
+        /** Visits an XML document at the specified URL, and tries to load it in a Thingy tree. */
 		url2thingy:function(url){
 			return ThingyUtil.dom2thingy(ThingyUtil.url2node(url));
 		},
+        /** Visits a RelaxNG document at the specified URL, and tries to load it into a ThingyGrammar tree. */
 		url2rule:function(url){
 			return ThingyUtil.dom2rule(ThingyUtil.url2node(url));
 		},
+        /** Attempts to remove nodes which contain nothing but whitespace from a DOM. */
 		domStripSpace:function(dom){
 			$("*", dom).contents().filter(function(){ //identifies spurious whitespace text nodes
 				if(this.nodeType == 3){ //filter for text node
@@ -324,7 +341,7 @@ YOURX = function(){
 		/** E4X cant handle XML processing instructions. Strip them out. From http://www.xml.com/pub/a/2007/11/28/introducing-e4x.html?page=4 */
 		xmlStripComments:function(xml){return xml.replace(/<\?(.*?)\?>/g,"");}, 
 		/** Iterates over the members of allmaps until one is found containing the given key. 
-		 * @param {Array or Object} allmaps A collection which contains maps as members 
+		 * @param {Array or Object} allmaps A collection which contains maps as members
 		 * @param {String or Integer} itemkey The member sought should have itemkey in its properties
 		 * @return The key (position or name) which retrieves the member from allmaps which contains itemkey  
 		 */
@@ -371,6 +388,7 @@ YOURX = function(){
 		walkSequenceWithRules:function(rls,sequence,walker){ //todo consider meaningful return value
 			var startidx = 0;
 			rls.forEach(function(rule){
+                //TODO currently implementations of walkSequence do not return a new index to indicate their consumption of an item
 				startidx = rule.walkSequence(sequence, walker, startidx);
 			});
 		},
@@ -1114,7 +1132,7 @@ YOURX = function(){
 	ContainerThingyRule.prototype = new ThingyRule();
 	/** Walks children along with child rules.
 	 * Any existing children trigger exactly one of either
-	 * an posAccepted or posRejected call for their position.
+	 * a posAccepted or posRejected call for their position.
 	 * Any missing children can trigger a posRequired call.
 	 * @param {Object} thingy
 	 * @param {Object} childwalker
@@ -1124,6 +1142,12 @@ YOURX = function(){
 		var childths = thingy.getChildren();
 		ThingyUtil.walkSequenceWithRulesOrReject(childrls,childths,childwalker,this);
 	};
+    /** Attempt to validate a thingy against a container rule.
+     * (A default container rule is trivially satisfied unless recursive)
+     * @param thingy The thingy to validate.
+     * @param shallow Flag to avoid recursion.
+     * @returns {boolean} Value to indicate if the thingy is valid against the rule.
+     */
 	ContainerThingyRule.prototype.matchThingy=function(thingy, shallow){
 		try{
 			if(!shallow){
@@ -1341,8 +1365,12 @@ YOURX = function(){
 	 * In this way, match and validation routines can be stricter (immediate termination) 
 	 * than autocompletion routines (which may continue to accept a sequence of required changes).  
 	 * 
-	 */ 
-	
+	 */
+
+    /** A SequenceWalker provides stub implementations of the functions involved in
+     * positional validation (for a sequence of children).
+     * @constructor
+     */
 	function SequenceWalker(){};
 	SequenceWalker.prototype.posAccepted = function(pos, rule){
 		throw new UnsupportedOperationError("posAccepted() not yet implemented");
@@ -1352,8 +1380,12 @@ YOURX = function(){
 	};		
 	SequenceWalker.prototype.posRequired = function(pos, rule){
 		throw new UnsupportedOperationError("posRequired() not yet implemented");
-	};		
+	};
 
+    /** A MapWalker provides stub implementations of the functions involved in
+     * name-oriented validation (for named attributes).
+     * @constructor
+     */
 	function MapWalker(){};
 	MapWalker.prototype.nameAccepted = function(name, rule){
 		throw new UnsupportedOperationError("nameAccepted() not yet implemented");
@@ -1364,7 +1396,11 @@ YOURX = function(){
 	MapWalker.prototype.nameRequired = function(name, rule){
 		throw new UnsupportedOperationError("nameRequired() not yet implemented");
 	};
-	
+
+    /** An ElementWalker combines the stub implementations of both the MapWalker
+     * and SequenceWalker
+     * @constructor
+     */
 	function ElementWalker(){};
 	ElementWalker.prototype = (function(){
 		var proto = {};
@@ -1372,15 +1408,22 @@ YOURX = function(){
 		copyProperties(MapWalker.prototype,proto);
 		return proto;
 	}());
-	
+
+    /** A walker which handles validation events against a single parent by
+     * recording the validating rule against the appropriate key (number or text).
+     * This allows a walk to be inspected after the fact, for example to identify
+     * children or attributes for which NO event was triggered.
+     * @constructor
+     */
 	function CachingWalker(){
-		//indexed by name
+        //maps to store the rules firing validation events
+		//indexed by name for attribute descendants
 		this.mapsbyname = {
 			accepted:{},
 			rejected:{},
 			required:{}
 		};
-		//indexed by position
+		//indexed by position for element descendants
 		this.mapsbypos = {
 			accepted:{},
 			rejected:{},
@@ -1390,11 +1433,21 @@ YOURX = function(){
 	CachingWalker.prototype = (function(){
 		var proto = new ElementWalker();
 		copyProperties({
+            /** Record a single validation event triggered by a single rule.
+             * @param allmaps The object containing one lookup table per status
+             * @param mapkey The validation status (which table to put it in)
+             * @param rulekey The position or name (in the document) to which the validation status applies
+             * @param rule the rule which asserted the validation status.
+             */
 			putCache:function(allmaps,mapkey,rulekey,rule){
-				if(!ThingyUtil.putUniqueKey(allmaps,mapkey,rulekey,rule)){
+                if(!ThingyUtil.putUniqueKey(allmaps,mapkey,rulekey,rule)){
 					throw new ThingyRuleError("Key " + rulekey + " already claimed by another rule"); 
 				}					
 			},
+            /** Return the current validation status for a given position or name by finding which lookup table contains it.
+             * @param rulekey
+             * @returns {The status}
+             */
 			getCacheStatus:function(rulekey){
 				if(typeof rulekey === "string"){
 					//by name
@@ -1408,6 +1461,11 @@ YOURX = function(){
 					throw new Error("Unexpected key type");
 				}
 			},
+            /** Gets the rule which assigned validation status to a particular
+             * position or name (multiple rules trying to assert a status should trigger an error).
+             * @param rulekey The position or name (key) being interrogated
+             * @returns {The rule which asserted validation status for that key}
+             */
 			getCache:function(rulekey){
 				var mapkey;
 				if(typeof rulekey  === "string"){
@@ -1438,7 +1496,13 @@ YOURX = function(){
 		},proto);
 		return proto;
 	}());
-			
+
+    /** A ValidationWalker responds to validation events by throwing
+     * errors which can propagate up the stack until they are handled
+     * by something monitoring for validation issues. Depending on where
+     * the error is handled, it may be possible to selectively resume the walk.
+     * @constructor
+     */
 	function ValidationWalker(){};
 	ValidationWalker.prototype = new ElementWalker();	
 	ValidationWalker.prototype.nameAccepted = function(name,rule){
@@ -1459,7 +1523,12 @@ YOURX = function(){
 	ValidationWalker.prototype.posRequired = function(pos,rule){
 		throw new ThingyRuleError("Child missing");
 	};
-	
+
+    /** A RecursiveValidationWalker is a ValidationWalker which
+     * spawns a new ValidationWalker for each accepted child.
+     * @param parent
+     * @constructor
+     */
 	function RecursiveValidationWalker(parent){
 		this.parent = parent;
 	};
@@ -1470,16 +1539,21 @@ YOURX = function(){
 			var walker = new RecursiveValidationWalker(child);
 			ThingyUtil.walkBelow(rule,child, walker);				
 		}
+        else{
+            //TODO CH: harsher handling of fallthrough where there is a child but the rule can't handle it?
+        }
 	};
-	
+
+    /** A CompoundWalker wraps multiple Walkers, allowing them all to be notified of each event in a validation run.
+     * @param wrapped The Walkers needing to be wrapped
+     * @constructor
+     */
 	function CompoundWalker(wrapped){
-		this.wrapped = [].concat(wrapped);
+		this.wrapped = [].concat(wrapped); //takes a unique copy of the array (TODO: isn't there a clonearray utility)
 	};
 	CompoundWalker.prototype = new ElementWalker();
 	CompoundWalker.prototype.nameAccepted = function(name,rule){
-		this.wrapped.forEach(function(walker){
-			walker.nameAccepted(name,rule);
-		});
+		this.wrapped.forEach(function(walker){ walker.nameAccepted(name,rule);});
 	};
 	CompoundWalker.prototype.nameRejected = function(name,rule){
 		this.wrapped.forEach(function(walker){walker.nameRejected(name,rule);});
@@ -1653,7 +1727,7 @@ YOURX = function(){
 	 * their preceding sibling and its descendants. If the test function returns
 	 * a truthy value, then the traversal is terminated early. 
 	 * @param {Object} totest The item at which the traversal should start
-	 * @param {Object} testfun The function which  should be used to visit each thingy
+	 * @param {Object} testfun The function which should be used to visit each thingy
 	 * @return The truthy value returned by the test function, or null if the traversal was not terminated.
 	 */ 
 	ThingyTracker.prototype.traverseDocumentOrder = function(totest, testfun){
