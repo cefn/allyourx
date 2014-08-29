@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!--  
-  Defines the minimal subset of RelaxNG which Allyourx can support in v003.
-  It extends v002 support with the control of content choice to include strictly typed content definitions for attributes, 
+  Defines the minimal subset of RelaxNG which Allyourx can support in v004.
+  It extends v003 support with the control of content choice to include strictly typed content definitions for attributes, 
   incorporating xml schema types like 'date', choices from a predefined set of values.
 -->
 <grammar datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes"

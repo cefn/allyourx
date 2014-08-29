@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!-- 
-  Defines the minimal subset of RelaxNG which Allyourx can support in v004.
-  Extends support of version v003 to escape the russian doll-only representation
+  Defines the minimal subset of RelaxNG which Allyourx can support in v005.
+  Extends support of version v004 to escape the russian doll-only representation
   and permit infinite recursion through production rules in ref/define relationships.
 -->
 <grammar datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes"

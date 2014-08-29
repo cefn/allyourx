@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!-- 
-  Defines the minimal subset of RelaxNG which Allyourx can support in v005.
-  Extends support of version v004 by introducing standard representations for
+  Defines the minimal subset of RelaxNG which Allyourx can support in v006.
+  Extends support of version v005 by introducing standard representations for
   xhtml markup and binary files to be included in XML files.
 -->
 <grammar datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes"
