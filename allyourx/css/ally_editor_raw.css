@@ -4,10 +4,12 @@
 
 .xraw.xcontainer, .xraw.xelement{
     display:block;
-    color:#FFFFFF;
-    background-color:#8888CC;
+    /*color:#FFFFFF;
+    background-color:#8888CC; */
+    color:#00CC00;
+    background-color:#000000;
     padding:0;
-    padding-left:4em; 
+    padding-left:2em;
 }
 
 .xraw.xattribute, .xraw.xtext, .xraw.xcontent{
@@ -18,17 +20,19 @@
 .xraw.xelement {
     border-width:1px;
     border-style:solid;
-    background-color:#88CC88;
+    /* background-color:#88CC88; */
+    background-color:#000000;
     clear:both;
 }
 .xraw.xattribute {
-    color:#FF0000;
-    background-color:#88CC88;
+    color:#009900;
+    /* background-color:#88CC88; */
     clear:left;
 }
 .xraw.xtext {
-    color:#000000;
-    background-color:#AAAAAA;
+    color:#00FF00;
+    /* background-color:#AAAAAA; */
+    background-color:#005500;
 }
 .xraw.xcontent {
     
