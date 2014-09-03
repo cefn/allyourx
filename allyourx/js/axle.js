@@ -125,7 +125,7 @@ AXLE = function(){
 		return null;
 	};
 
-	/** Returns the next involuntary operation. It simply returns the operation stored at the next key in interation order. 
+	/** Returns the next involuntary operation. It simply returns the operation stored at the next key in iteration order.
 	 * The sequence of returned operations is therefore dependent on the implementation and should be assumed to be arbitrary.
 	 */
 	OperationCaret.prototype.nextInvoluntaryOperation = function(){
@@ -186,7 +186,8 @@ AXLE = function(){
 
 	/** Used to configure the parentthingy of the OperationCaret. In principle this containment 
 	 * means an OperationCaret can be reused for multiple points in the tree, although
-	 * this should be tested, and is perhaps of questionable value compared to a clean object. 
+	 * this should be tested, and is perhaps of questionable value compared to a clean object.
+     * However, setParentThingy(null) triggers unbinding of events, to tidy up and permit garbage collection.
 	 * @param {Object} parentthingy The thingy monitored
 	 */
 	OperationCaret.prototype.setParentThingy = function(parentthingy){			
@@ -206,13 +207,15 @@ AXLE = function(){
 	
 	/** Used to configure the parentrule of the OperationCaret. In principle this means
 	 * that an OperationCaret can be reused through different validation scenarios for the 
-	 * same thingy, although this should be tested, and is perhaps of questionable value compared to a clean object. 
+	 * same thingy, although this should be tested, and is perhaps of questionable value compared to a clean object.
+     * However, setParentRule(rule) causes the operation cache to be refreshed, so could be used where the grammar
+     * is changing in real time.
 	 * @param {Object} parentrule The rule monitored
 	 */
 	OperationCaret.prototype.setParentRule = function(parentrule){
 		this.parentrule = parentrule;
 		if(this.parentrule){
-			this.updateOperationCache();		
+			this.updateOperationCache();
 		}
 		else{
 			throw new Error("null parentrule set in OperationCaret");
