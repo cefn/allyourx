@@ -24,47 +24,17 @@
     </define>
     
     <define name="expression">
-        <ref name="boolean" />
-        <ref name="number" />
-    </define>
-    
-    <define name="number">
         <choice>
-            <ref name="float"/>
-            <ref name="integer"/>
+            <ref name="boolean" />
+            <ref name="number" />           
         </choice>
     </define>
-    
-    <define name="if">
-        <element name="if">
-            <ref name="boolean"/>
-            <ref name="script"/>
-        </element>
-    </define>
-
-    <define name="ifelse">
-        <element name="ifelse">
-            <ref name="boolean"/>
-            <ref name="script"/>
-            <ref name="script"/>
-        </element>
-    </define>
-    
-    <define name="while">
-        <element name="while">
-            <ref name="boolean"/>
-            <ref name="script"/>
-        </element>
-    </define>
-    
-    <define name="boolean">
+            
+    <define name="number">
         <choice>
-            <ref name="true"/>
-            <ref name="false"/>
-            <ref name="equal" />
-            <ref name="notequal" />
-            <ref name="greaterthan" />
-            <ref name="lessthan" />
+            <ref name="variable"/>
+            <ref name="float"/>
+            <ref name="integer"/>
         </choice>
     </define>
     
@@ -84,6 +54,18 @@
         </choice>
     </define>
     
+    <define name="boolean">
+        <choice>
+            <ref name="variable"/>
+            <ref name="true"/>
+            <ref name="false"/>
+            <ref name="equal" />
+            <ref name="notequal" />
+            <ref name="greaterthan" />
+            <ref name="lessthan" />
+        </choice>
+    </define>
+    
     <define name="true">
         <element name="true">
             <empty/>
@@ -95,6 +77,35 @@
             <empty/>
         </element>
     </define>
+    
+    <define name="variable">
+        <element name="variable">
+            <data type="QName"/>
+        </element>
+    </define>
+    
+    <define name="if">
+        <element name="if">
+            <ref name="boolean"/>
+            <ref name="script"/>
+        </element>
+    </define>
+    
+    <define name="ifelse">
+        <element name="ifelse">
+            <ref name="boolean"/>
+            <ref name="script"/>
+            <ref name="script"/>
+        </element>
+    </define>
+    
+    <define name="while">
+        <element name="while">
+            <ref name="boolean"/>
+            <ref name="script"/>
+        </element>
+    </define>
+    
     
     <define name="equal">
         <element name="equal">
