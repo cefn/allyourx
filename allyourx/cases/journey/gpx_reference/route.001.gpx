@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Routino" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.topografix.com/GPX/1/1" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+<metadata>
+<desc>Creator : Routino - http://www.routino.org/</desc>
+<copyright author="Based on OpenStreetMap data from http://www.openstreetmap.org/">
+<license>http://www.openstreetmap.org/copyright</license>
+</copyright>
+</metadata>
+<rte>
+<name>Shortest route</name>
+<desc>Shortest route between 'start' and 'finish' waypoints</desc>
+<rtept lat="51.524658" lon="-0.127877">
+  <name>START</name>
+  <desc>South-East on 'Woburn Place (A4200)' for 0.251 km, 0.3 min</desc>
+</rtept>
+<rtept lat="51.522811" lon="-0.125781">
+  <name>TRIP001</name>
+  <desc>South-East on 'Russell Square (A4200)' for 0.186 km, 0.2 min</desc>
+</rtept>
+<rtept lat="51.521482" lon="-0.124123">
+  <name>TRIP002</name>
+  <desc>South-East on 'Southampton Row (A4200)' for 0.351 km, 0.4 min</desc>
+</rtept>
+...
+<rtept lat="51.477678" lon="-0.106792">
+  <name>TRIP020</name>
+  <desc>South-East on 'Vassall Road' for 0.138 km, 0.2 min</desc>
+</rtept>
+<rtept lat="51.478015" lon="-0.104870">
+  <name>TRIP021</name>
+  <desc>East on 'Vassall Road' for 0.087 km, 0.1 min</desc>
+</rtept>
+<rtept lat="51.478244" lon="-0.103651">
+  <name>FINISH</name>
+  <desc>Total Journey 6.4 km, 6 minutes</desc>
+</rtept>
+</rte>
+</gpx>
