@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?oxygen RNGSchema="file:/home/cefn/Documents/code/allyourx/github/allyourx_red/allyourx/testcases/routing/route.001.rng" type="xml"?>
+<route>
+    <location>M6 Lancaster Services Southbound exit</location>
+    <continue><number>16</number><miles/>
+    </continue>
+    <turnoff><left/></turnoff>
+    <continue><number>1</number><miles/></continue>
+    <turnoff><right/></turnoff>
+    <location>Preston Ice Skating Rink</location>
+</route>

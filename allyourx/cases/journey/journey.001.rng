@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grammar 
+  xmlns="http://relaxng.org/ns/structure/1.0"
+  xmlns:a="http://relaxng.org/ns/compatibility/annotations/1.0"
+  datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
+    <start>
+        <ref name="route" />
+    </start>
+    
+    <define name="route">
+        <element name="route">
+            <ref name="location" />
+            <oneOrMore>
+                <ref name="step"/>
+            </oneOrMore>
+            <ref name="location" />
+        </element>
+    </define>
+    
+    <define name="location">
+        <element name="location">
+            <data type="string"/>
+        </element>
+    </define>
+    
+    <define name="step">
+            <choice>
+            <ref name="turnoff"/>
+            <ref name="travel"/>
+            </choice>
+    </define>
+    
+    <define name="turnoff">
+        <element name="turnoff">
+            <ref name="direction"/>
+        </element>
+    </define>
+
+    <define name="direction">
+        <choice>
+            <ref name="left" />
+            <ref name="right" />
+        </choice>
+    </define>
+    
+    <define name="left">
+        <element name="left">
+            <empty/>
+        </element>
+    </define>
+
+    <define name="right">
+        <element name="right">
+            <empty/>
+        </element>
+    </define>
+    
+    <define name="travel">
+        <element name="meters" ><data type="float"/></element>
+        <!--
+            <choice>
+            <element name="miles" ><data type="float"/></element>
+            <element name="kilometers" ><data type="float"/></element>
+            <element name="meters" ><data type="float"/></element>
+            <element name="feet" ><data type="float"/></element>
+            </choice>
+        -->
+    </define>
+    
+    
+</grammar>
