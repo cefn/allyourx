@@ -95,7 +95,16 @@ $(function() {
 			UNITTEST.thingy = new YOURX.RootThingy();
 			UNITTEST.grammar.autoPopulate(UNITTEST.thingy);
 			return thingy.getChildren()[0].getName() == "player";
-		}], 
+		}],
+
+		 /**
+		    For initial script expressivity we need the RelaxNG elements...
+		    'choice'
+		    'ref' & 'define'
+		    'oneOrMore'
+
+		 *
+
 */	]);
 });            
 
