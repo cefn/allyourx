@@ -190,6 +190,16 @@ YOURX = function(){
 		return to;
 	}
 
+    function initPrototype(){
+        var constructors = [];
+        constructors = constructors.concat(cloneArray(arguments));
+        var proto = {};
+        constructors.forEach(function(item){
+            copyProperties(item.prototype, proto);
+        })
+        return proto;
+    }
+
     /** Writes javascript which populates names in a new object, using items with the same names from the current scope. */
 	function writeScopeExportCode(propnames){
 		var pairs = [];
@@ -251,20 +261,64 @@ YOURX = function(){
 		},
         /** Translates from RelaxNG DOM to ThingyGrammar tree. */
 		dom2rule:function(node) {
-			if(node instanceof Document){
-				return new ThingyGrammar(node);
-			}
-			else if(node instanceof Element){
-				var name = node.nodeName;
-				if(name=="element"){
-					return new ElementThingyRule(node);
-				}
-				else if(name=="attribute"){
-					return new AttributeThingyRule(node);
-				}
-				else{
-					throw new Error("Unsupported element found when loading ThingyRules");						
-				}
+            var CACHE = "rulecache";
+            var result = $(node).data(CACHE);
+            if(result){
+                return result;
+            }
+            else{
+                if(node instanceof Document){
+                    //TODO tidyup of CACHE_KEY data after completed traversal
+                    result = new ThingyGrammar(node);
+                }
+                else if(node instanceof Element) {
+                    var name = node.nodeName;
+                    if (name == "element") {
+                        result = new ElementThingyRule(node);
+                    }
+                    else if (name == "attribute") {
+                        result = new AttributeThingyRule(node);
+                    }
+                    else if (name == "oneOrMore") {
+                        result = new OneOrMoreThingyRule(node);
+                    }
+                    else if (name == "choice") {
+                        result = new ChoiceThingyRule(node);
+                    }
+                    else if (name == "data") {
+                        result = new DataThingyRule(node);
+                    }
+                    else if (name == "ref") { //find matching define and hand off
+                        result = [];
+                        var nameatt = $(node).attr("name");
+                        var matches = $("define[name='" + nameatt + "']", node.ownerDocument);
+                        if(matches.length !== 0){
+                            matches.each(function (index, el) {
+                                result = result.concat(ThingyUtil.dom2rule(el));
+                            });
+                        }
+                        else{
+                            throw new Error("Cannot find define pointed to by ref[@name=" + nameatt + "]");
+                        }
+                    }
+                    else if (name == "define") {
+                        result = [];
+                        $(node).children().each(function(idx, el){
+                            result = result.concat(ThingyUtil.dom2rule(el));
+                        });
+                        if (result.length == 0) {
+                            var nameatt = $(node).attr("name");
+                            throw new Error("Cannot find any rules within define [@name=" + nameatt + "]");
+                        }
+                    }
+                    else {
+                        throw new Error("Unsupported element '" + name + "' found when loading ThingyRules");
+                    }
+                }
+                if(result !== null){ //handle 'define' which simply redirects
+                    $(node).data(CACHE,result);
+                }
+                return result; //return resulting rule(s)
 			}
 		},
         /** Translates from Thingy tree format to serialized XML. */
@@ -382,38 +436,49 @@ YOURX = function(){
 		/** Walks a set of rules over a sequence of Thingies (stored by position), notifying validation events 
 		 * @param {Array} rls The rules to validate the Thingies
 		 * @param {Array} sequence The Thingies
-		 * @param {Walker} walker The walker which monitors the validation events and decides what to do
-		 * @return Nothing meaningful yet
+         * @param {Walker} walker The walker which monitors the validation events and decides what to do
+         * @param {Number} startfrom The index within the sequence where the rules should read from
+		 * @return {Number} The index after the last posAccepted() in the sequence, or startidx if no posAccepted().
 		 */
-		walkSequenceWithRules:function(rls,sequence,walker){ //todo consider meaningful return value
-			var startidx = 0;
+		walkSequenceWithRules:function(rls,sequence,walker,startfrom){ //todo consider meaningful return value
+            var nextidx = startfrom !== undefined ? startfrom : 0;
 			rls.forEach(function(rule){
-                //TODO currently implementations of walkSequence do not return a new index to indicate their consumption of an item
-				startidx = rule.walkSequence(sequence, walker, startidx);
+				nextidx = rule.walkSequence(sequence, walker, nextidx);
 			});
+            return nextidx;
 		},
 		/** Walks a set of rules over a sequence of Thingies (stored by position), notifying validation events 
 		 * and fires a rejection event for any Thingies which are not positively accepted by a rule once the walk has completed.
 		 * @param {Array} rls The rules to validate the Thingies
 		 * @param {Array} sequence The Thingies
-		 * @param {Walker} walker The walker to monitor validation events
+         * @param {Walker} walker The walker to monitor validation events
 		 * @param {Object} enforcer The entity on behalf of which the rejection is fired
+         * @param {Number} startwalk The position in the Thingy sequence to start walking
+         * @param {Number} endreject Items up to this position must be matched
+         * @return {Number} The index after the last posAccepted() in the sequence, or startidx if no posAccepted().
 		 */
-		walkSequenceWithRulesOrReject:function(rls,sequence,walker,enforcer){
-			//arrange to store walk results
+		walkSequenceWithRulesOrReject:function(rls,sequence,walker,enforcer,startfrom,rejectto){
+            startfrom = startfrom !== undefined? startfrom: 0; //default; start matching from first position of sequence
+            rejectto = rejectto!== undefined? rejectto: sequence.length; //default; rules must pattern match the whole sequence
+
+            //arrange to store walk results
 			var cachingwalker = new CachingWalker();
 			var compoundwalker = new CompoundWalker([cachingwalker,walker]);
 			
 			//walk
-			ThingyUtil.walkSequenceWithRules(rls,sequence,compoundwalker);
+            var nextidx = ThingyUtil.walkSequenceWithRules(rls,sequence,compoundwalker, startfrom);
 			
 			//rejected unmatched positions on behalf of the enforcing (parent?) rule
 			var pos;
-			for(pos = 0; pos < sequence.length; pos++){
+			for(pos = startfrom ; pos < rejectto; pos++){
 				if(cachingwalker.getCacheStatus(pos) === null){
 					walker.posRejected(pos,enforcer);
 				}
 			}
+
+            //report the next unbound position in the sequence
+            return nextidx;
+
 		},
 		/** Tests if a rule has duck-typing to do a recursive validation walk on descendant Thingies
 		 * @param {ThingyRule} rule The rule to walk descendants.
@@ -1172,7 +1237,14 @@ YOURX = function(){
 		}
 	};
 
-	function ThingyGrammar(){
+    /** ContentThingyRule has validation logic for rules bound against ContentThingy types, such as...
+     * AttributeThingyRule, TextThingyRule, DataThingyRule
+     * @constructor
+     */
+    function ContentThingyRule(){}
+    ContentThingyRule.prototype = initPrototype(ThingyRule);
+
+    function ThingyGrammar(){
 		if(arguments.length == 1 && arguments[0] instanceof Document){
 			var docnoderuleq = $("grammar>start>*", arguments[0]);
 			if(docnoderuleq.length == 1){
@@ -1187,14 +1259,17 @@ YOURX = function(){
 		}
 	}
 	ThingyGrammar.prototype = new ContainerThingyRule();
-	ThingyGrammar.prototype.walkSequence = function(sequence, walker, startidx){
-		if(sequence[startidx] instanceof RootThingy){
-			walker.posAccepted(startidx,this);
+	ThingyGrammar.prototype.walkSequence = function(sequence, walker, startfrom){
+        var walkedto = startfrom;
+		if(sequence[startfrom] instanceof RootThingy){
+			walker.posAccepted(startfrom,this);
+            walkedto++;
 		}
 		else{
-			walker.posRequired(startidx,this);
-			walker.posRejected(startidx,this);
+			walker.posRequired(startfrom,this);
+			walker.posRejected(startfrom,this);
 		}
+        return walkedto;
 	};
 			
 	function TypedThingyRule(typename, children){
@@ -1226,7 +1301,7 @@ YOURX = function(){
 				if(name){
 					var childrules = [];
 					cloneArray(el.childNodes).forEach(function(item){
-						childrules.push(ThingyUtil.dom2rule(item));			
+						childrules = childrules.concat(ThingyUtil.dom2rule(item));
 					});
 					NamedThingyRule.apply(this,[name, "ElementThingy", childrules]);															
 				}
@@ -1245,13 +1320,8 @@ YOURX = function(){
 			throw new Error("Malformed arguments to ElementThingyRule constructor");
 		}
 	}
-	ElementThingyRule.prototype = (function(){
-		var proto = {};
-		copyProperties(NamedThingyRule.prototype, proto);
-		copyProperties(ContainerThingyRule.prototype, proto);
-		return proto;
-	}());
-	
+	ElementThingyRule.prototype = initPrototype(NamedThingyRule,ContainerThingyRule);
+
 	/** Combines shallow matching from NamedThingyRule with recursive behaviour of Container
 	 * @param {Object} thingy
 	 */
@@ -1262,19 +1332,22 @@ YOURX = function(){
 		return false;
 	};
 	
-	ElementThingyRule.prototype.walkSequence = function(sequence,walker,startidx){
-		if(sequence.length > startidx){ //check there is a candidate at all
-			if(this.matchThingy(sequence[startidx], true)){
-				walker.posAccepted(startidx, this);
+	ElementThingyRule.prototype.walkSequence = function(sequence,walker,startfrom){
+        var walkedto = startfrom;
+		if(sequence.length > startfrom){ //check there is a candidate at all
+			if(this.matchThingy(sequence[startfrom], true)){
+				walker.posAccepted(startfrom, this);
+                walkedto++;
 			}
 			else{
-				walker.posRejected(startidx, this);
-				walker.posRequired(startidx, this);
-			}				
+				walker.posRejected(startfrom, this);
+				walker.posRequired(startfrom, this);
+			}
 		}
 		else{
-			walker.posRequired(startidx, this);
+			walker.posRequired(startfrom, this);
 		}
+        return walkedto;
 	};
 	
 	/** Walks an element's attributes along with attribute rules. 
@@ -1314,7 +1387,7 @@ YOURX = function(){
 			throw new Error("Malformed arguments to AttributeThingyRule constructor");
 		}
 	}
-	AttributeThingyRule.prototype = new NamedThingyRule();
+	AttributeThingyRule.prototype = initPrototype(ContentThingyRule,NamedThingyRule);
 	AttributeThingyRule.prototype.matchThingy = function(thingy,shallow){ //for v001 shallow is not yet relevant
 		if(thingy instanceof AttributeThingy){
 			return thingy.name === this.name;
@@ -1339,31 +1412,116 @@ YOURX = function(){
 	function TextThingyRule(){
 		TypedThingyRule.apply(this,['TextThingy',[]]); //Text rules have no children - empty child array
 	}
-	TextThingyRule.prototype = new TypedThingyRule();
-	
-	function OptionalThingyRule(){
-		ThingyRule.apply(this,arguments);	
+	TextThingyRule.prototype = initPrototype(ContentThingyRule,TypedThingyRule);
+
+    function DataThingyRule(){
+        //throw new UnsupportedOperationError("DataThingyRule not yet implemented");
+        TextThingyRule.apply(this,[]); //Text rules have no children - empty child array
+    }
+    DataThingyRule.prototype = initPrototype(TextThingyRule);
+
+    /** The QuantifiedThingyRule provides a mechanism for its descendant rules to be repeated
+     * between 'min' and 'max' times, as expressed by the 'optional', 'zeroOrMore' and 'oneOrMore'
+     * RelaxNG rules. To express these alternatives it provides a procedure for descendant rules to
+     * bind between  0 and Number.MAX_VALUE times. To count as a binding, the whole sub-pattern has
+     * to be matched.
+     * The QuantifiedThingyRule therefore consumes or generates new walker callbacks. For example:
+     * In the case that min>0 (corresponding to RelaxNG's 'oneOrMore') at least one sub-pattern is
+     * required, so the QuantifiedThingyRule will raise an xRequired() callback if any of its sub-pattern
+     * reports it is unsatisfied. Equally, in the case that min==0 (for example corresponding to RelaxNG
+     * 'optional' or 'zeroOrMore'), then it will consume it's sub-pattern's xRequired() or xRejected() calls.
+     */
+    function QuantifiedThingyRule(rulenode, min, max){
+        this.min = min;
+        this.max = max;
+        //retrieve childrules from immediate children
+        var childrules = [];
+        cloneArray(rulenode.childNodes).forEach(function(item){
+            childrules = childrules.concat(ThingyUtil.dom2rule(item));
+        });
+        ThingyRule.apply(this,[childrules]);
+    }
+    QuantifiedThingyRule.prototype = new ThingyRule(); //TODO need equivalent for walkMap? Are Attributes valid in Quantifications
+    QuantifiedThingyRule.prototype.walkSequence = function(sequence,sequenceWalker,sequenceStart) {
+        //try to match all child rules a whole number of times
+        var sequencePos;
+        sequencePos = sequenceStart;
+        var goodWalkers = [], badWalkers = [];
+        var patternPos;
+        for(patternPos = 0; patternPos < this.max; patternPos++){
+            var cachingWalker = new CachingWalker();
+            sequencePos = ThingyUtil.walkSequenceWithRules(this.children,sequence,cachedWalker,sequencePos);
+            if(cachingWalker.getRejectedPositions().length === 0 &&
+                cachingWalker.getRequiredPositions().length === 0){
+                goodWalkers.push(cachingWalker);
+            }
+            else{
+                badWalkers.push(cachingWalker);
+                break;
+            }
+        }
+        //re-run events
+        sequencePos = sequenceStart;
+        if(goodWalkers.length < this.min){ //repetitions below lower bound, pass on failed validation events (if any)
+            badWalkers.every(function(badWalker){
+                sequencePos = badWalker.replay(sequenceWalker,sequencePos);
+            });
+        }
+        else{
+            goodWalkers.every(function(goodWalker){
+                sequencePos = goodWalker.replay(sequenceWalker,sequencePos);
+            });
+        }
+        return sequencePos;
+    };
+
+
+
+    function OneOrMoreThingyRule(){
+        if(arguments[0] instanceof Element && arguments[0].nodeName=="oneOrMore"){ //creation from values in DOM node
+            QuantifiedThingyRule.apply(this,[arguments[0], 1, Number.MAX_VALUE]);
+        }
+        else{ throw new Error("Malformed arguments to OneOrMoreThingyRule constructor"); }
+    }
+    OneOrMoreThingyRule.prototype = initPrototype(QuantifiedThingyRule);
+
+    function OptionalThingyRule(){
+        if(arguments[0] instanceof Element && arguments[0].nodeName=="optional"){ //creation from values in DOM node
+            QuantifiedThingyRule.apply(this,[arguments[0], 0, 1]);
+        }
+        else{ throw new Error("Malformed arguments to OptionalThingyRule constructor"); }
 	}
-	OptionalThingyRule.prototype = new ThingyRule();
-	
+	OptionalThingyRule.prototype = initPrototype(QuantifiedThingyRule);
+
 	function ZeroOrMoreThingyRule(){ /** Repeats the consumption of its child rules until they stop consuming. */
-		ThingyRule.apply(this,arguments);	
+        if(arguments[0] instanceof Element && arguments[0].nodeName=="optional"){ //creation from values in DOM node
+            QuantifiedThingyRule.apply(this,[arguments[0], 0, Number.MAX_VALUE]);
+        }
+        else{ throw new Error("Malformed arguments to OptionalThingyRule constructor"); }
 	}
-	ZeroOrMoreThingyRule.prototype = new ThingyRule();		
-	
-	function OneOrMoreThingyRule(){
-		ThingyRule.apply(this,arguments);	
-	}
-	OneOrMoreThingyRule.prototype = new ThingyRule();
-	
-	/** A Walker allows pluggable exception throwing and termination behaviour
+	ZeroOrMoreThingyRule.prototype = initPrototype(QuantifiedThingyRule);
+
+    function ChoiceThingyRule(){
+        throw new UnsupportedOperationError("ChoiceThingyRule not yet implemented");
+        ThingyRule.apply(this,arguments);
+    }
+    ChoiceThingyRule.prototype = new ThingyRule();
+
+    function GroupThingyRule(){
+        throw new UnsupportedOperationError("GroupThingyRule not yet implemented");
+        ThingyRule.apply(this,arguments);
+    }
+    GroupThingyRule.prototype = new ThingyRule();
+
+    /** A Walker allows pluggable exception throwing and termination behaviour
 	 * for validation routines. When a schema rule requires a change to a parent node
 	 * it can invoke the corresponding method on this object and, depending on the 
 	 * validation scenario, the model may choose to accept the change, or terminate 
 	 * immediately with it's choice of exception to flag the state to enclosing code.
 	 * 
 	 * In this way, match and validation routines can be stricter (immediate termination) 
-	 * than autocompletion routines (which may continue to accept a sequence of required changes).  
+	 * than autocompletion routines (which may continue to accept a sequence of required changes)
+     * whilst using the same validation-rule-binding traversal and metadata structures.
 	 * 
 	 */
 
@@ -1492,7 +1650,32 @@ YOURX = function(){
 			posRequired:function(pos, rule){ this.putCache(this.mapsbypos, "required", pos, rule); },
 			nameAccepted:function(name, rule){ this.putCache(this.mapsbyname, "accepted", name, rule); },
 			nameRejected:function(name, rule){ this.putCache(this.mapsbyname, "rejected", name, rule); },
-			nameRequired:function(name, rule){ this.putCache(this.mapsbyname, "required", name, rule); }
+			nameRequired:function(name, rule){ this.putCache(this.mapsbyname, "required", name, rule); },
+            replay:function(sequenceWalker,sequenceStart,sequenceEnd){
+                sequenceEnd = sequenceEnd !== undefined? sequenceEnd : Number.MAX_VALUE;
+                var sequencePos = sequenceStart;
+                sequenceLoop:
+                while(sequencePos < sequenceEnd){
+                    var status = this.getCacheStatus(sequencePos);
+                    switch(status){
+                        case 'accepted':
+                            sequenceWalker.posAccepted(sequencePos,this.getCache(sequencePos));
+                            break;
+                        case 'required':
+                            sequenceWalker.posRequired(sequencePos,this.getCache(sequencePos));
+                            break;
+                        case 'rejected':
+                            sequenceWalker.posRejected(sequencePos,this.getCache(sequencePos));
+                            break;
+                        case null:
+                            //no recorded status against next position means walk was already complete
+                            break sequenceLoop;
+                        default: throw new Error("Unexpected cache status '" + status + "' in successful walk");
+                    }
+                    sequencePos ++;
+                }
+            }
+
 		},proto);
 		return proto;
 	}());
