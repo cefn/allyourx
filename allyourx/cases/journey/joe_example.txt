@@ -1,0 +1,5 @@
+<travel><south/><optional><lane>Perimeter Road</lane></optional></travel>
+Drive south down the perimeter road
+take the south exit
+turn right at the roundabout 
+left at the traffic lights onto the A6
