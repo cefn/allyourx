@@ -22,8 +22,8 @@ $(function() {
 				   ( docthingy.name==='player') &&
 				   ( docthingyatt0.name==='name') &&
 				   ( docthingyatt1.name==='position') &&
-				   ( docthingy.getAttribute('name') === 'Viswanathan Anand') &&
-				   ( docthingy.getAttribute('position') === 'Grand Master') &&
+				   ( docthingy.getAttributeValue('name') === 'Viswanathan Anand') &&
+				   ( docthingy.getAttributeValue('position') === 'Grand Master') &&
 				   ( docthingy.getAttributes()['name'].value === 'Viswanathan Anand') &&
 				   ( docthingy.getAttributes()['position'].value  === 'Grand Master');
 		}],
@@ -65,8 +65,8 @@ $(function() {
 				   ( docthingyatt0.name==='name') &&
 				   ( docthingyatt1.name==='position') &&
 				   ( docthingychild0.name==='championship') &&
-				   ( docthingy.getAttribute('name') === 'Viswanathan Anand') &&
-				   ( docthingy.getAttribute('position') === 'Grand Master') &&
+				   ( docthingy.getAttributeValue('name') === 'Viswanathan Anand') &&
+				   ( docthingy.getAttributeValue('position') === 'Grand Master') &&
 				   ( docthingy.getAttributes()['name'].value === 'Viswanathan Anand') &&
 				   ( docthingy.getAttributes()['position'].value  === 'Grand Master');			
 		}],
