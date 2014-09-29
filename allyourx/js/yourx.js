@@ -439,7 +439,46 @@ YOURX = function(){
 				return false;
 			}
 		},
-		/** Walks a set of rules over a sequence of Thingies (stored by position), notifying validation events 
+        /** Walks a set of rules over a sequence of characters, notifying validation events
+         * @param textRules The rules to validate character sequences
+         * @param textValue The character sequence to read
+         * @param textWalker The walker which monitors the validation events and decides what to do
+         * @param textStart The index within the string where the characters should be validated from.
+         * @returns {*}
+         */
+        walkStringWithRules:function(textRules, textValue, textWalker, textStart){
+            textStart = textStart !== undefined ? textStart : 0;
+            textRules.forEach(function(rule){
+                textStart = rule.walkString(textValue,textWalker,textStart);
+            });
+            return textStart;
+        },
+        walkStringWithRulesOrReject:function(textRules,textValue,textWalker,enforcer,startfrom,rejectto){
+            startfrom = startfrom !== undefined? startfrom: 0; //default; start matching from first position of sequence
+            rejectto = rejectto!== undefined? rejectto: textValue.length; //default; rules must pattern match the whole sequence
+
+            //arrange to store walk results
+            var cachingwalker = new CachingWalker();
+
+            //walk
+            var nextidx = ThingyUtil.walkStringWithRules(textRules,textValue,cachingwalker, startfrom);
+
+            //rejected unmatched positions on behalf of the enforcing (parent?) rule
+            var pos;
+            for(pos = startfrom ; pos < rejectto; pos++){
+                if(cachingwalker.getCachedStatus(pos) === null){
+                    cachingwalker.posRejected(pos,enforcer);
+                }
+            }
+
+            //replay the sequence, including posRejected events
+            cachingwalker.replaySequence(textWalker);
+
+            //report the next unbound position in the sequence
+            return nextidx;
+
+        },
+        /** Walks a set of rules over a sequence of Thingies (stored by position), notifying validation events
 		 * @param {Array} rls The rules to validate the Thingies
 		 * @param {Array} sequence The Thingies
          * @param {Walker} walker The walker which monitors the validation events and decides what to do
@@ -477,7 +516,7 @@ YOURX = function(){
 			//rejected unmatched positions on behalf of the enforcing (parent?) rule
 			var pos;
 			for(pos = startfrom ; pos < rejectto; pos++){
-				if(cachingwalker.getCacheStatus(pos) === null){
+				if(cachingwalker.getCachedStatus(pos) === null){
 					walker.posRejected(pos,enforcer);
 				}
 			}
@@ -486,11 +525,13 @@ YOURX = function(){
             return nextidx;
 
 		},
-		/** Tests if a rule has duck-typing to do a recursive validation walk on descendant Thingies
+		/** Tests if a rule has duck-typing to do a recursive validation walk on descendant Thingies,
+         * Returns true if the rule processes Attributes, Child Nodes (Element or Text nodes)
+         * or Character data (individual characters as 'descendants' of a text node)
 		 * @param {ThingyRule} rule The rule to walk descendants.
 		 */
 		canWalkBelow:function(rule){
-			return ("walkAttributes" in rule) || ("walkChildren" in rule);
+			return ("walkAttributes" in rule) || ("walkChildren" in rule) || "walkCharacters" in rule;
 		},
 		/** Executes the validation walk on descendant Thingies for a given rule, using
 		 * duck-typing to establish the descendants to walk. 
@@ -503,10 +544,14 @@ YOURX = function(){
 				//traverse attributes if an element
 				rule.walkAttributes(thingy,walker);
 			}
-			if('walkChildren' in rule){
-				//traverse children for all containers
-				rule.walkChildren(thingy,walker);				
-			}
+            if('walkChildren' in rule){
+                //traverse children for all containers, including element nodes and text nodes
+                rule.walkChildren(thingy,walker);
+            }
+            if('walkCharacters' in rule){
+                //traverse characters of an attribute node or text node
+                rule.walkCharacters(thingy,walker);
+            }
 		},
 		/** Walks a set of rules over a map of Thingies (stored by name), notifying validation events 
 		 * @param {Array} rls The rules which should validate the Thingies
@@ -535,7 +580,7 @@ YOURX = function(){
 			
 			//rejected unmatched names on behalf of the enforcing (parent?) rule
 			for(name in map){
-				if(cachingwalker.getCacheStatus(name) === null){ 
+				if(cachingwalker.getCachedStatus(name) === null){
 					walker.nameRejected(name, enforcer);
 				}
 			}
@@ -550,10 +595,16 @@ YOURX = function(){
         this.origin = origin;
 	}
 	UnsupportedOperationError.prototypeFrom(Error);
-	
-	function ThingyRuleError(message) {
+
+    /** A ThingyRuleError is used to encode, for example, validation failures
+     * @param message The message describing the failure
+     * @param related An object with named entries related to debugging
+     * @constructor
+     */
+	function ThingyRuleError(message, related) {
 	    this.name = "ThingyRuleError";
 	    this.message = (message || "");
+        this.related = related;
 	}
 	ThingyRuleError.prototypeFrom(Error);
 	
@@ -1094,7 +1145,7 @@ YOURX = function(){
         },
 
         /** Returns the value in the AttributeThingy stored against the given name. */
-        getAttribute:function(name){
+        getAttributeValue:function(name){
             if (name in this.attributes) {
                 return this.attributes[name].value;
             }
@@ -1216,16 +1267,38 @@ YOURX = function(){
         getChildren:function(){
             return this.children;
         },
-        /** Calls back with rule-specific event notifications
-         * if the walker has matching signature.
+        /** This function should be implemented to call back on the specified walker
+         * indicating the individual locations in a sequence which are...
+         * <ul>
+         *     <li><i>accepted</i> by the rule (which are valid at their position)</li>
+         *     <li><i>required</i> by the rule (which aren't at their position, but are needed by this rule)</li>
+         *     <li><i>rejected</i> by the rule (which <em>are</em> at their position, but are not accepted by this rule</li>
+         * </ul>
+         * The implementation should call posRequired or posRejected on at most one occasion.
+         * @param ths The sequence of thingies being validated
+         * @param walker The walker getting validation notifications
+         * @param startidx The position in the sequence to start validating
+         * @return The last valid position accepted by the rule (or the start if no position is accepted).
+         *
+         * Note: This mirrors the behaviour of walkString on a per-character basis within StringThingyRule.
          */
         walkSequence:function(ths, walker, startidx){
             throw new UnsupportedOperationError("Walk not yet implemented", this);
         }
     });
 
+    function SingleThingyRule(children){
+        ThingyRule.apply(this,arguments);
+    }
+    SingleThingyRule.prototypeFrom(ThingyRule);
+    SingleThingyRule.copyToPrototype({
+        matchThingy:function(){
+            throw new UnsupportedOperationError("Match not yet implemented", this);
+        }
+    });
+
 	function ContainerThingyRule(){}
-	ContainerThingyRule.prototypeFrom(ThingyRule);
+	ContainerThingyRule.prototypeFrom(SingleThingyRule);
     ContainerThingyRule.copyToPrototype({
         /** Walks children along with child rules.
          * Any existing children trigger exactly one of either
@@ -1276,11 +1349,20 @@ YOURX = function(){
     });
 
     /** ContentThingyRule has validation logic for rules bound against ContentThingy types, such as...
-     * AttributeThingyRule, TextThingyRule, DataThingyRule
+     * AttributeThingyRule, DataThingyRule or TextThingyRule
      * @constructor
      */
-    function ContentThingyRule(){}
+    function ContentThingyRule(children){
+        ThingyRule.apply(this,[children]);
+    };
     ContentThingyRule.prototypeFrom(ThingyRule);
+    ContentThingyRule.copyToPrototype({
+       walkCharacters:function(thingy,stringWalker){
+           var stringRules = this.getChildren(); //.filter(function(rule){ return "walkString" in rule; });
+           var stringValue = thingy.getValue();
+           return ThingyUtil.walkStringWithRulesOrReject(stringRules, stringValue, stringWalker, this, 0, stringValue.length);
+       }
+    });
 
     function ThingyGrammar(){
 		if(arguments.length == 1 && arguments[0] instanceof Document){
@@ -1314,9 +1396,9 @@ YOURX = function(){
 
 	function TypedThingyRule(typename, children){
 		this.typename = typename;
-		ThingyRule.apply(this,[children]);
+		SingleThingyRule.apply(this,[children]);
 	}
-	TypedThingyRule.prototypeFrom(ThingyRule);
+	TypedThingyRule.prototypeFrom(SingleThingyRule);
     TypedThingyRule.copyToPrototype({
         matchThingy:function(thingy){
             return thingy instanceof YOURX[this.typename];
@@ -1412,15 +1494,38 @@ YOURX = function(){
         }
     );
 
+    /** Superclass for validation rules which require specific character data in text nodes, such as
+     * DataThingyRule (for text nodes matching XML Schema Datatypes), LiteralThingyRule (for text nodes
+     * matching pre-defined character sequences) or AnyTextRule (allowing any character data). Note,
+     * these validation rules are children of the rules
+     * which actually match the thingies. For example, a TextThingyRule or an AttributeThingyRule is
+     * needed as a parent rule. */
+    function StringThingyRule() {
+    }
+    StringThingyRule.prototypeFrom(ThingyRule);
+    StringThingyRule.copyToPrototype({
+        matchThingy:function(thingy,shallow){ //shallow is ignored
+            //A StringThingyRule doesn't match any thingy at all. It is used to validate character content found within a thingy.
+            throw new UnsupportedOperationError("matchThingy is not a valid operation for a StringThingyRule", this);
+        },
+    });
 
-	function AttributeThingyRule(){
-		var children = []; //Attribute rules have no children - force empty child array
+    function AttributeThingyRule(){
 		if(arguments[0] instanceof Element){ //creation from values in DOM node
 			var el = arguments[0];
 			if(el.nodeName=="attribute"){
 				var name = el.getAttribute("name");
 				if(name){
-					NamedThingyRule.apply(this,[name, "AttributeThingy", children]);						
+                    //characters can be validated by <text/> with a literal, or <data/> (XSD)
+                    var children = [];
+                    cloneArray(el.childNodes).forEach(function(item){
+                        children = children.concat(ThingyUtil.dom2rule(item));
+                    });
+                    //if no explicit <text/> or <data/> then any character literal would be allowed
+                    if(children.length === 0){
+                        children.push(new LiteralThingyRule(null));
+                    }
+                    NamedThingyRule.apply(this,[name, "AttributeThingy", children]);
 				}
 				else{
 					throw new Error("Cannot populate AttributeThingyRule, 'attribute' DOM element has no 'name' attribute");
@@ -1437,9 +1542,9 @@ YOURX = function(){
 			throw new Error("Malformed arguments to AttributeThingyRule constructor");
 		}
 	}
-	AttributeThingyRule.prototypeFrom(ContentThingyRule);
+	AttributeThingyRule.prototypeFrom(NamedThingyRule); //TODO switch inheritance heirarchy to favour NamedThingyRule
     AttributeThingyRule.copyToPrototype(
-        NamedThingyRule.prototype,
+        ContentThingyRule.prototype,
         {
             matchThingy:function(thingy,shallow){ //for v001 shallow is not yet relevant
                 if(thingy instanceof AttributeThingy){
@@ -1470,16 +1575,108 @@ YOURX = function(){
 	TextThingyRule.prototypeFrom(TypedThingyRule);
     TextThingyRule.copyToPrototype(ContentThingyRule.prototype);
 
+    /** Enforces character content to correspond to an XML Schema datatype.
+     * Examples of these types (of which only some are implemented) are...
+     * boolean, base64binary, hexBinary, anyURI, language, normalizedString,
+     * string, token, byte, decimal, double, float, int, integer, long,
+     * negativeInteger, nonNegativeInteger, nonPositiveInteger, positiveInteger,
+     * short, unsignedByte, unsignedInt, unsignedLong, unsignedShort,
+     * date, dateTime, duration, gDay, gMonth, gMonthDay, gYear, gYearMonth, time,
+     * Name, NCName, QName, ENTITY, ENTITIES, ID, IDREF, IDREFS, NMTOKEN, NMTOKENS
+     * anyType, anySimpleType
+     * @constructor
+     */
     function DataThingyRule(){
-        //throw new UnsupportedOperationError("DataThingyRule not yet implemented");
-        TextThingyRule.apply(this,[]); //Text rules have no children - empty child array
+        if(arguments[0] instanceof Element){ //creation from values in DOM node
+            var el = arguments[0];
+            if(el.nodeName=="data"){
+                var type = el.getAttribute("type");
+                if(type){
+                    this.type = type;
+                }
+                else{
+                    throw new Error("Cannot populate DataThingyRule 'data' DOM element has no 'type' attribute");
+                }
+            }
+            else{
+                throw new Error("Cannot populate DataThingyRule with DOM element called " + el.nodeName);
+            }
+        }
+        else{
+            throw new Error("Malformed arguments to DataThingyRule constructor");
+        }
+        StringThingyRule.apply(this,[]); //Data rules have no children - empty child array
     }
-    DataThingyRule.prototypeFrom(TextThingyRule);
+    DataThingyRule.prototypeFrom(StringThingyRule);
+    DataThingyRule.copyToPrototype({
+        walkString:function(stringValue,stringWalker,stringStart){
+            throw new UnsupportedOperationError("walkString is not yet implemented", this);
+        }
+    });
+
+    function LiteralThingyRule(){
+        if(arguments[0] instanceof Element){ //creation from values in DOM node
+            var el = arguments[0];
+            if(el.nodeName=="text"){
+                var literalValue = $(el).contents().filter(function() {
+                    return this.nodeType == 3;
+                }).text();
+                if(literalValue){
+                    this.value = literalValue; //specific text allowed
+                }
+                else{
+                    this.value = null; //any text allowed
+                }
+            }
+            else{
+                throw new Error("Cannot populate LiteralThingyRule with DOM element called " + el.nodeName);
+            }
+        }
+        else if (arguments[0] instanceof String){
+            this.value = arguments[0]; //specific text allowed
+        }
+        else if (arguments[0] === null){
+            this.value = null; //any text allowed
+        }
+        else{
+            throw new Error("Malformed arguments to LiteralThingyRule constructor");
+        }
+        StringThingyRule.apply(this,[]); //Literal rules have no children - empty child array
+    }
+    LiteralThingyRule.prototypeFrom(StringThingyRule);
+    LiteralThingyRule.copyToPrototype({
+        walkString:function(stringValue,stringWalker,stringStart){
+            if(this.value !== null){ //test against literal characters
+                var valuePos;
+                for(valuePos=0;valuePos< this.value.length; valuePos++){
+                    var stringPos = stringStart + valuePos;
+                    if(stringValue.length > stringPos){
+                        if(stringValue.charAt(stringPos) == this.value.charAt(valuePos)){ //accept the character
+                            stringWalker.posAccepted(stringPos,this);
+                        }
+                    }
+                    else{
+                        stringWalker.posRequired(stringPos,this);
+                        break; //TODO this break ensures only a single posRequired is thrown. Correct behaviour?
+                    }
+                }
+            }
+            else{ //consume all characters
+                var stringPos;
+                for(stringPos=stringStart;stringPos<stringValue.length ; stringPos++){
+                    stringWalker.posAccepted(stringPos, this);
+                }
+            }
+            return stringPos;
+        }
+    });
+
+
 
     /** The QuantifiedThingyRule provides a mechanism for its descendant rules to be repeated
-     * between 'min' and 'max' times, as expressed by the 'optional', 'zeroOrMore' and 'oneOrMore'
+     * between 'min' and 'max' times, corresponding with the 'optional', 'zeroOrMore' and 'oneOrMore'
      * RelaxNG rules. To express these alternatives it provides a procedure for descendant rules to
-     * bind between  0 and Number.MAX_VALUE times. To count as a binding, the whole sub-pattern has
+     * bind between 0 and Number.MAX_VALUE times. To count as a binding, the whole sub-pattern has
      * to be matched.
      * The QuantifiedThingyRule therefore consumes or generates new walker callbacks. For example:
      * In the case that min>0 (corresponding to RelaxNG's 'oneOrMore') at least one sub-pattern is
@@ -1602,6 +1799,8 @@ YOURX = function(){
     }
     GroupThingyRule.prototypeFrom(ThingyRule);
 
+
+
     /** A Walker allows pluggable exception throwing and termination behaviour
 	 * for validation routines. When a schema rule requires a change to a parent node
 	 * it can invoke the corresponding method on this object and, depending on the 
@@ -1613,12 +1812,15 @@ YOURX = function(){
      * whilst using the same validation-rule-binding traversal and metadata structures.
 	 * 
 	 */
+    function Walker(){};
+    Walker.prototypeFrom(Object);
 
     /** A SequenceWalker provides stub implementations of the functions involved in
      * positional validation (for a sequence of children).
      * @constructor
      */
 	function SequenceWalker(){};
+    SequenceWalker.prototypeFrom(Walker);
     SequenceWalker.copyToPrototype({
         posAccepted:function(pos, rule){
             throw new UnsupportedOperationError("posAccepted() not yet implemented", this);
@@ -1636,6 +1838,7 @@ YOURX = function(){
      * @constructor
      */
 	function MapWalker(){};
+    MapWalker.prototypeFrom(Walker);
     MapWalker.copyToPrototype({
         nameAccepted:function(name, rule){
             throw new UnsupportedOperationError("nameAccepted() not yet implemented", this);
@@ -1665,102 +1868,126 @@ YOURX = function(){
      * @constructor
      */
 	function CachingWalker(){
-        //maps to store the rules firing validation events
-		//indexed by name for attribute descendants
-		this.mapsbyname = {
-			accepted:{},
-			rejected:{},
-			required:{}
-		};
-		//indexed by position for element descendants
-		this.mapsbypos = {
-			accepted:{},
-			rejected:{},
-			required:{}
-		};
+        //number:rule mappings (corresponding with element/textnode positions)
+        //string:rule mappings (corresponding with attribute names)
+        this.cache = {
+            accepted:{},
+            rejected:{},
+            required:{}
+        };
 	};
     CachingWalker.copyToPrototype({
         /** Record a single validation event triggered by a single rule.
-         * @param allmaps The object containing one lookup table per status
-         * @param mapkey The validation status (which table to put it in)
-         * @param rulekey The position or name (in the document) to which the validation status applies
+         * @param statusKey The validation status (which table to put it in)
+         * @param caretKey The position or name (in the document) to which the validation status applies
          * @param rule the rule which asserted the validation status.
          */
-        putCache:function(allmaps,mapkey,rulekey,rule){
-            if(!ThingyUtil.putUniqueKey(allmaps,mapkey,rulekey,rule)){
-                throw new ThingyRuleError("Key " + rulekey + " already claimed by another rule");
+        putCache:function(putStatus,putCaret,putRule){
+            //check no status already assigned
+            var testStatus;
+            for(testStatus in this.cache){
+                if(putCaret in this.cache[testStatus]){
+                    throw new ThingyRuleError(
+                            "Key " + rulekey + " already assigned status by rule ",
+                        {status:testStatus, rule:this.cache[testStatus][putCaret]}
+                    );
+                }
             }
+            //assign status
+            this.cache[putStatus][putCaret]=putRule;
         },
         /** Return the current validation status for a given position or name by finding which lookup table contains it.
-         * @param rulekey
-         * @returns {The status}
+         * @param getCaret The caret for which to get the status (position or name).
+         * @returns {*} The status or null if no status was found.
          */
-        getCacheStatus:function(rulekey){
-            if(typeof rulekey === "string"){
-                //by name
-                return ThingyUtil.mapWithKey(this.mapsbyname,rulekey);
+        getCachedStatus:function(getCaret){
+            var testStatus;
+            for (testStatus in this.cache){
+                if(getCaret in this.cache[testStatus]){
+                    return testStatus;
+                    cachedStatus = testStatus;
+                }
             }
-            else if(typeof rulekey === "number"){
-                //by pos
-                return ThingyUtil.mapWithKey(this.mapsbypos,rulekey);
-            }
-            else{
-                throw new Error("Unexpected key type");
-            }
+            return null;
         },
         /** Gets the rule which assigned validation status to a particular
          * position or name (multiple rules trying to assert a status should trigger an error).
          * @param rulekey The position or name (key) being interrogated
          * @returns {The rule which asserted validation status for that key}
          */
-        getCache:function(rulekey){
-            var mapkey;
-            if(typeof rulekey  === "string"){
-                //by name
-                mapkey = ThingyUtil.mapWithKey(this.mapsbyname,rulekey);
-                if(mapkey !== null){
-                    return this.mapsbyname[mapkey][rulekey];
+        getCachedRule:function(getCaret){
+            var testStatus;
+            for(testStatus in this.cache){
+                if(getCaret in this.cache[testStatus]){
+                    return this.cache[testStatus][getCaret];
                 }
-            }
-            else if(typeof rulekey  === "number"){
-                //by pos
-                mapkey = ThingyUtil.mapWithKey(this.mapsbypos,rulekey);
-                if(mapkey !== null){
-                    return this.mapsbypos[mapkey][rulekey];
-                }
-            }
-            else{
-                throw new Error("Unexpected key type");
             }
             return null;
         },
-        posAccepted:function(pos, rule){ this.putCache(this.mapsbypos, "accepted", pos, rule); },
-        posRejected:function(pos, rule){ this.putCache(this.mapsbypos, "rejected", pos, rule); },
-        posRequired:function(pos, rule){ this.putCache(this.mapsbypos, "required", pos, rule); },
-        nameAccepted:function(name, rule){ this.putCache(this.mapsbyname, "accepted", name, rule); },
-        nameRejected:function(name, rule){ this.putCache(this.mapsbyname, "rejected", name, rule); },
-        nameRequired:function(name, rule){ this.putCache(this.mapsbyname, "required", name, rule); },
+        posAccepted:function(pos, rule){ this.putCache("accepted", pos, rule); },
+        posRejected:function(pos, rule){ this.putCache("rejected", pos, rule); },
+        posRequired:function(pos, rule){ this.putCache("required", pos, rule); },
+        nameAccepted:function(name, rule){ this.putCache("accepted", name, rule); },
+        nameRejected:function(name, rule){ this.putCache("rejected", name, rule); },
+        nameRequired:function(name, rule){ this.putCache("required", name, rule); },
         allValid:function(){
-            return  this['mapsbyname']['rejected'].length == 0 &&
-                this['mapsbyname']['required'].length == 0 &&
-                this['mapsbypos']['rejected'].length == 0 &&
-                this['mapsbypos']['rejected'].length == 0;
+            return
+                this.cache['rejected'].length == 0 &&
+                this.cache['required'].length == 0;
         },
-        replay:function(sequenceWalker,sequenceStart,sequenceEnd){
+        /**
+         * @param sort A sort function. If not specified then sort order is arbitrary
+         * @returns {Array}
+         */
+        getCachedCarets:function(sort){
+            var cache = this.cache;
+            var carets = [];
+            cloneArray(cache.keys()).forEach(function(testStatus){
+                carets.concat(cache[testStatus].keys());
+            });
+            if(sort !== undefined){
+                carets.sort(sort);
+            }
+            return carets;
+        },
+        replayMap:function(mapWalker, carets){
+            //by default populate list with all non-numeric carets with previously cached status
+            if(carets === undefined){
+                carets = getCachedCarets().filter(function(caret){ return ! isNumeric(caret); });
+            }
+            //fire events for the caret list
+            carets.forEach(function(testCaret){
+                switch(this.getCachedStatus(testCaret)){
+                    case 'accepted':
+                        mapWalker.nameAccepted(testCaret,this.getCachedRule(testCaret));
+                        break;
+                    case 'required':
+                        mapWalker.nameRequired(testCaret,this.getCachedRule(testCaret));
+                        break;
+                    case 'rejected':
+                        mapWalker.nameRejected(testCaret,this.getCachedRule(testCaret));
+                        break;
+                    default:
+                        throw new Error("Unexpected cache status '" + status + "' in successful walk");
+                }
+            });
+        },
+        replaySequence:function(sequenceWalker,sequenceStart,sequenceEnd){
+            sequenceStart = sequenceStart !== undefined? sequenceStart : 0;
             sequenceEnd = sequenceEnd !== undefined? sequenceEnd : Number.MAX_VALUE;
             var sequencePos = sequenceStart;
             sequenceLoop:
                 while(sequencePos < sequenceEnd){
-                    var status = this.getCacheStatus(sequencePos);
+                    var status = this.getCachedStatus(sequencePos);
                     switch(status){
                         case 'accepted':
-                            sequenceWalker.posAccepted(sequencePos,this.getCache(sequencePos));
+                            sequenceWalker.posAccepted(sequencePos,this.getCachedRule(sequencePos));
                             break;
                         case 'required':
-                            sequenceWalker.posRequired(sequencePos,this.getCache(sequencePos));
+                            sequenceWalker.posRequired(sequencePos,this.getCachedRule(sequencePos));
                             break;
                         case 'rejected':
-                            sequenceWalker.posRejected(sequencePos,this.getCache(sequencePos));
+                            sequenceWalker.posRejected(sequencePos,this.getCachedRule(sequencePos));
                             break;
                         case null:
                             //no recorded status against next position means walk was already complete
@@ -1770,7 +1997,6 @@ YOURX = function(){
                     sequencePos ++;
                 }
         }
-
     });
 
     /** A ValidationWalker responds to validation events by throwing
@@ -1812,11 +2038,21 @@ YOURX = function(){
 	};
 	RecursiveValidationWalker.prototypeFrom(ValidationWalker);
     RecursiveValidationWalker.copyToPrototype({
-        posAccepted:function(pos,rule){
-            var child = this.parent.getChildren()[pos];
+        posAccepted:function(pos,rule){ //triggers validation of elements (children and attributes) or text nodes (characters)
             if(ThingyUtil.canWalkBelow(rule)){
+                var child = this.parent.getChildren()[pos];
                 var walker = new RecursiveValidationWalker(child);
                 ThingyUtil.walkBelow(rule,child, walker);
+            }
+            else{
+                //TODO CH: harsher handling of fallthrough where there is a child but the rule can't handle it?
+            }
+        },
+        nameAccepted:function(name,rule){ //handles case of string validation of attributes
+            var att = this.parent.getAttributeThingy(name);
+            if(ThingyUtil.canWalkBelow(rule)){
+                var walker = new RecursiveValidationWalker(att);
+                ThingyUtil.walkBelow(rule,att, walker);
             }
             else{
                 //TODO CH: harsher handling of fallthrough where there is a child but the rule can't handle it?
