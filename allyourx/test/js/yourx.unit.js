@@ -45,13 +45,15 @@ $(function() {
 		["load schema from examples.001/team.002.rng", function(){
 			UNITTEST.grammar = YOURX.ThingyUtil.url2rule("schema/yourx/examples.001/team.002.rng");
 			var rule, rulechild0, rulechild1;
-			return (UNITTEST.grammar) instanceof YOURX.ThingyGrammar && 
-				   (rule = UNITTEST.grammar.getChildren()[0]) instanceof YOURX.ElementThingyRule && 
-				   (rulechild0 = rule.getChildren()[0]) instanceof YOURX.AttributeThingyRule && 
-				   (rulechild1 = rule.getChildren()[1]) instanceof YOURX.AttributeThingyRule && 
-				   rule.name == "player" && 
-				   rulechild0.name == "name" && 
-				   rulechild1.name == "position"; 
+			return  (UNITTEST.grammar) instanceof YOURX.ThingyGrammar &&
+				    (rule = UNITTEST.grammar.getChildren()[0]) instanceof YOURX.ElementThingyRule &&
+				    (rulechild0 = rule.getChildren()[0]) instanceof YOURX.AttributeThingyRule &&
+				    (rulechild1 = rule.getChildren()[1]) instanceof YOURX.AttributeThingyRule &&
+                    (rulechild2 = rule.getChildren()[2]) instanceof YOURX.ElementThingyRule &&
+                    rule.name == "player" &&
+				    rulechild0.name == "name" &&
+                    rulechild1.name == "position"
+				    rulechild2.name == "championship";
 		}],
 		["load data from examples.001/team.002.xml to in-memory model", function(){
 			UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("schema/yourx/examples.001/team.002.xml");
@@ -90,7 +92,7 @@ $(function() {
 				thingies.push(thingy);
 			});
 			return thingies.length === 33;
-	    }],
+	    }]
 /*		["insert required elements from examples.001/team.002.rng ", function(){
 			UNITTEST.thingy = new YOURX.RootThingy();
 			UNITTEST.grammar.autoPopulate(UNITTEST.thingy);
