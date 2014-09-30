@@ -19,7 +19,7 @@
     
     <define name="location">
         <element name="location">
-            <data type="string"/>
+            <text />
         </element>
     </define>
     
