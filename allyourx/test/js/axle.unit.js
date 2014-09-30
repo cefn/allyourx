@@ -352,7 +352,7 @@ $(function(){
 					UNITTEST.editor.caret.key == 1 &&
 					$(getDomFocus()).hasClass("xdescend") && 
 					$(getDomFocus()).parent().hasClass("xelement");
-		}],
+		}]
 		/*
 		["Mouse click moves cursor", function(){
 		}],

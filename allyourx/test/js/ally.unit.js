@@ -71,7 +71,7 @@ $(function(){
 		["bindThingy: Removing Thingy wrapper altogether leaves empty element", function(){
 			UNITTEST.boundq.remove();
 			return UNITTEST.viewportq.children().length === 0;
-	    }], 
+	    }]
 	]);
 });
 
