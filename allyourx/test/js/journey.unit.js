@@ -17,6 +17,7 @@ $(function() {
         ["journey.001.xml accepted by validation",function(){
             return UNITTEST.grammar.matchThingy(UNITTEST.thingy) === true;
         }],
+        /*
         ["load data from (invalid) journey.001a.xml to in-memory model", function(){
             UNITTEST.thingy = YOURX.ThingyUtil.url2thingy("../cases/journey/journey.001a.xml");
             return ( (UNITTEST.thingy) instanceof YOURX.RootThingy) ;
@@ -33,5 +34,6 @@ $(function() {
             //steps
             ;
         }],
+        */
     ]);
 });
