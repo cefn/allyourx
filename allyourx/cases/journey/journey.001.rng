@@ -25,8 +25,8 @@
     
     <define name="step">
             <choice>
-            <ref name="turnoff"/>
-            <ref name="travel"/>
+                <ref name="turnoff"/>
+                <ref name="travel"/>
             </choice>
     </define>
     
