@@ -297,16 +297,19 @@ YOURX = function(){
                     else if (name == "attribute") {
                         result = new AttributeThingyRule(node);
                     }
-                    else if (name == "text") { //corresponds with Text node with child rule to validate literal
-                        result = new TextThingyRule(node);
+                    else if (name == "text") { //matches Text node, with implicitly implies literal based on text node content
+                        result = new TextThingyRule();
+                        result.getChildren().push(new LiteralThingyRule(node));
                     }
-                    else if (name == "data") { //corresponds with Text node with child rules to validate character positions
+                    else if (name == "data") { //needs child rules to validate characters against XSD
                         if(node.parentNode.nodeName === "attribute"){
-                            //simply insert rule for validating character data of attribute
+                            //validates character data contained as value in attribute parent
+                            //simply add rule child
                             result = new DataThingyRule(node);
                         }
                         else if(node.parentNode.nodeName === "element"){
-                            //wrap validation rule in TextThingyNode - text node implicit
+                            //validates character data contained in a text node of element parent
+                            //add TextThingyNode - text node implicit
                             result = new TextThingyRule();
                             result.getChildren().push(new DataThingyRule(node));
                         }
@@ -341,15 +344,16 @@ YOURX = function(){
                         }
                     }
                     else if (name == "empty") {
-                        //ignore - means there are no rules for descendants
+                        //list of child rules should be empty
+                        result = [];
                     }
                     else {
                         throw new Error("Unsupported element '" + name + "' found when loading ThingyRules");
                     }
                 }
-                if(result !== null){ //handle 'define' which simply redirects
-                    $(node).data(CACHE,result);
-                }
+                //store resulting ThingyRule(s) against the node
+                // (to prevent cycles infinitely constructing new ThingyRules)
+                $(node).data(CACHE,result);
                 return result; //return resulting rule(s)
 			}
 		},
@@ -1435,7 +1439,6 @@ YOURX = function(){
                 walkedto++;
             }
             else{
-                walker.posRequired(startfrom,this);
                 walker.posRejected(startfrom,this);
             }
             return walkedto;
@@ -1665,8 +1668,26 @@ YOURX = function(){
     }
     DataThingyRule.prototypeFrom(StringThingyRule);
     DataThingyRule.copyToPrototype({
+        typePatterns:{
+            float:"[-+]?[0-9]*\.?[0-9]+"
+        },
         walkString:function(stringValue,stringWalker,stringStart){
-            throw new UnsupportedOperationError("walkString is not yet implemented", this);
+            if(this.type in this.typePatterns){
+                var pattern = this.typePatterns[this.type];
+                var match = stringValue.substr(stringStart).match(pattern);
+                if(match !== null){
+                    var stringPos;
+                    for(stringPos = stringStart; stringPos < match.index + match[0].length; stringPos++ ){
+                        stringWalker.posAccepted(stringPos, this);
+                    }
+                    return match[0].length;
+                }
+                else{
+                    stringWalker.posRequired(stringStart, this);
+                    return 0;
+                }
+            }
+            throw new UnsupportedOperationError("walkString is not yet implemented for type " + this.type, this);
         }
     });
 
@@ -1745,91 +1766,69 @@ YOURX = function(){
      * reports it is unsatisfied. Equally, in the case that min==0 (for example corresponding to RelaxNG
      * 'optional' or 'zeroOrMore'), then it will consume it's sub-pattern's xRequired() or xRejected() calls.
      */
-    function QuantifiedThingyRule(min, max, childrules){
+    function QuantifiedThingyRule(min, max, el, elNameMatch){
         this.min = min;
         this.max = max;
-        ThingyRule.apply(this,[childrules]);
+        if(el instanceof Element && el.nodeName===elNameMatch) { //creation from values in DOM node
+            ThingyRule.apply(this,[ ThingyUtil.children2rules(el) ]);
+        }
+        else{ throw new Error("Malformed arguments to QuantifiedThingyRule constructor"); }
+
     }
     QuantifiedThingyRule.prototypeFrom(ThingyRule); //TODO need equivalent for walkMap? Are Attributes valid in Quantifications
     QuantifiedThingyRule.copyToPrototype({
         walkSequence:function(sequence,sequenceWalker,sequenceStart) {
             //try to match all child rules a whole number of times
-            var sequencePos;
-            sequencePos = sequenceStart;
             var goodWalkers = [], badWalkers = [];
+            var consumed = 0;
             var patternPos;
             for(patternPos = 0; patternPos < this.max; patternPos++){
                 var cachingWalker = new CachingWalker();
-                sequencePos = ThingyUtil.walkSequenceWithRules(this.children,sequence,cachingWalker,sequencePos);
-                if(cachingWalker.allValid()){
+                consumed += ThingyUtil.walkSequenceWithRules(this.children,sequence,cachingWalker,sequenceStart + consumed);
+                if(cachingWalker.allAccepted()){
                     goodWalkers.push(cachingWalker);
                 }
-                else{
+                else{ //the moment an issue is hit, record failure and bail from repetition
                     badWalkers.push(cachingWalker);
                     break;
                 }
             }
             //re-run events
-            sequencePos = sequenceStart;
-            if(goodWalkers.length < this.min){ //repetitions below lower bound, pass on failed validation events (if any)
-                badWalkers.every(function(badWalker){
-                    sequencePos = badWalker.replayPositions(sequenceWalker,sequencePos);
+            var consumed = 0;
+            goodWalkers.forEach(function(goodWalker){
+                goodWalker.replayPositions(sequenceWalker,sequenceStart + consumed);
+                consumed += goodWalker.acceptedCarets().length;
+            });
+            if(goodWalkers.length < this.min){ //repetitions below lower bound, replay failed validation events
+                badWalkers.forEach(function(badWalker){
+                    badWalker.replayPositions(sequenceWalker,sequenceStart + consumed);
+                    consumed += badWalker.acceptedCarets().length;
                 });
             }
-            else{
-                goodWalkers.every(function(goodWalker){
-                    sequencePos = goodWalker.replayPositions(sequenceWalker,sequencePos);
-                });
-            }
-            return sequencePos;
+            return consumed;
         }
     });
 
-    function OneOrMoreThingyRule(){
-        var children = [];
-        if(arguments[0] instanceof Element){ //creation from values in DOM node
-            if(arguments[0].nodeName=="oneOrMore"){
-                children.concat(ThingyUtil.children2rules(arguments[0]));
-            }
-            else{ throw new Error("Malformed arguments to OneOrMoreThingyRule constructor"); }
-        };
-        QuantifiedThingyRule.apply(this, [1, Number.MAX_VALUE, children]);
+    function OneOrMoreThingyRule(el){
+        QuantifiedThingyRule.apply(this, [1, Number.MAX_VALUE, el, "oneOrMore"]);
     }
     OneOrMoreThingyRule.prototypeFrom(QuantifiedThingyRule);
 
     function OptionalThingyRule(){
-        var children = [];
-        if(arguments[0] instanceof Element){ //creation from values in DOM node
-            if(arguments[0].nodeName=="optional"){
-                children.concat(ThingyUtil.children2rules(arguments[0]));
-            }
-            else{ throw new Error("Malformed arguments to OptionalThingyRule constructor"); }
-        };
-        QuantifiedThingyRule.apply(this, [0, 1, children]);
+        QuantifiedThingyRule.apply(this, [0, 1, el, "optional"]);
 	}
 	OptionalThingyRule.prototypeFrom(QuantifiedThingyRule);
 
-	function ZeroOrMoreThingyRule(){ /** Repeats the consumption of its child rules until they stop consuming. */
-        var children = [];
-        if(arguments[0] instanceof Element){ //creation from values in DOM node
-            if(arguments[0].nodeName=="zeroOrMore"){
-                children.concat(ThingyUtil.children2rules(arguments[0]));
-            }
-            else{ throw new Error("Malformed arguments to zeroOrMoreThingyRule constructor"); }
-        };
-        QuantifiedThingyRule.apply(this, [0, Number.MAX_VALUE, children]);
+	function ZeroOrMoreThingyRule(){
+        QuantifiedThingyRule.apply(this, [0, Number.MAX_VALUE, el, "zeroOrMore"]);
 	}
 	ZeroOrMoreThingyRule.prototypeFrom(QuantifiedThingyRule);
 
     function ChoiceThingyRule(el){
-        var children = [];
-        if(arguments[0] instanceof Element){ //creation from values in DOM node
-            if(arguments[0].nodeName=="choice"){
-                children.concat(ThingyUtil.children2rules(arguments[0]));
-            }
-            else{ throw new Error("Malformed arguments to choice constructor"); }
-        };
-        ThingyRule.apply(this,[children]);
+        if(el instanceof Element && el.nodeName==="choice"){ //creation from values in DOM node
+            ThingyRule.apply(this,[ThingyUtil.children2rules(el)]);
+        }
+        else{ throw new Error("Malformed arguments to choice constructor"); }
     }
     ChoiceThingyRule.prototypeFrom(ThingyRule);
     ChoiceThingyRule.copyToPrototype({
@@ -1839,10 +1838,8 @@ YOURX = function(){
             // replay the first walker which has fewest 'xRejected' or 'xRequired' calls
             this.children.forEach(function(rule){
                 var cachingWalker = new CachingWalker();
-                var sequencePos = sequenceStart;
-                sequencePos = ThingyUtil.walkSequenceWithRules([rule],sequence,cachingWalker,sequencePos);
-                var problemCount = cachingWalker.problemCount();
-                childWalkers.push([problemCount, cachingWalker]);
+                ThingyUtil.walkSequenceWithRules([rule],sequence,cachingWalker,sequenceStart);
+                childWalkers.push([cachingWalker.acceptedCarets().length, cachingWalker]);
             });
 
             // TODO: It's not obvious which of the walkers to fire events for, issues being...
@@ -1855,9 +1852,12 @@ YOURX = function(){
 
             //sort walkers first by problemCount then second (implicitly), by grammar order, earliest first
             //sort by problemCount ascending
-            childWalkers.sort(function(a,b){ return a[0] - b[0] ; });
-            if(childWalkers.length > 0){
-                childWalkers[0][1].replay(sequenceWalker,sequenceStart);
+            childWalkers.sort(function(a,b){ return b[0] - a[0]; }); //places highest scoring walker first
+
+            if(childWalkers.length > 0){ //use walker with highest score
+                var selectedWalker = childWalkers[0][1];
+                selectedWalker.replayPositions(sequenceWalker,sequenceStart);
+                return selectedWalker.acceptedCarets().length;
             }
             else{
                 throw new Error("Choice without any child rules is an invalid grammar");
@@ -1996,16 +1996,40 @@ YOURX = function(){
             }
             return null;
         },
-        posAccepted:function(pos, rule){ this.putCache("accepted", pos, rule); },
-        posRejected:function(pos, rule){ this.putCache("rejected", pos, rule); },
-        posRequired:function(pos, rule){ this.putCache("required", pos, rule); },
-        nameAccepted:function(name, rule){ this.putCache("accepted", name, rule); },
-        nameRejected:function(name, rule){ this.putCache("rejected", name, rule); },
-        nameRequired:function(name, rule){ this.putCache("required", name, rule); },
-        allValid:function(){
-            return
-                this.cache['rejected'].length == 0 &&
-                this.cache['required'].length == 0;
+
+        posAccepted:function(pos, rule){
+            undefined;
+            this.putCache("accepted", pos, rule);
+        },
+        posRejected:function(pos, rule){
+            undefined;
+            this.putCache("rejected", pos, rule);
+        },
+        posRequired:function(pos, rule){
+            undefined;
+            this.putCache("required", pos, rule);
+        },
+        nameAccepted:function(name, rule){
+            undefined;
+            this.putCache("accepted", name, rule);
+        },
+        nameRejected:function(name, rule){
+            undefined;
+            this.putCache("rejected", name, rule);
+        },
+        nameRequired:function(name, rule){
+            undefined;
+            this.putCache("required", name, rule);
+        },
+
+        acceptedCarets:function(){
+            return Object.keys(this.cache['accepted']);
+        },
+        nonAcceptedCarets:function(){
+            return Object.keys(this.cache['rejected']).concat(Object.keys(this.cache['required']));
+        },
+        allAccepted:function(){
+            return this.nonAcceptedCarets().length === 0;
         },
         /**
          * @param sort A sort function. If not specified then sort order is arbitrary
@@ -2114,19 +2138,23 @@ YOURX = function(){
             undefined;//do nothing
         },
         nameRejected:function(name,rule){
-            throw new ThingyRuleError("Attribute rejected");
+            undefined;
+            throw new ThingyRuleError("Attribute with name " + name + " is rejected", rule);
         },
         nameRequired:function(name,rule){
-            throw new ThingyRuleError("Attribute missing");
+            undefined;
+            throw new ThingyRuleError("Attribute with name " + name + " is missing", rule);
         },
         posAccepted:function(pos,rule){
             undefined;//do nothing
         },
         posRejected:function(pos,rule){
-            throw new ThingyRuleError("Thingy at pos " + pos + " rejected");
+            undefined;
+            throw new ThingyRuleError("Thingy at pos " + pos + " is rejected", rule);
         },
         posRequired:function(pos,rule){
-            throw new ThingyRuleError("Child missing");
+            undefined;
+            throw new ThingyRuleError("Thingy at pos " + pos + " is required", rule);
         }
     });
 
