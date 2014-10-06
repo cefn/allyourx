@@ -160,18 +160,22 @@ $(function(){
 			return 	UNITTEST.editor.caret.thingy === UNITTEST.thingy.getChildren()[0] && 
 					UNITTEST.editor.caret.key === -1;
 		}],
-		["Backspace makes element name empty", function(){
-			typeControlKey("Backspace");
-			var name = UNITTEST.thingy.getChildren()[0].getName();
-			return name === "";
-		}],
-		["Repeat - Single typed character modifies element name and moves cursor", function(){
-			var typed = rootName.substring(0, 1);
-			typeCharacters(typed);
+        ["Backspace makes element name empty", function(){
+            typeControlKey("Backspace");
+            var name = UNITTEST.thingy.getChildren()[0].getName();
+            return name === "";
+        }],
+        ["Backspace again removes element", function(){
+            typeControlKey("Backspace");
+            return UNITTEST.thingy.getChildren().length === 0;
+        }],
+        ["Repeat - Open angle bracket and single typed character creates named element and moves cursor", function(){
+			var nameFragment = rootName.substring(0, 1);
+			typeCharacters("<" + nameFragment);
 			var name = UNITTEST.thingy.getChildren()[0].getName();
 			var domtext = $(UNITTEST.editor.editable.selection).text();
 			var range = window.getSelection().getRangeAt(0);
-			return name === typed && domtext === typed && 
+			return name === nameFragment && domtext === nameFragment &&
 			range.collapsed && range.startOffset === 1 && 
 			range.startContainer === $(UNITTEST.editor.editable.selection).get(0);
 		}],
@@ -300,7 +304,28 @@ $(function(){
 					$(getDomFocus()).hasClass("xdescend") && 
 					$(getDomFocus()).parent().hasClass("xelement");
 		}],
+        ["Backspaces delete element name, then remove element", function(){
+            //start element and write name
+            var deletedElementName = "todelete";
+            typeControlKey("Arrow Right");
+            typeCharacters("<" + deletedElementName);
+            var elementAdded =
+                UNITTEST.thingy.getChildren()[0].getChildren().length === 2 &&
+                UNITTEST.thingy.getChildren()[0].getChildren()[1].getName() === deletedElementName;
+            //remove name
+            var stroke;
+            for(stroke = 0; stroke < deletedElementName.length; stroke++){
+                typeControlKey("Backspace");
+            }
+            var nameRemoved =
+                UNITTEST.thingy.getChildren()[0].getChildren()[1].getName() === "";
+            //remove element
+            typeControlKey("Backspace");
+            var elementRemoved = UNITTEST.thingy.getChildren()[0].getChildren().length === 1;
+            return elementAdded && nameRemoved && elementRemoved;
+        }],
 		["Text input creates text node", function(){
+            typeControlKey("Arrow Left"); //moves back into preceding sibling's descendants
 			typeCharacters(textContent);
 			var focusthingy;
 			return 	(focusthingy = UNITTEST.editor.caret.thingy) instanceof YOURX.TextThingy &&
@@ -352,52 +377,52 @@ $(function(){
 					UNITTEST.editor.caret.key == 1 &&
 					$(getDomFocus()).hasClass("xdescend") && 
 					$(getDomFocus()).parent().hasClass("xelement");
-		}]
-		/*
-		["Mouse click moves cursor", function(){
 		}],
-		["Backspace after element deletes element", function(){
-		}],
-		["Element key sequence creates additional descendant even when cursor inside text element", function(){
-			return false;
-		}],
-		["Keydown right angle-bracket moves focus to parent when descendants exhausted", function(){
-			return false;
-		}],
-		["Keydown backspace on structural character deletes structure", function(){
-			return false;
-		}],
-		["Validating; Editor with grammar creates OperationCaret for focus", function(){
-			return false;
-		}],
-		["Validating; OperationCaret updated following focus change", function(){
-			return false;
-		}],
-		["Validating noninteractive; Keydown angle-bracket autocompletes involuntary operations", function(){
-			return false;
-		}],
-		["Validating interactive; Keydown angle-bracket prompts operations ", function(){
-			return false;
-		}],
-		["Click on element name sets focus", function(){
-			return false;
-		}],
-		["Click on attribute name sets focus", function(){
-			return false;
-		}],
-		["Click on attribute value sets focus", function(){
-			return false;
-		}],
-		["Click in text sets focus", function(){
-			return false;
-		}],
-		["Click after last attribute in an element sets focus", function(){
-			return false;
-		}],
-		["Click after element open tag in an element sets focus in descendant area", function(){
-			return false;
-		}],
-		*/
+        /*
+        ["Mouse click moves cursor", function(){
+        }],
+        ["Backspace after element deletes element", function(){
+        }],
+        ["Element key sequence creates additional descendant even when cursor inside text element", function(){
+            return false;
+        }],
+        ["Keydown right angle-bracket moves focus to parent when descendants exhausted", function(){
+            return false;
+        }],
+        ["Keydown backspace on structural character deletes structure", function(){
+            return false;
+        }],
+        ["Validating; Editor with grammar creates OperationCaret for focus", function(){
+            return false;
+        }],
+        ["Validating; OperationCaret updated following focus change", function(){
+            return false;
+        }],
+        ["Validating noninteractive; Keydown angle-bracket autocompletes involuntary operations", function(){
+            return false;
+        }],
+        ["Validating interactive; Keydown angle-bracket prompts operations ", function(){
+            return false;
+        }],
+        ["Click on element name sets focus", function(){
+            return false;
+        }],
+        ["Click on attribute name sets focus", function(){
+            return false;
+        }],
+        ["Click on attribute value sets focus", function(){
+            return false;
+        }],
+        ["Click in text sets focus", function(){
+            return false;
+        }],
+        ["Click after last attribute in an element sets focus", function(){
+            return false;
+        }],
+        ["Click after element open tag in an element sets focus in descendant area", function(){
+            return false;
+        }],
+        */
 	]);
 });
 
