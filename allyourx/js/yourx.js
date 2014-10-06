@@ -195,6 +195,26 @@ YOURX = function(){
         return a - b;
     }
 
+    function invert(fun){
+        return function(item){
+            return !fun(item);
+        }
+    }
+
+    function isNumbery(x){
+        if(x===''){
+            return false;
+        }
+        else{
+            try{
+                return !isNaN(x);
+            }
+            catch(e){
+                return false;
+            }
+        }
+    }
+
     /* First argument should be the prototype any additional javascript objects are merged through copyProperties */
     Function.prototype.prototypeFrom = function(constructor){
         //as described by http://javascript.crockford.com/prototypal.html
@@ -262,10 +282,14 @@ YOURX = function(){
 			else if(node instanceof Text){
 				return new TextThingy(node);
 			}
-			else if(node instanceof ProcessingInstruction){
-				//ignore for now, although schema instruction will be read eventually
-				return null;
-			}
+            else if(node instanceof Comment){
+                //ignore for now
+                return null;
+            }
+            else if(node instanceof ProcessingInstruction){
+                //ignore for now, although schema instruction will be read eventually
+                return null;
+            }
 			else{
 				throw new Error("Unexpected node type when parsing XML");					
 			}
@@ -904,7 +928,7 @@ YOURX = function(){
                 }
                 else if (typeof(arguments[0]) === "number") {
                     childidx = arguments[0];
-                    child = children[childidx];
+                    child = this.children[childidx];
                     this.children.splice(childidx, 1);
                 }
 
@@ -918,7 +942,7 @@ YOURX = function(){
                 return child;
             }
             else { //TODO CH improve error handling - fallthrough?
-                throw new Error("Malformed invocation of ContainerThingy#addChild()");
+                throw new Error("Malformed invocation of ContainerThingy#removeChild()");
             }
 
         },
@@ -1157,7 +1181,7 @@ YOURX = function(){
 
         /** Accesses either children or attributes depending on the key. */
         getThingy:function(key){
-            if(isNaN(key)){ //key is a string
+            if(!isNumbery(key)){ //check it's not a child key
                 return this.getAttributeThingy(key);
             }
             else{ //fall through to container (use key as child index)
@@ -1929,6 +1953,7 @@ YOURX = function(){
      * @constructor
      */
 	function ElementWalker(){};
+    ElementWalker.prototypeFrom(Walker);
 	ElementWalker.copyToPrototype(
         SequenceWalker.prototype,
         MapWalker.prototype
@@ -1941,15 +1966,18 @@ YOURX = function(){
      * @constructor
      */
 	function CachingWalker(){
-        //number:rule mappings (corresponding with element/textnode positions)
-        //string:rule mappings (corresponding with attribute names)
-        this.cache = {
-            accepted:{},
-            rejected:{},
-            required:{}
-        };
+        this.resetCache();
 	};
     CachingWalker.copyToPrototype({
+        resetCache:function(){
+            //number:rule mappings (corresponding with element/textnode positions)
+            //string:rule mappings (corresponding with attribute names)
+            this.cache = {
+                accepted:{},
+                rejected:{},
+                required:{}
+            };
+        },
         /** Record a single validation event triggered by a single rule.
          * @param statusKey The validation status (which table to put it in)
          * @param caretKey The position or name (in the document) to which the validation status applies
@@ -2416,7 +2444,7 @@ YOURX = function(){
 	//evaluate the export function in this scope	
 	return eval(writeScopeExportCode([
 		//General Javascript utility functions
-		'getGlobal','writeScopeExportCode','copyProperties','cloneArray', 
+		'getGlobal','writeScopeExportCode','copyProperties','cloneArray', 'invert', 'isNumbery',
 		//Thingy-oriented utility functions
 		"ThingyUtil", 
 		//Thingy instances used to create trees storing data
