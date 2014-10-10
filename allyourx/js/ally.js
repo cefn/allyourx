@@ -167,6 +167,7 @@ ALLY = function(){
 		var elq = $("<span/>");			
 
 		//bind thingy and add structural elements
+        elq.addClass("xbound");
 
 		//assign classes depending on Thingy type
 		if(thingy instanceof YOURX.ContainerThingy){
