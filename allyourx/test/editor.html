@@ -7,6 +7,7 @@
         <script type="text/javascript" src="http://localhost:3000/allyourx/lib/jquery-1.11.1/jquery.js"></script>
         <script type="text/javascript" src="../lib/guid0/guid0.js"></script>
         <script type="text/javascript" src="../lib/jshashtable/jshashtable-2.1.js"></script>
+        <script type="text/javascript" src="../lib/closestDescendant/closestDescendant.js"></script>
         <script type="text/javascript" src="../js/yourx.js"></script>
         <script type="text/javascript" src="../js/ally.js"></script>
         <script type="text/javascript" src="../js/axle.js"></script>		
@@ -21,7 +22,13 @@
 				session.editor.trackThingy(session.thingy); //load root into editor
 				session.boundq = session.editor.getBoundSelection(session.thingy); //grab the ui binding 
 				session.viewportq.append(session.boundq); //append to the page
-				
+                session.grammar = YOURX.ThingyUtil.url2rule("../cases/journey/journey.001.rng"); //load validating grammar
+
+                //TODO For efficiency the real-time validation and restyling should be suspended as the tree is traversed recursively
+                //TODO with just a single validation and styling refresh at the end.
+                session.decorator = new AXLE.ValidationDecorator(session.editor,session.grammar);
+                session.decorator.trackThingy(session.thingy);
+
                 //TODO, creating a child and moving cursor into the name is a workaround for Firefox not showing the cursor when using session.editor.setCaret(session.docnode, -1)
 				session.docnode = new YOURX.ElementThingy("");
 				session.thingy.addChild(session.docnode);
