@@ -949,7 +949,8 @@ YOURX = function(){
 
         getChildThingy: function (key) {
             if (arguments.length === 1) {
-                if (typeof(arguments[0]) === "number") {
+                if (isNumbery(key)) {
+                    key = Number(key);
                     if (key >= 0 && key < this.children.length) {
                         return this.children[key];
                     }
@@ -1821,12 +1822,12 @@ YOURX = function(){
             var consumed = 0;
             goodWalkers.forEach(function(goodWalker){
                 goodWalker.replayPositions(sequenceWalker,sequenceStart + consumed);
-                consumed += goodWalker.acceptedCarets().length;
+                consumed += goodWalker.acceptedKeys().length;
             });
             if(goodWalkers.length < this.min){ //repetitions below lower bound, replay failed validation events
                 badWalkers.forEach(function(badWalker){
                     badWalker.replayPositions(sequenceWalker,sequenceStart + consumed);
-                    consumed += badWalker.acceptedCarets().length;
+                    consumed += badWalker.acceptedKeys().length;
                 });
             }
             return consumed;
@@ -1863,7 +1864,7 @@ YOURX = function(){
             this.children.forEach(function(rule){
                 var cachingWalker = new CachingWalker();
                 ThingyUtil.walkSequenceWithRules([rule],sequence,cachingWalker,sequenceStart);
-                childWalkers.push([cachingWalker.acceptedCarets().length, cachingWalker]);
+                childWalkers.push([cachingWalker.acceptedKeys().length, cachingWalker]);
             });
 
             // TODO: It's not obvious which of the walkers to fire events for, issues being...
@@ -1881,7 +1882,7 @@ YOURX = function(){
             if(childWalkers.length > 0){ //use walker with highest score
                 var selectedWalker = childWalkers[0][1];
                 selectedWalker.replayPositions(sequenceWalker,sequenceStart);
-                return selectedWalker.acceptedCarets().length;
+                return selectedWalker.acceptedKeys().length;
             }
             else{
                 throw new Error("Choice without any child rules is an invalid grammar");
@@ -1979,32 +1980,32 @@ YOURX = function(){
             };
         },
         /** Record a single validation event triggered by a single rule.
-         * @param statusKey The validation status (which table to put it in)
-         * @param caretKey The position or name (in the document) to which the validation status applies
-         * @param rule the rule which asserted the validation status.
+         * @param putStatus The validation status (which table to put it in)
+         * @param putKey The position or name (in the document) to which the validation status applies
+         * @param putRule the rule which asserted the validation status.
          */
-        putCache:function(putStatus,putCaret,putRule){
+        putCache:function(putStatus,putKey,putRule){
             //check no status already assigned
             var testStatus;
             for(testStatus in this.cache){
-                if(putCaret in this.cache[testStatus]){
+                if(putKey in this.cache[testStatus]){
                     throw new ThingyRuleError(
-                            "Key " + putCaret + " already assigned status by rule ",
-                        {status:testStatus, rule:this.cache[testStatus][putCaret]}
+                            "Key " + putKey + " already assigned status by rule ",
+                        {status:testStatus, rule:this.cache[testStatus][putKey]}
                     );
                 }
             }
             //assign status
-            this.cache[putStatus][putCaret]=putRule;
+            this.cache[putStatus][putKey]=putRule;
         },
         /** Return the current validation status for a given position or name by finding which lookup table contains it.
-         * @param getCaret The caret for which to get the status (position or name).
+         * @param getKey The key for which to get the status (position or name).
          * @returns {*} The status or null if no status was found.
          */
-        getCachedStatus:function(getCaret){
+        getCachedStatus:function(getKey){
             var testStatus;
             for (testStatus in this.cache){
-                if(getCaret in this.cache[testStatus]){
+                if(getKey in this.cache[testStatus]){
                     return testStatus;
                 }
             }
@@ -2015,11 +2016,11 @@ YOURX = function(){
          * @param rulekey The position or name (key) being interrogated
          * @returns {The rule which asserted validation status for that key}
          */
-        getCachedRule:function(getCaret){
+        getCachedRule:function(getKey){
             var testStatus;
             for(testStatus in this.cache){
-                if(getCaret in this.cache[testStatus]){
-                    return this.cache[testStatus][getCaret];
+                if(getKey in this.cache[testStatus]){
+                    return this.cache[testStatus][getKey];
                 }
             }
             return null;
@@ -2050,51 +2051,51 @@ YOURX = function(){
             this.putCache("required", name, rule);
         },
 
-        acceptedCarets:function(){
+        acceptedKeys:function(){
             return Object.keys(this.cache['accepted']);
         },
-        nonAcceptedCarets:function(){
+        nonAcceptedKeys:function(){
             return Object.keys(this.cache['rejected']).concat(Object.keys(this.cache['required']));
         },
         allAccepted:function(){
-            return this.nonAcceptedCarets().length === 0;
+            return this.nonAcceptedKeys().length === 0;
         },
         /**
          * @param sort A sort function. If not specified then sort order is arbitrary
          * @returns {Array}
          */
-        getCachedCarets:function(sort){
+        getCachedKeys:function(sort){
             var cache = this.cache;
-            var carets = [];
-            var status,caret;
+            var keys = [];
+            var status,key;
             for(status in cache){
-                for(caret in cache[status]){
-                    carets.push(caret);
+                for(key in cache[status]){
+                    keys.push(key);
                 }
             }
             if(sort !== undefined){
-                carets.sort(sort);
+                keys.sort(sort);
             }
-            return carets;
+            return keys;
         },
-        replayNames:function(mapWalker, carets){
-            //by default populate list with all non-numeric carets with previously cached status
-            if(carets === undefined){
-                carets = this.getCachedCarets().filter(function(caret){ return typeof caret !== 'number'; });
+        replayNames:function(mapWalker, keys){
+            //by default populate list with all non-numeric keys with previously cached status
+            if(keys === undefined){
+                keys = this.getCachedKeys().filter(function(key){ return typeof key !== 'number'; });
             }
-            //fire events for the caret list
-            var caretPos;
-            for(caretPos = 0; caretPos < carets.length; caretPos++){
-                testCaret = carets[caretPos];
-                switch(this.getCachedStatus(testCaret)){
+            //fire events for the key list
+            var keyPos;
+            for(keyPos = 0; keyPos < keys.length; keyPos++){
+                testKey = keys[keyPos];
+                switch(this.getCachedStatus(testKey)){
                     case 'accepted':
-                        mapWalker.nameAccepted(testCaret,this.getCachedRule(testCaret));
+                        mapWalker.nameAccepted(testKey,this.getCachedRule(testKey));
                         break;
                     case 'required':
-                        mapWalker.nameRequired(testCaret,this.getCachedRule(testCaret));
+                        mapWalker.nameRequired(testKey,this.getCachedRule(testKey));
                         break;
                     case 'rejected':
-                        mapWalker.nameRejected(testCaret,this.getCachedRule(testCaret));
+                        mapWalker.nameRejected(testKey,this.getCachedRule(testKey));
                         break;
                     default:
                         throw new Error("Unexpected cache status '" + status + "' in successful walk");
@@ -2103,33 +2104,33 @@ YOURX = function(){
         },
         replayPositions:function(sequenceWalker,sequenceFirst,sequenceLast){
 
-            //get all positional carets, and coerce to number
-            var posCarets = [];
-            this.getCachedCarets().forEach(function(caret){
+            //get all positional keys, and coerce to number
+            var posKeys = [];
+            this.getCachedKeys().forEach(function(key){
                 try{
-                    posCarets.push(Number(caret));
+                    posKeys.push(Number(key));
                 }
                 catch(e){
                     undefined;
                 }
             });
 
-            if(posCarets.length > 0){
+            if(posKeys.length > 0){
 
                 //sort ascending
-                posCarets.sort(numerically);
+                posKeys.sort(numerically);
 
-                // calculate bounds (if not specified) based on largest and smallest available posCaret
-                sequenceFirst = sequenceFirst !== undefined? sequenceFirst : posCarets[0];
-                sequenceLast = sequenceLast !== undefined? sequenceLast : posCarets[posCarets.length - 1];
+                // calculate bounds (if not specified) based on largest and smallest available posKey
+                sequenceFirst = sequenceFirst !== undefined? sequenceFirst : posKeys[0];
+                sequenceLast = sequenceLast !== undefined? sequenceLast : posKeys[posKeys.length - 1];
 
-                //iterate over carets replaying validation events
-                var caretIdx;
-                caretIteration:
-                for(caretIdx = 0; caretIdx < posCarets.length; caretIdx++){
-                    var sequencePos = posCarets[caretIdx];
+                //iterate over keys replaying validation events
+                var keyIdx;
+                keyIteration:
+                for(keyIdx = 0; keyIdx < posKeys.length; keyIdx++){
+                    var sequencePos = posKeys[keyIdx];
                     if(sequencePos < sequenceFirst || sequencePos > sequenceLast){
-                        break caretIteration;
+                        break keyIteration;
                     }
                     else{
                         var status = this.getCachedStatus(sequencePos);
@@ -2262,13 +2263,18 @@ YOURX = function(){
     ThingyTracker.copyToPrototype({
         /** Accesses metadata storage for a thingy previously tracked.*/
         getMetadata:function(thingy){
-            if(thingy !== null && this.metadata.containsKey(thingy)){
-                var data = this.metadata.get(thingy);
-                if(data !== null){
-                    return data;
+            if(thingy){
+                if(this.metadata.containsKey(thingy)){
+                    var data = this.metadata.get(thingy);
+                    if(data !== null){
+                        return data;
+                    }
                 }
+                throw new Error("Thingy is not yet being tracked by this tracker");
             }
-            throw new Error("Thingy is not yet being tracked by this tracker");
+            else{
+                throw new Error("Null or undefined Thingy. Cannot retrieve metadata");
+            }
         },
         isTracked:function(thingy){
             return this.metadata.containsKey(thingy);
@@ -2280,8 +2286,7 @@ YOURX = function(){
             //superclass does nothing
         },
         childAdded:function(parent,child,childidx){
-            this.trackThingy(child);
-            this.getMetadata(child)['parent'] = parent;
+            this.trackThingy(child, {parent:parent});
         },
         childRemoved:function(parent,child,childidx){
             this.untrackThingy(child);
