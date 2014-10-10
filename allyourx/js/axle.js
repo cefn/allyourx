@@ -1395,59 +1395,108 @@ AXLE = function(){
 	};
 
     function StylingWalker(decorator, thingy){
-        this.validationDecorator = validationDecorator;
+        this.decorator = decorator;
         this.thingy = thingy;
+        YOURX.CachingWalker.apply(this,arguments);
     }
     StylingWalker.prototypeFrom(YOURX.CachingWalker);
     StylingWalker.copyToPrototype({
-        resetStyling:function(){
-            var avixEditor = this.validationDecorator.avixEditor;
-            //reset all existing styling
+        refreshStyling:function(){
+
+            var thisWalker = this;
+            var thisEditor = this.decorator.editor;
+            var thisThingy =this.thingy;
+
+            //first undo styling on descendants validated against the thingy
+            var thingyq = thisEditor.getBoundSelection(thisThingy);
+            var annotationClass = "grammar";
+            var willTraverse = thingyq.closestDescendant("." + annotationClass);
+            willTraverse.removeClass("accepted");
+            willTraverse.removeClass("required");
+            willTraverse.removeClass("rejected");
 
             //visit all cached keys and trigger relevant restyling
-            this.getCachedCarets().forEach(function(caret){
-
+            this.getCachedKeys().forEach(function(key){
+                if("getThingy" in thisThingy){ //it's a container
+                    var validatedThingy = thisThingy.getThingy(key);
+                    var validatedStatus = thisWalker.getCachedStatus(key);
+                    thisEditor.getBoundSelection(validatedThingy).addClass(annotationClass);
+                    thisEditor.getBoundSelection(validatedThingy).addClass(validatedStatus);
+                }
+                else{ //it's perhaps a TextThingy
+                    //TODO implement span-based highlighting within text "nodes"
+                    //based on validation status of character positions
+                }
             });
         }
     });
 
-    function ValidationDecorator(avixEditor){
-        this.avixEditor = avixEditor;
+    function ValidationDecorator(editor,grammar){
+        this.editor = editor;
+        this.grammar = grammar;
+        this.autoRefresh = true;
         YOURX.ThingyTracker.apply(this,[]);
     }
     ValidationDecorator.prototypeFrom(YOURX.ThingyTracker);
     ValidationDecorator.copyToPrototype({
         getStylingWalker:function(thingy){
-            var stylingWalker = this.getMetadata("stylingWalker");
-            if( ! stylingWalker){
+            var stylingWalker = this.getMetadata(thingy)["stylingWalker"];
+            if( ! stylingWalker ){
                 stylingWalker = new StylingWalker(this, thingy);
-                this.setMetadata("stylingWalker", stylingWalker);
+                this.getMetadata(thingy)["stylingWalker"] = stylingWalker;
             }
             return stylingWalker;
         },
+        validateDescendants:function(thingy){
+            var rule;
+            // lookup rule assigned to thingy by previous parent walk
+            if(thingy instanceof YOURX.RootThingy){
+                rule = this.grammar;
+            }
+            else{
+                var parent = this.getParent(thingy);
+                var key = this.getKey(thingy);
+                rule = this.getStylingWalker(parent).getCachedRule(key);
+            }
+            // lookup stylingWalker specific to the child
+            var walker = this.getStylingWalker(thingy);
+            // walk thingy with the assigned rule
+            walker.resetCache();
+            YOURX.ThingyUtil.walkBelow(rule,thingy,walker);
+            // consider autoRefresh to reflect new validation status
+            if(this.autoRefresh){
+                walker.refreshStyling();
+            }
+        },
         nameChanged:function(thingy, newname){
             YOURX.ThingyTracker.prototype.nameChanged.apply(this, arguments);
+            this.validateDescendants(this.getParent(thingy));
         },
         valueChanged:function(thingy, newval, oldval){
             YOURX.ThingyTracker.prototype.valueChanged.apply(this, arguments);
+            this.validateDescendants(this.getParent(thingy));
         },
         childAdded:function(parent,child,childidx){
             YOURX.ThingyTracker.prototype.childAdded.apply(this, arguments);
+            this.validateDescendants(parent);
         },
         childRemoved:function(parent,child,childidx){
             YOURX.ThingyTracker.prototype.childRemoved.apply(this, arguments);
+            this.validateDescendants(parent);
         },
         attributeAdded:function(parent,att){
             YOURX.ThingyTracker.prototype.attributeAdded.apply(this, arguments);
+            this.validateDescendants(parent);
         },
         attributeRemoved:function(parent,att){
             YOURX.ThingyTracker.prototype.attributeRemoved.apply(this, arguments);
+            this.validateDescendants(parent);
         }
 
     });
 
 	return eval(YOURX.writeScopeExportCode([
-		'OperationCaret','ThingyOperation','ThingyAddition','ThingyDeletion','AvixEditor'
+		'OperationCaret','ThingyOperation','ThingyAddition','ThingyDeletion','AvixEditor', 'ValidationDecorator', 'StylingWalker'
 	]));	
 	
 }();
