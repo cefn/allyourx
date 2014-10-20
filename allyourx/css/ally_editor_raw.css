@@ -41,3 +41,7 @@
 .grammar.required, .grammar.rejected{
     color:red;
 }
+
+.grammar.accepted{
+    color:green;
+}
