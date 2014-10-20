@@ -38,6 +38,6 @@
     
 }
 
-.grammar.required{
+.grammar.required, .grammar.rejected{
     color:red;
 }
