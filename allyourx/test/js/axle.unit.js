@@ -378,6 +378,12 @@ $(function(){
 					$(getDomFocus()).hasClass("xdescend") && 
 					$(getDomFocus()).parent().hasClass("xelement");
 		}],
+        ["Validation Decorator annotates tree", function(){
+            var editor = new AXLE.AvixEditor();
+            var decorator = new AXLE.ValidationDecorator(editor, UNITTEST.grammar);
+            editor.trackThingy(UNITTEST.thingy);
+            decorator.trackThingy(UNITTEST.thingy);
+        }],
         /*
         ["Mouse click moves cursor", function(){
         }],
