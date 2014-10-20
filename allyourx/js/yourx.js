@@ -571,7 +571,9 @@ YOURX = function(){
 			//rejected unmatched positions on behalf of the enforcing (parent?) rule
 			var pos;
 			for(pos = startfrom ; pos < rejectto; pos++){
-				if(cachingwalker.getCachedStatus(pos) === null){
+                var cachedStatus = cachingwalker.getCachedStatus(pos);
+				if(cachedStatus !== "accepted"){
+                    cachingwalker.resetCache(pos);
 					cachingwalker.posRejected(pos,enforcer);
 				}
 			}
@@ -1371,7 +1373,17 @@ YOURX = function(){
     SingleThingyRule.copyToPrototype({
         matchThingy:function(){
             throw new UnsupportedOperationError("Match not yet implemented", this);
-        }
+        },
+        walkSequence:function(sequence,walker,startfrom){
+            if(sequence.length > startfrom){ //check there is a candidate at all
+                if(this.matchThingy(sequence[startfrom], true)){ //test only for shallow match
+                    walker.posAccepted(startfrom, this);
+                    return 1;
+                }
+            }
+            walker.posRequired(startfrom, this);
+            return 0;
+        },
     });
 
 	function ContainerThingyRule(){}
@@ -1421,8 +1433,7 @@ YOURX = function(){
                     throw e;
                 }
             }
-        }
-
+        },
     });
 
     /** ContentThingyRule has validation logic for rules bound against ContentThingy types, such as...
@@ -1445,7 +1456,7 @@ YOURX = function(){
 		if(arguments.length == 1 && arguments[0] instanceof Document){
 			var docnoderuleq = $("grammar>start>*", arguments[0]);
 			if(docnoderuleq.length == 1){
-				ThingyRule.apply(this,[ThingyUtil.dom2rule(docnoderuleq.get(0))]);
+				TypedThingyRule.apply(this,["RootThingy", ThingyUtil.dom2rule(docnoderuleq.get(0))]);
 			}
 			else{
 				throw new Error("Could not match a unique document node rule");
@@ -1455,19 +1466,16 @@ YOURX = function(){
 			throw new Error("Malformed arguments to ThingyGrammar constructor");
 		}
 	}
-	ThingyGrammar.prototypeFrom(ContainerThingyRule);
-    ThingyGrammar.copyToPrototype({
-        walkSequence:function(sequence, walker, startfrom){
-            var walkedto = startfrom;
-            if(sequence[startfrom] instanceof RootThingy){
-                walker.posAccepted(startfrom,this);
-                walkedto++;
+	ThingyGrammar.prototypeFrom(TypedThingyRule);
+    ThingyGrammar.copyToPrototype(
+        ContainerThingyRule.prototype,
+        {
+            matchThingy:function(thingy){
+                if(TypedThingyRule.prototype.matchThingy.apply(this,arguments)){
+                    return ContainerThingyRule.prototype.matchThingy.apply(this,arguments);
+                }
+                return false;
             }
-            else{
-                walker.posRejected(startfrom,this);
-            }
-            return walkedto;
-        }
     });
 
 	function TypedThingyRule(typename, children){
@@ -1540,17 +1548,6 @@ YOURX = function(){
                 }
                 return false;
             },
-            walkSequence:function(sequence,walker,startfrom){
-                if(sequence.length > startfrom){ //check there is a candidate at all
-                    if(this.matchThingy(sequence[startfrom], true)){ //test only for shallow match
-                        walker.posAccepted(startfrom, this);
-                        return 1;
-                    }
-                }
-                walker.posRequired(startfrom, this);
-                return 0;
-            },
-
             /** Walks an element's attributes along with attribute rules.
              * Each existing attribute triggers exactly one call of either
              * nameAccepted or nameRejected for that name.
@@ -1864,7 +1861,10 @@ YOURX = function(){
             this.children.forEach(function(rule){
                 var cachingWalker = new CachingWalker();
                 ThingyUtil.walkSequenceWithRules([rule],sequence,cachingWalker,sequenceStart);
-                childWalkers.push([cachingWalker.acceptedKeys().length, cachingWalker]);
+                childWalkers.push({
+                    accepted:cachingWalker.acceptedKeys().length,
+                    walker:cachingWalker
+                });
             });
 
             // TODO: It's not obvious which of the walkers to fire events for, issues being...
@@ -1877,10 +1877,10 @@ YOURX = function(){
 
             //sort walkers first by problemCount then second (implicitly), by grammar order, earliest first
             //sort by problemCount ascending
-            childWalkers.sort(function(a,b){ return b[0] - a[0]; }); //places highest scoring walker first
+            childWalkers.sort(function(a,b){ return b.accepted - a.accepted; }); //places highest scoring walker first
 
             if(childWalkers.length > 0){ //use walker with highest score
-                var selectedWalker = childWalkers[0][1];
+                var selectedWalker = childWalkers[0].walker;
                 selectedWalker.replayPositions(sequenceWalker,sequenceStart);
                 return selectedWalker.acceptedKeys().length;
             }
@@ -1963,21 +1963,31 @@ YOURX = function(){
     /** A walker which handles validation events against a single parent by
      * recording the validating rule against the appropriate key (number or text).
      * This allows a walk to be inspected after the fact, for example to identify
-     * children or attributes for which NO event was triggered.
+     * children or attributes for which NO event was triggered. It contains a cache
+     * object containing number:rule mappings (corresponding with element/textnode positions)
+     * or string:rule mappings (corresponding with attribute names)
      * @constructor
      */
 	function CachingWalker(){
         this.resetCache();
 	};
     CachingWalker.copyToPrototype({
+        /** @param key Optional key to reset cache, if not specified, all keys are reset
+         */
         resetCache:function(){
-            //number:rule mappings (corresponding with element/textnode positions)
-            //string:rule mappings (corresponding with attribute names)
-            this.cache = {
-                accepted:{},
-                rejected:{},
-                required:{}
-            };
+            if(arguments.length === 0){ //reset whole cache
+                this.cache = {
+                    accepted:{},
+                    rejected:{},
+                    required:{}
+                };
+            }
+            else if(arguments.length === 1){
+                key = arguments[0];
+                for(testStatus in this.cache){
+                    delete this.cache[testStatus][key];
+                }
+            }
         },
         /** Record a single validation event triggered by a single rule.
          * @param putStatus The validation status (which table to put it in)
@@ -2292,8 +2302,7 @@ YOURX = function(){
             this.untrackThingy(child);
         },
         attributeAdded:function(parent,att){
-            this.trackThingy(att);
-            this.getMetadata(att)['parent'] = parent;
+            this.trackThingy(att, {parent:parent});
         },
         attributeRemoved:function(parent,att){
             this.untrackThingy(att);
