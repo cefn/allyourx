@@ -1422,29 +1422,32 @@ AXLE = function(){
             //visit all cached keys and trigger relevant restyling
             this.getCachedKeys().forEach(function(key){
                 if("getThingy" in thisThingy){ //it's a container
-                    var validatedStatus = thisWalker.getCachedStatus(key);
+                    var statusDict = thisWalker.getCachedStatuses(key);
                     var validatedThingy = thisThingy.getThingy(key);
-                    if(validatedStatus === "accepted" || validatedStatus === "rejected"){ //annotate the child with a class
-                        thisEditor.getBoundSelection(validatedThingy).addClass(annotationClass);
-                        thisEditor.getBoundSelection(validatedThingy).addClass(validatedStatus);
-                    }
-                    else if(validatedStatus === "required"){ //create an extra span in the parent
-                        var requiredSpan =$("<span class='" + validatedStatus + " " + annotationClass + "'>+</span>");
-                        thingyq.append(requiredSpan);
-                        if(YOURX.isNumbery(key)){ //move to correct child position
-                            key = Number(key);
-                            var after = thingyq.children().eq(key);
-                            if(after.length){
-                                after.before(requiredSpan);
+                    //add classes for these statuses
+                    ['accepted','rejected'].forEach(function(testStatus){ //style in this priority order
+                        if(testStatus in statusDict){
+                            thisEditor.getBoundSelection(validatedThingy).addClass(annotationClass);
+                            thisEditor.getBoundSelection(validatedThingy).addClass(testStatus);
+                        }
+                    });
+                    //add new element for these statuses
+                    ['required'].some(function(testStatus){
+                        if(testStatus in statusDict){
+                            var requiredSpan =$("<span class='" + testStatus + " " + annotationClass + "'>+</span>");
+                            thingyq.append(requiredSpan);
+                            if(YOURX.isNumbery(key)){ //move to correct child position
+                                key = Number(key);
+                                var after = thingyq.children().eq(key);
+                                if(after.length){
+                                    after.before(requiredSpan);
+                                }
+                            }
+                            else{ //move to correct attribute position
+                                //TODO handle relocation in a way appropriate for attribute keys
                             }
                         }
-                        else{ //move to correct attribute position
-                            //TODO handle relocation in a way appropriate for attribute keys
-                        }
-                    }
-                    else{
-                        throw new Error("No thingy matching ")
-                    }
+                    });
                 }
                 else{ //it's perhaps a TextThingy
                     //TODO implement span-based highlighting within text "nodes"
@@ -1471,26 +1474,29 @@ AXLE = function(){
             return stylingWalker;
         },
         validateDescendants:function(thingy){
-            var rule;
+            var rules = [];
             // lookup rule assigned to thingy by previous parent walk
             if(thingy instanceof YOURX.RootThingy){
-                rule = this.grammar;
+                rules = [this.grammar];
             }
             else{
                 var parent = this.getParent(thingy);
                 var key = this.getKey(thingy);
-                rule = this.getStylingWalker(parent).getCachedRule(key);
-            }
-            if(rule !== null){
-                // lookup stylingWalker specific to the child
-                var walker = this.getStylingWalker(thingy);
-                // walk thingy with the assigned rule
-                walker.resetCache();
-                YOURX.ThingyUtil.walkBelow(rule,thingy,walker);
-                // consider autoRefresh to reflect new validation status
-                if(this.autoRefresh){
-                    walker.refreshStyling();
+                var statusDict = this.getStylingWalker(parent).getCachedStatuses(key);
+                if(statusDict !== null && 'accepted' in statusDict){
+                    rules = statusDict['accepted'];
                 }
+            }
+            // lookup stylingWalker specific to the child and reset
+            var walker = this.getStylingWalker(thingy);
+            walker.resetCache();
+            // walk thingy with each assigned rule
+            rules.forEach(function(rule){
+                YOURX.ThingyUtil.walkBelow(rule,thingy,walker);
+            }, this);
+            // consider autoRefresh to reflect new validation status
+            if(this.autoRefresh){
+                walker.refreshStyling();
             }
         },
         nameChanged:function(thingy, newname){

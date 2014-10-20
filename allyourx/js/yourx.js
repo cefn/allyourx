@@ -521,7 +521,7 @@ YOURX = function(){
             //rejected unmatched positions on behalf of the enforcing (parent?) rule
             var pos;
             for(pos = startfrom ; pos < rejectto; pos++){
-                if(cachingwalker.getCachedStatus(pos) === null){
+                if(! ('accepted' in cachingwalker.getCachedStatuses(pos))){
                     cachingwalker.posRejected(pos,enforcer);
                 }
             }
@@ -571,9 +571,8 @@ YOURX = function(){
 			//rejected unmatched positions on behalf of the enforcing (parent?) rule
 			var pos;
 			for(pos = startfrom ; pos < rejectto; pos++){
-                var cachedStatus = cachingwalker.getCachedStatus(pos);
-				if(cachedStatus !== "accepted"){
-                    cachingwalker.resetCache(pos);
+                var statusDict = cachingwalker.getCachedStatuses(pos);
+				if(statusDict === null || ! ("accepted" in statusDict)){
 					cachingwalker.posRejected(pos,enforcer);
 				}
 			}
@@ -639,7 +638,8 @@ YOURX = function(){
 			
 			//rejected unmatched names on behalf of the enforcing (parent?) rule
 			for(name in map){
-				if(cachingwalker.getCachedStatus(name) === null){
+                var statusDict = cachingwalker.getCachedStatuses(name);
+				if(statusDict === null || !('accepted' in statusDict)){
 					cachingwalker.nameRejected(name, enforcer);
 				}
 			}
@@ -1807,7 +1807,7 @@ YOURX = function(){
             for(patternPos = 0; patternPos < this.max; patternPos++){
                 var cachingWalker = new CachingWalker();
                 consumed += ThingyUtil.walkSequenceWithRules(this.children,sequence,cachingWalker,sequenceStart + consumed);
-                if(cachingWalker.allAccepted()){
+                if(cachingWalker.keysWithoutStatus('accepted').length === 0){
                     goodWalkers.push(cachingWalker);
                 }
                 else{ //the moment an issue is hit, record failure and bail from repetition
@@ -1819,12 +1819,12 @@ YOURX = function(){
             var consumed = 0;
             goodWalkers.forEach(function(goodWalker){
                 goodWalker.replayPositions(sequenceWalker,sequenceStart + consumed);
-                consumed += goodWalker.acceptedKeys().length;
+                consumed += goodWalker.keysWithStatus('accepted').length;
             });
             if(goodWalkers.length < this.min){ //repetitions below lower bound, replay failed validation events
                 badWalkers.forEach(function(badWalker){
                     badWalker.replayPositions(sequenceWalker,sequenceStart + consumed);
-                    consumed += badWalker.acceptedKeys().length;
+                    consumed += badWalker.keysWithStatus('accepted').length;
                 });
             }
             return consumed;
@@ -1862,7 +1862,7 @@ YOURX = function(){
                 var cachingWalker = new CachingWalker();
                 ThingyUtil.walkSequenceWithRules([rule],sequence,cachingWalker,sequenceStart);
                 childWalkers.push({
-                    accepted:cachingWalker.acceptedKeys().length,
+                    accepted:cachingWalker.keysWithStatus('accepted').length,
                     walker:cachingWalker
                 });
             });
@@ -1882,7 +1882,7 @@ YOURX = function(){
             if(childWalkers.length > 0){ //use walker with highest score
                 var selectedWalker = childWalkers[0].walker;
                 selectedWalker.replayPositions(sequenceWalker,sequenceStart);
-                return selectedWalker.acceptedKeys().length;
+                return selectedWalker.keysWithStatus('accepted').length;
             }
             else{
                 throw new Error("Choice without any child rules is an invalid grammar");
@@ -1977,65 +1977,49 @@ YOURX = function(){
         resetCache:function(){
             if(arguments.length === 0){ //reset whole cache
                 this.cache = {
-                    accepted:{},
-                    rejected:{},
-                    required:{}
                 };
             }
             else if(arguments.length === 1){
                 key = arguments[0];
-                for(testStatus in this.cache){
-                    delete this.cache[testStatus][key];
-                }
+                delete this.cache[key];
             }
         },
         /** Record a single validation event triggered by a single rule.
-         * @param putStatus The validation status (which table to put it in)
+         * @param putStatus The validation status
          * @param putKey The position or name (in the document) to which the validation status applies
-         * @param putRule the rule which asserted the validation status.
+         * @param putRule The rule which asserted the validation status.
          */
         putCache:function(putStatus,putKey,putRule){
-            //check no status already assigned
-            var testStatus;
-            for(testStatus in this.cache){
-                if(putKey in this.cache[testStatus]){
-                    throw new ThingyRuleError(
-                            "Key " + putKey + " already assigned status by rule ",
-                        {status:testStatus, rule:this.cache[testStatus][putKey]}
-                    );
-                }
+            //check dictionary exists for this key
+            var statusDict;
+            if(putKey in this.cache){
+                statusDict = this.cache[putKey];
             }
-            //assign status
-            this.cache[putStatus][putKey]=putRule;
+            else{
+                statusDict = {};
+                this.cache[putKey] = statusDict;
+            }
+            //check list exists for this status at this key
+            var ruleList;
+            if(putStatus in statusDict){
+                ruleList = statusDict[putStatus];
+            }
+            else{
+                ruleList = [];
+                statusDict[putStatus] = ruleList;
+            }
+            ruleList.push(putRule);
         },
         /** Return the current validation status for a given position or name by finding which lookup table contains it.
          * @param getKey The key for which to get the status (position or name).
          * @returns {*} The status or null if no status was found.
          */
-        getCachedStatus:function(getKey){
-            var testStatus;
-            for (testStatus in this.cache){
-                if(getKey in this.cache[testStatus]){
-                    return testStatus;
-                }
+        getCachedStatuses:function(getKey){
+            if(getKey in this.cache){
+                return this.cache[getKey];
             }
             return null;
         },
-        /** Gets the rule which assigned validation status to a particular
-         * position or name (multiple rules trying to assert a status should trigger an error).
-         * @param rulekey The position or name (key) being interrogated
-         * @returns {The rule which asserted validation status for that key}
-         */
-        getCachedRule:function(getKey){
-            var testStatus;
-            for(testStatus in this.cache){
-                if(getKey in this.cache[testStatus]){
-                    return this.cache[testStatus][getKey];
-                }
-            }
-            return null;
-        },
-
         posAccepted:function(pos, rule){
             undefined;
             this.putCache("accepted", pos, rule);
@@ -2060,29 +2044,24 @@ YOURX = function(){
             undefined;
             this.putCache("required", name, rule);
         },
-
-        acceptedKeys:function(){
-            return Object.keys(this.cache['accepted']);
+        keysWithStatus:function(status){
+            var cache = this.cache;
+            return Object.keys(cache).filter(function(key){
+                return status in cache[key];
+            });
         },
-        nonAcceptedKeys:function(){
-            return Object.keys(this.cache['rejected']).concat(Object.keys(this.cache['required']));
-        },
-        allAccepted:function(){
-            return this.nonAcceptedKeys().length === 0;
+        keysWithoutStatus:function(status){
+            var cache = this.cache;
+            return Object.keys(cache).filter(function(key){
+                return ! (status in cache[key]);
+            });
         },
         /**
          * @param sort A sort function. If not specified then sort order is arbitrary
          * @returns {Array}
          */
         getCachedKeys:function(sort){
-            var cache = this.cache;
-            var keys = [];
-            var status,key;
-            for(status in cache){
-                for(key in cache[status]){
-                    keys.push(key);
-                }
-            }
+            var keys = Object.keys(this.cache);
             if(sort !== undefined){
                 keys.sort(sort);
             }
@@ -2091,39 +2070,32 @@ YOURX = function(){
         replayNames:function(mapWalker, keys){
             //by default populate list with all non-numeric keys with previously cached status
             if(keys === undefined){
-                keys = this.getCachedKeys().filter(function(key){ return typeof key !== 'number'; });
+                keys = this.getCachedKeys().filter(function(key){ return !YOURX.isNumbery(key); });
             }
+
+            //mapping between statuses and callback functions
+            var statuses = ['accepted','required','rejected'];
+            var callbacks = [mapWalker.nameAccepted,mapWalker.nameRequired,mapWalker.nameRejected];
+
             //fire events for the key list
             var keyPos;
             for(keyPos = 0; keyPos < keys.length; keyPos++){
-                testKey = keys[keyPos];
-                switch(this.getCachedStatus(testKey)){
-                    case 'accepted':
-                        mapWalker.nameAccepted(testKey,this.getCachedRule(testKey));
-                        break;
-                    case 'required':
-                        mapWalker.nameRequired(testKey,this.getCachedRule(testKey));
-                        break;
-                    case 'rejected':
-                        mapWalker.nameRejected(testKey,this.getCachedRule(testKey));
-                        break;
-                    default:
-                        throw new Error("Unexpected cache status '" + status + "' in successful walk");
-                }
+                var testKey = keys[keyPos];
+                var statusDict = this.cache[testKey];
+                statuses.forEach(function(status, idx){
+                    var callback = callbacks[idx];
+                    if(status in statusDict){
+                       statusDict[status].forEach(function(rule){ //get the list of rules with this status
+                           callback.apply(mapWalker,[testKey,rule]);
+                       });
+                    }
+                });
             }
         },
         replayPositions:function(sequenceWalker,sequenceFirst,sequenceLast){
 
             //get all positional keys, and coerce to number
-            var posKeys = [];
-            this.getCachedKeys().forEach(function(key){
-                try{
-                    posKeys.push(Number(key));
-                }
-                catch(e){
-                    undefined;
-                }
-            });
+            var posKeys = this.getCachedKeys().filter(function(key){ return YOURX.isNumbery(key); });
 
             if(posKeys.length > 0){
 
@@ -2134,32 +2106,32 @@ YOURX = function(){
                 sequenceFirst = sequenceFirst !== undefined? sequenceFirst : posKeys[0];
                 sequenceLast = sequenceLast !== undefined? sequenceLast : posKeys[posKeys.length - 1];
 
-                //iterate over keys replaying validation events
+                //mapping between statuses and callback functions
+                var statuses = ['accepted','required','rejected'];
+                var callbacks = [sequenceWalker.posAccepted,sequenceWalker.posRequired,sequenceWalker.posRejected];
+
+                //iterate over rules' statuses replaying validation events accordingly
                 var keyIdx;
                 keyIteration:
-                for(keyIdx = 0; keyIdx < posKeys.length; keyIdx++){
+                for(keyIdx = 0; keyIdx < posKeys.length; keyIdx++) {
                     var sequencePos = posKeys[keyIdx];
-                    if(sequencePos < sequenceFirst || sequencePos > sequenceLast){
-                        break keyIteration;
+                    if (sequencePos < sequenceFirst || sequencePos > sequenceLast) {
+                        //ignore this key, it's not in range
                     }
                     else{
-                        var status = this.getCachedStatus(sequencePos);
-                        statusSwitch:
-                            switch(status){
-                                case 'accepted':
-                                    sequenceWalker.posAccepted(sequencePos,this.getCachedRule(sequencePos));
-                                    break statusSwitch;
-                                case 'required':
-                                    sequenceWalker.posRequired(sequencePos,this.getCachedRule(sequencePos));
-                                    break statusSwitch;
-                                case 'rejected':
-                                    sequenceWalker.posRejected(sequencePos,this.getCachedRule(sequencePos));
-                                    break statusSwitch;
-                                default:
-                                    throw new Error("Unexpected cache status '" + status + "' in successful walk");
+                        //fire events for this key
+                        var statusDict = this.cache[sequencePos];
+                        statuses.forEach(function(status, idx){
+                            var callback = callbacks[idx];
+                            if(status in statusDict){
+                                statusDict[status].forEach(function(rule){ //get the list of rules with this status
+                                    callback.apply(sequenceWalker,[sequencePos,rule]);
+                                });
                             }
+                        });
                     }
                 }
+
             }
         }
     });
