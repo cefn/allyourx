@@ -301,6 +301,48 @@ YOURX = function(){
             });
             return childRules;
         },
+        /** Used with a Tree of Thingies which is actually a RelaxNG XML document.
+         * causes ThingyRules to be created (and managed within their own tree mirroring RelaxNG)
+         * @param thingytracker A tracker with the tree of thingies in it
+         * @param childthingy A childthingy managed by the tracker to bind against
+         */
+        bind2rule:function(thingytracker, childthingy) {
+
+            //create children array to be preserved against bound rules
+            // (even when temporarily there is no bound rule - when document invalid)
+            var children;
+            if(RULEKEY in this){ //get children from existing rule bound against this thingy
+                children = this[RULEKEY].children;
+            }
+            else{ //
+                children = [];
+            }
+
+            //add rule capabilities to thingy
+            var RULEKEY = 'rule';
+            thingy.getRule = function(){
+                return this[RULEKEY];
+            };
+            thingy.setRule = function(rule){ //ensures descendants are transferred
+                this[RULEKEY]=rule;
+                //substitute scoped children array
+                rule.children = children.concat(rule.children);
+                //insert in appropriate position in parent rule
+
+            };
+
+            //each time name changes, try to create a rule from it
+            //then call setRule to associate rule and transfer children from the last one
+            thingy.getName(function(thingy,name){
+                try{ //if successful, then set the rule
+                    thingy.setRule(thingy2rule(thingy));
+                }
+                catch(e){
+                    //rule not bound, keep children and attributes in scope hanging for the next time
+                }
+            });
+
+        },
         /** Translates from RelaxNG DOM to ThingyGrammar tree. */
 		dom2rule:function(node) {
             var CACHE = "rulecache";
@@ -1383,7 +1425,7 @@ YOURX = function(){
             }
             walker.posRequired(startfrom, this);
             return 0;
-        },
+        }
     });
 
 	function ContainerThingyRule(){}
@@ -1433,7 +1475,7 @@ YOURX = function(){
                     throw e;
                 }
             }
-        },
+        }
     });
 
     /** ContentThingyRule has validation logic for rules bound against ContentThingy types, such as...
@@ -1519,6 +1561,49 @@ YOURX = function(){
 				throw new Error("Cannot populate ElementThingyRule with DOM element called " + el.nodeName);
 			}
 		}
+        else if(arguments[0] instanceof ElementThingy){
+            var thingy = arguments[0];
+            var that = this;
+            if(thingy.name==='element'){
+                var nameAtt = null;
+                var attNameListener = function(att,newval,oldval){
+                    that.name = newval;
+                };
+                //set and bind name
+                var attAddedListener = function(parent,att){
+                    if(att.name==='name'){
+                        nameAtt = att;
+                        nameAtt.bind("namechanged", attNameListener);
+                    }
+                };
+                var attRemovedListener = function(parent,att){
+                    if(att === nameAtt){
+                        nameAtt.unbind("namechanged", attNameListener);
+                    }
+                };
+                that.children = [];
+                var childAddedListener = function(parent, child, childidx){ //on added
+                    that.children.splice(childidx,0,ThingyUtil.children2rules(child));
+                };
+                var childRemovedListener = function(parent, child, childidx){ //on removed
+                    that.children.splice(childidx, 1);
+                };
+                //bind current and future children to ContainerThingyRule#children
+                thingy.getChildren(childAddedListener, childRemovedListener);
+                thingy.getAttributes(attAddedListener);
+                this.dispose = function(){
+                    if(nameAtt != null){
+                        nameAtt.unbind("namechanged",attNameListener);
+                    }
+                    thingy.unbind("childAdded",childAddedListener);
+                    thingy.unbind("childRemoved",childRemovedListener);
+                };
+                NamedThingyRule.apply(that,[that.name,"ElementThingy", that.children]);
+            }
+            else{
+                throw new Error("Cannot populate ElementThingyRule with ElementThingy called " + thingy.name);
+            }
+        }
 		else if(typeof(arguments[0]) === "string"){
 			NamedThingyRule.apply(this,[arguments[0] /*name*/, "ElementThingy" /*typename*/ , arguments[1] /*children*/]);				
 		}
@@ -1980,7 +2065,7 @@ YOURX = function(){
                 };
             }
             else if(arguments.length === 1){
-                key = arguments[0];
+                var key = arguments[0];
                 delete this.cache[key];
             }
         },
