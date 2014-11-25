@@ -1,7 +1,7 @@
 Editor Errors
 -------------
 
-Everywhere
+Editing interactions
 ...selections not possible
 	...range operations such as shift-select mouse click or mouse drag not handled (e.g. https://developer.mozilla.org/En/DOM:range)
 	...CTRL accelerations and SHIFT selection should be considered
@@ -16,6 +16,13 @@ Everywhere
 ...can navigate to invalid caret by moving beyond last character of root container
 ...ensure that deleting zeroth character of element/attribute/text deletes element/attribute/text
 ...find out why mouse-clicking in elements doesn't set cursorthingy and cursorkey in editor.html, but keyboard navigation does 
+...insertion between any child elements seems to cause new element to appear at the end, not at insertion point.
+...cursor positioning inside name of element doesn't seem to move caret to name (typing continues at former caret position).
+...up key doesn't move cursor to text element visibly above current cursor position, or previous-sibling - simply throws error
+
+
+Validation interactions
+...Data rule doesn't trigger invalidity of alphabetical character data where a number is required
 
 Firefox
 ...when empty root node is loaded, cursor does not appear and document is invisible (zero height). Could be fixed in CSS? Workaround has been added in editor.html for the time being to move the cursor to inside the first child (with additional content, Firefox is then happy to render the cursor).
