@@ -1417,7 +1417,7 @@ AXLE = function(){
             willTraverse.removeClass("rejected");
 
             //remove "required" flag elements
-            thingyq.remove(">." + annotationClass + ".required");
+            thingyq.find(">." + annotationClass + ".required").remove();
 
             //visit all cached keys and trigger relevant restyling
             this.getCachedKeys().forEach(function(key){
