@@ -42,7 +42,7 @@
 							$("#caretkey").contents().remove();
 							if(session.editor.caret.thingy instanceof YOURX.Thingy){
 								$("#caretthingy").text(YOURX.ThingyUtil.thingy2xml(session.editor.caret.thingy));
-								$("#caretkey").text(session.editor.caret.key);							
+								$("#caretkey").text(session.editor.caret.key);
 							}
 						}, 0);						
 					}
@@ -55,10 +55,12 @@
     </head>
 	
     <body>
+    <!--
     	<p>
 			Visit <a href="unit.html">unit.html</a> for concrete progress on codebase and its capabilities.
     		This editor file is used for interactive testing only occasionally and can therefore be well behind HEAD. 
     	</p>
+    	-->
     	<div id="editor"></div>
     	<div id="caretthingy"></div>
     	<div id="caretkey"></div>
