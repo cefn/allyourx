@@ -1,0 +1,25 @@
+{\rtf1\ansi\ansicpg1252
+{\pard\plain The Problem:\par}
+{\pard\plain\par}
+{\pard\plain Currently validation and potentially autocompletion is built on a data structure known as a CachingWalker, which can handle accepted, required and rejected callbacks, assigning a single validation status to each key (position or name), and recording the rule which triggered that status. \par}
+{\pard\plain\par}
+{\pard\plain This is appropriate for the scenario of a document validated by greedy production rules. However, problems arise when the document is not valid, or only partially valid, or where non-greedy production rules need to be considered (e.g. where the first possible binding is not followed exclusively).\par}
+{\pard\plain\par}
+{\pard\plain Unfortunately this is incompatible with increasingly complex validation scenarios, since  multiple rules may claim an error status at a given key:\par}
+{\pard\plain * A choice rule may trigger assertions from two or more of its multiple descendant rules.\par}
+{\pard\plain * A sequence (implicit in RelaxNG container rules) may allow a singular rule to assert validation status, and on failure consider the same position for validation by another rule.\par}
+{\pard\plain\par}
+{\pard\plain Perhaps the CachedWalker approach can be used to indicate a single production rule assignment instead, meaning that there would be multiple CachedWalkers for each \lquote split\rquote  in the multiple parallel universes of production rule assignment. \par}
+{\pard\plain\par}
+{\pard\plain The experience authors want related to a given \lquote caret\rquote  location is:\par}
+{\pard\plain * For elements at that location (currently present); Are they valid? Could they be valid at that level in the hierarchy (even if the tree at that level is actually not valid because key features are absent).\par}
+{\pard\plain * If features are absent which would achieve or maintain validity, what operations would be needed to create them?\par}
+{\pard\plain\par}
+{\pard\plain This means that all possible paths have to be considered, including stepping over absent elements in a sequence or subsequence (group), and multiple \lquote parallel\rquote  statuses and operations need to be retained for a given caret location.\par}
+{\pard\plain\par}
+{\pard\plain Is a CachingWalker (assigning exclusive rules and statuses to every caret) a suitable way of summarising a productive (sub)sequence (an expansion of rules)? Is a different representation needed? Does there need to be a reference to the actual Thingy (as the caret it currently occupies may be an aspect which needs changing).\par}
+{\pard\plain\par}
+{\pard\plain Does there need to be \lquote virtual\rquote  keys for resolving expansions - e.g. this element would be pushed to position 1 if something was inserted in position 0, so assess it as if it were there already in a given expansion.\par}
+{\pard\plain\par}
+{\pard\plain One principle might be to only flag status which would be relevant to the next operation (e.g. if an operation is only valid after another, then no trace of that status exists in a Walker pass).\par}
+}
