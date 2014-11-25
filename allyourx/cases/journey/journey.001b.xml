@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?oxygen RNGSchema="./journey.001.rng" type="xml"?>
+<route>
+    <location>M6 Lancaster Services Southbound exit</location>
+    <!-- tests comment parsing, also a required 'oneOrMore' direction is missing here. -->
+    <location>Preston Ice Skating Rink</location>
+</route>

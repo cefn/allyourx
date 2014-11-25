@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?oxygen RNGSchema="./journey.001.rng" type="xml"?>
+<route>
+    <location>M6 Lancaster Services Southbound exit</location>
+    <meters>10000</meters>
+    <turnoff><left/></turnoff>
+    <meters>1000</meters>
+    <turnoff><right/></turnoff>
+    <location>Preston Ice Skating Rink</location>
+    <location>Spurious additional location</location>
+</route>
