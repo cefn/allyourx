@@ -148,8 +148,34 @@ ALLY = function(){
 		if(targetq.size() !== 1){
 			throw new Error("Could not find content selection for value change");
 		}						
-	};	
-	
+	};
+
+	/** Should return the DOM element in the view which corresponds to the 'open' tag, or null if none exists.
+	 * @param elq
+	 */
+	RecursiveView.prototype.queryOpenWrapper = function(elq){
+		throw new YOURX.UnsupportedException("The queryOpenWrapper() function must be overriden to implement an ALLY.RecursiveView");
+	};
+	/** Should return the DOM element in the view where children should be inserted, or null if none exists.
+	 * @param elq
+	 */
+	RecursiveView.prototype.queryDescendantWrapper = function(elq){
+		throw new YOURX.UnsupportedException("The queryDescendantWrapper() function must be overriden to implement an ALLY.RecursiveView");
+	};
+	/** Should return the DOM element in the view where text content should be inserted, or null if none exists.
+	 * @param elq
+	 */
+	RecursiveView.prototype.queryContentWrapper = function(elq){
+		throw new YOURX.UnsupportedException("The queryContentWrapper() function must be overriden to implement an ALLY.RecursiveView");
+	};
+	/** Should return the DOM element in the view which corresponds to the 'close' tag, or null if none exists.
+	 * @param elq
+	 */
+	RecursiveView.prototype.queryCloseWrapper = function(elq){
+		throw new YOURX.UnsupportedException("The queryCloseWrapper() function must be overriden to implement an ALLY.RecursiveView");
+	};
+
+
 	/** A RecursiveView whose factory methods create class-annotated spans
 	 * as the structural elements corresponding with individual Thingies in the DOM.
 	 */
@@ -217,7 +243,16 @@ ALLY = function(){
 	StyledView.prototype.queryCloseWrapper = function(elq){
 		return elq.children().filter(".xclose");
 	};
-	
+
+	function TiledView(grammar){
+		StyledView.apply(this,arguments);
+		this.grammar = grammar;
+	}
+	TiledView.prototype.boundSelectionImpl = function(thingy){
+		var superq = StyledView.prototype.boundSelectionImpl.apply(this,arguments);
+		superq.addClass("xtile");
+	}
+
 	function XmlView(){
 		StyledView.apply(this,arguments);
 	}
