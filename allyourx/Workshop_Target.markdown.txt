@@ -1,0 +1,7 @@
+﻿Non-programmers will be invited to workshops where the device domain, behaviour design task and toolset will be disclosed.
+
+During the session, the toolset has to...
+* Present a domain-specific language authoring environment in which authored behaviours and authoring steps are comprehensible to non-programmers.
+* Enable real-time compilation and deployment to a target environment
+* Capture informally shared ‘programs’ in an “abstract syntax tree structure”, even when the program is not valid in the domain specific language.
+* Maintain a backlog of actions needed to make invalid AST structures deployable, that is, made valid, bound to target code, compiled and executed on the demonstration device.
